@@ -3,18 +3,31 @@ import { Card, CardContent } from "~/components/ui/card";
 import InputWithLabel from "~/components/ui/input-with-label";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Form, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { Form, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import {  useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import Cookies from "js-cookie";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const cookieHeader = request.headers.get('Cookie');
+  if(!cookieHeader){
+    return redirect('/login');
+  }
+   const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        if (name && value) {
+            acc[name] = decodeURIComponent(value);
+        }
+        return acc;
+    }, {} as Record<string, string>);
+
   const url = new URL(request.url);
   const selectedOrg = url.searchParams.get('org');
 
   if(selectedOrg){
-    const {data} = await supabase.from('organization').select().eq('id', selectedOrg);
+    const {data} = await supabase.from('organization').select().eq('id', selectedOrg).eq('user_id', cookies.user_id);
     console.log(data[0])
     return {orgData: data[0]}
   }
@@ -41,6 +54,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
 }
 
 export default function Home({ loaderData}: Route.ComponentProps) {
+
   const {orgData} = loaderData;
   const [selectedBadges, setSelectedBadges] = useState<string>(orgData?.type);
   const [description, setDescription] = useState(orgData?.description);
@@ -75,6 +89,24 @@ export default function Home({ loaderData}: Route.ComponentProps) {
       setSelectedBadges(orgData.type);
     }
   },[orgData?.type])
+
+  useEffect(() => {
+    if (orgData?.name){
+      setName(orgData.name);
+    }
+  },[orgData?.name])
+
+  useEffect(() => {
+    if (orgData?.description){
+      setDescription(orgData.description);
+    }
+  },[orgData?.description])
+
+  useEffect(() => {
+    if (orgData?.contact){
+      setPOC(orgData.contact);
+    }
+  },[orgData?.contact])
 
   if(orgData){
     return (
