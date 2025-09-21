@@ -1,7 +1,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { useState } from "react";
-import { Form, redirect } from "react-router";
+import { Form, redirect, type ActionFunctionArgs } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
 import InputWithLabel from "~/components/ui/input-with-label";
@@ -9,7 +9,7 @@ import Cookies from 'js-cookie'
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-export const action = async ({ request }) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
     const formData = await request.formData();
     const _action = formData.get("_action");
     const email = formData.get("email");

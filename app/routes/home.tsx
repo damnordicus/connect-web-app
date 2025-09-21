@@ -7,6 +7,7 @@ import { Form, redirect, useRouteLoaderData, type ActionFunctionArgs, type Loade
 import {  useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import FileInput, { type FileInputProps } from "~/components/FIleUpload";
+import { OrgCard } from "~/components/OrgCard";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -185,7 +186,13 @@ export default function Home({ loaderData}: Route.ComponentProps) {
             <p>Primary Theme Color: </p>
             <input type="color" name="primary" value={primaryColor} onChange={(e) => setPrimaryColor(e.currentTarget.value)} className=""/>
           </div>
+          <div className="w-full space-y-2 text-left">
+            <p>Secondary Theme Color: </p>
+            <input type="color" name="secondary" value={secondaryColor} onChange={(e) => setSecondaryColor(e.currentTarget.value)} className=""/>
+          </div>
           <input type="hidden" name="badge" value={selectedBadges} />
+          <p className="text-left  mt-2">Preview: </p>
+          <OrgCard primaryColor={primaryColor} secondaryColor={secondaryColor} orgData={orgData}/>
           <Button className="mt-4 w-full bg-blue-400" type="submit" name="_action" value="submit">Update</Button>
           </Form>
         </CardContent>
