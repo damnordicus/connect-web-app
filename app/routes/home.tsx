@@ -3,10 +3,10 @@ import { Card, CardContent } from "~/components/ui/card";
 import InputWithLabel from "~/components/ui/input-with-label";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Form, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { Form, redirect, useRouteLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import {  useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import Cookies from "js-cookie";
+import FileInput, { type FileInputProps } from "~/components/FIleUpload";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -42,10 +42,45 @@ export const action = async ({request}: ActionFunctionArgs) => {
     const poc = formData.get("poc");
     const badge = formData.get("badge");
     const _action = formData.get("_action");
+    const image = formData.get("logo") as File;
+    const primary = formData.get("primary");
 
     if(_action === "submit"){
       try{
-        const { error } = await supabase.from("organization").update({name: name, description: description, contact: poc, type: badge}).eq('id', id);
+        const { error } = await supabase.from("organization").update({name: name, description: description, contact: poc, type: badge, primary_color: primary}).eq('id', id);
+        let imageUrl = null;
+        if(image && image.size > 0 ){
+          console.log('test: ', image)
+          const fileExt = image.name.split('.').pop();
+          const filename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          const {data: uploadData,error: uploadError} = await supabase.storage
+            .from('images')
+            .upload(filename, image, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          console.log("ud: ", uploadData)
+          if(uploadError) {
+            console.error("upload error: ", uploadError);
+            return {success: false, error: uploadError.message};
+          }
+
+          const {data: urlData} = supabase.storage
+            .from('images')
+            .getPublicUrl(filename);
+
+          imageUrl = urlData.publicUrl;
+          console.log(imageUrl)
+
+          const { error: updateError } = await supabase.from("organization").update({image_url: imageUrl}).eq('id', id);
+          if(updateError){
+            console.error("update error: ", updateError);
+            return {success: false, error: updateError.message};
+          }
+
+        }
+
       }catch(error){
         console.error(error);
       }
@@ -60,6 +95,10 @@ export default function Home({ loaderData}: Route.ComponentProps) {
   const [description, setDescription] = useState(orgData?.description);
   const [name, setName] = useState(orgData?.name);
   const [poc, setPOC] = useState(orgData?.contact);
+  const {orgs} = useRouteLoaderData('header') ;
+  const [primaryColor, setPrimaryColor] = useState(orgData?.primary_color);
+  const [secondaryColor, setSecondaryColor] = useState("");
+  // console.log()
 
   const categories = [
     {
@@ -85,37 +124,39 @@ export default function Home({ loaderData}: Route.ComponentProps) {
   ];
 
   useEffect(() => {
-    if (orgData?.type){
-      setSelectedBadges(orgData.type);
-    }
-  },[orgData?.type])
-
-  useEffect(() => {
-    if (orgData?.name){
+    if(orgData?.name){
       setName(orgData.name);
     }
-  },[orgData?.name])
-
-  useEffect(() => {
-    if (orgData?.description){
+    if(orgData?.description){
       setDescription(orgData.description);
     }
-  },[orgData?.description])
-
-  useEffect(() => {
-    if (orgData?.contact){
+    if(orgData?.contact){
       setPOC(orgData.contact);
     }
-  },[orgData?.contact])
+    if(orgData?.type){
+      setSelectedBadges(orgData.type);
+    }
+    if(orgData?.primary_color){
+      setPrimaryColor(orgData.primary_color)
+    }
+
+  },[orgData])
 
   if(orgData){
     return (
-    <div className="flex flex-col items-center mt-8">
-      <Card className="w-1/2">
+    <div className="flex flex-col items-center bg-linear-to-br from-blue-400 to-teal-300 h-screen">
+      <Card className="w-1/2 mt-8 ">
         <CardContent className="text-center">
-          <Form method="POST">
+          <Form method="POST" encType="multipart/form-data">
           <input type="hidden" name="id" value={orgData.id}/>
-          <h1 className="text-xl">Organization Details</h1>
+          {orgData.image_url && <div className="w-32 h-32 place-self-center mb-4 border-2 border-zinc-300/60 rounded-xl shadow-lg">
+            <img src={orgData.image_url} style={{width: "100%" , height: "100%", borderRadius: 12}}/>
+          </div>}
+          <h1 className="text-2xl">Organization Details</h1>
+          <div>
+            {/* <p className="text-left w-full space-y-2">Logo:</p> */}
+            <FileInput label={"Logo"} name={"logo"} />
+          </div>
           <InputWithLabel label="Name" name="name" type="text" setter={setName} value={name}/>
           <div className="text-left w-full space-y-2">
             <p>Category: </p>
@@ -140,6 +181,10 @@ export default function Home({ loaderData}: Route.ComponentProps) {
               {states.map(state => <option value={state}>{state}</option>)}
             </select>
           </div> */}
+          <div className="w-full space-y-2 text-left">
+            <p>Primary Theme Color: </p>
+            <input type="color" name="primary" value={primaryColor} onChange={(e) => setPrimaryColor(e.currentTarget.value)} className=""/>
+          </div>
           <input type="hidden" name="badge" value={selectedBadges} />
           <Button className="mt-4 w-full bg-blue-400" type="submit" name="_action" value="submit">Update</Button>
           </Form>
@@ -149,7 +194,13 @@ export default function Home({ loaderData}: Route.ComponentProps) {
     );
   }else{
     return (
-      <div>Loading...</div>
+      <div className="bg-linear-to-br from-blue-400 to-teal-300 p-6 h-screen">
+        <Card className=" shadow-lg">
+          <CardContent className="">
+            <h1>You are the editor of {orgs.length} organization(s)</h1>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
   
