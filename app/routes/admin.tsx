@@ -2,6 +2,7 @@ import { redirect, type LoaderFunctionArgs } from "react-router";
 import type { Route } from "../+types/root";
 import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -30,6 +31,16 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 export default function Dashboard ({loaderData}: Route.ComponentProps) {
     const {data: requests} = loaderData;
     console.log(requests)
+
+    const approve = async (userId, orgId, requestId) => {
+        const {data} = await supabase.from("organization").update([{"user_id": userId}]).eq("id", orgId)
+        
+        const {result} = await supabase.from("request").delete().eq("id", requestId)
+
+        console.log(data, result)
+        
+    }
+
     return (
         <div className="w-full h-screen p-6 bg-linear-to-br from-blue-400 to-teal-300">
             <Card className="">
@@ -55,12 +66,17 @@ export default function Dashboard ({loaderData}: Route.ComponentProps) {
                             </tr>
                         </thead>
                         <tbody className="text-left">
-                            {requests && requests.map(request => (
-                                <tr className="bg-white border">
+                            {requests && requests.map((request, index) => (
+                                <tr key={index} className="bg-white border">
                                     <td className="pl-2">{request.user.email}</td>
                                     <td>{request.organization.name}</td>
                                     <td>{new Date(request.created_at).toLocaleDateString()}</td>
-                                    <td></td>
+                                    <td>
+                                        <div className="space-x-2">
+                                            <Button className="bg-green-500" onClick={() => approve(request.user_id, request.org_id, request.id)}>Approve</Button>
+                                            <Button variant={"destructive"}>Deny</Button>
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                             {!requests && <tr></tr>}

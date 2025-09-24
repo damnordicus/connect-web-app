@@ -148,13 +148,16 @@ export default function Home({ loaderData}: Route.ComponentProps) {
 
   if(orgData){
     return (
-    <div className="flex flex-col items-center p-8 bg-linear-to-br from-blue-400 to-teal-300">
+    <div className="flex flex-col h-screen items-center p-8 bg-linear-to-br from-blue-400 to-teal-300">
       <Card className="lg:w-1/2 md:w-full">
         <CardContent className="text-center">
           <Form method="POST" encType="multipart/form-data">
           <input type="hidden" name="id" value={orgData.id}/>
-          {orgData.image_url && <div className="w-32 h-32 place-self-center mb-4 border-2 border-zinc-300/60 rounded-xl shadow-lg">
-            <img src={orgData.image_url} style={{width: "100%" , height: "100%", borderRadius: 12}}/>
+          {orgData.image_url &&
+           <div className="w-full flex justify-center">
+            <div className="w-32 h-32 place-self-center mb-4 border-2 border-zinc-300/60 rounded-xl shadow-lg">
+              <img src={orgData.image_url} style={{width: "90%" , height: "90%", margin:'auto', borderRadius: 12}}/>
+            </div>
           </div>}
           <h1 className="text-2xl">Organization Details</h1>
           <div>

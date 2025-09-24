@@ -40,7 +40,7 @@ export default function Header({loaderData}: Route.ComponentProps){
 
     const handleOrgChange = (selectedOrg: string) => {
         console.log('test')
-        navigate(`/?org=${selectedOrg}`, {replace: true});
+        navigate(`/home?org=${selectedOrg}`, {replace: true});
     }
 
     return (
