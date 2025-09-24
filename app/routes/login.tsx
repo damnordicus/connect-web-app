@@ -26,10 +26,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             if (data && data.length > 0) {
                 const user = data[0];
                 console.log(user.id)
-                const response = redirect("/");
-                response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
+                if(user.role === "SUPERADMIN"){
+                    const response = redirect("/admin");
+                    response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
+                    return response;
+                }else{
+                    const response = redirect("/home");
+                    response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
+                    return response;
+                }
                 
-                return response;
             } else {
                 return { success: false, error: "Invalid email or password" };
             }

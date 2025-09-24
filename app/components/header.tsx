@@ -53,6 +53,7 @@ export default function Header({loaderData}: Route.ComponentProps){
                     <option value="">Select an Org</option>
                     {orgs.map((org, index) => <option key={index} value={org.id}>{org.name}</option>)}
                 </select>
+                <Button onClick={() => navigate("/requestOrg")}>Request Org Admin</Button>
                 </div>
                 <Button variant={'default'} onClick={() => {Cookies.remove('user_id'); navigate('/login')}}>Logout</Button>
             </CardContent>

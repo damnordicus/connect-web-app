@@ -45,10 +45,12 @@ export const action = async ({request}: ActionFunctionArgs) => {
     const _action = formData.get("_action");
     const image = formData.get("logo") as File;
     const primary = formData.get("primary");
+    const secondary = formData.get("secondary");
+    const text = formData.get("text");
 
     if(_action === "submit"){
       try{
-        const { error } = await supabase.from("organization").update({name: name, description: description, contact: poc, type: badge, primary_color: primary}).eq('id', id);
+        const { error } = await supabase.from("organization").update({name: name, description: description, contact: poc, type: badge, primary_color: primary, secondary_color: secondary, text_color: text}).eq('id', id);
         let imageUrl = null;
         if(image && image.size > 0 ){
           console.log('test: ', image)
@@ -98,7 +100,8 @@ export default function Home({ loaderData}: Route.ComponentProps) {
   const [poc, setPOC] = useState(orgData?.contact);
   const {orgs} = useRouteLoaderData('header') ;
   const [primaryColor, setPrimaryColor] = useState(orgData?.primary_color);
-  const [secondaryColor, setSecondaryColor] = useState("");
+  const [secondaryColor, setSecondaryColor] = useState(orgData?.secondary_color);
+  const [textColor, setTextColor] = useState("");
   // console.log()
 
   const categories = [
@@ -145,8 +148,8 @@ export default function Home({ loaderData}: Route.ComponentProps) {
 
   if(orgData){
     return (
-    <div className="flex flex-col items-center bg-linear-to-br from-blue-400 to-teal-300 h-screen">
-      <Card className="w-1/2 mt-8 ">
+    <div className="flex flex-col items-center p-8 bg-linear-to-br from-blue-400 to-teal-300">
+      <Card className="lg:w-1/2 md:w-full">
         <CardContent className="text-center">
           <Form method="POST" encType="multipart/form-data">
           <input type="hidden" name="id" value={orgData.id}/>
@@ -161,7 +164,7 @@ export default function Home({ loaderData}: Route.ComponentProps) {
           <InputWithLabel label="Name" name="name" type="text" setter={setName} value={name}/>
           <div className="text-left w-full space-y-2">
             <p>Category: </p>
-            <div className="space-x-2">
+            <div className="space-x-2 space-y-2">
               {categories.map((item, index) => <Badge key={index} variant={"outline"} 
               onClick={() => {
                 if(selectedBadges === item.type)
@@ -182,17 +185,35 @@ export default function Home({ loaderData}: Route.ComponentProps) {
               {states.map(state => <option value={state}>{state}</option>)}
             </select>
           </div> */}
-          <div className="w-full space-y-2 text-left">
-            <p>Primary Theme Color: </p>
+          {/* <div className="w-full space-y-2 text-left">
+            <p>Background Color: </p>
             <input type="color" name="primary" value={primaryColor} onChange={(e) => setPrimaryColor(e.currentTarget.value)} className=""/>
           </div>
           <div className="w-full space-y-2 text-left">
-            <p>Secondary Theme Color: </p>
+            <p>Border Color: </p>
             <input type="color" name="secondary" value={secondaryColor} onChange={(e) => setSecondaryColor(e.currentTarget.value)} className=""/>
+          </div>
+          <div className="w-full space-y-2 text-left">
+            <p>Text Color: </p>
+            <input type="color" name="text" value={textColor} onChange={(e) => setTextColor(e.currentTarget.value)} className=""/>
+          </div> */}
+          <div className="flex flex-col">
+            <p>Card Color: </p>
+            <div className="flex justify-between">
+              <p onClick={() => {setPrimaryColor("#93c5fd"); setSecondaryColor("#60a5fa")}} className="p-4 bg-blue-300 rounded-full border-2 border-blue-400"></p>
+              <p onClick={() => {setPrimaryColor("#d8b4fe"); setSecondaryColor("#c084fc")}} className="p-4 bg-purple-300 rounded-full border-2 border-purple-400"></p>
+              <p onClick={() => {setPrimaryColor("#fca5a5"); setSecondaryColor("#f87171")}} className="p-4 bg-red-300 rounded-full border-2 border-red-400"></p>
+              <p onClick={() => {setPrimaryColor("#86efac"); setSecondaryColor("#4ade80")}} className="p-4 bg-green-300 rounded-full border-2 border-green-400"></p>
+              <p onClick={() => {setPrimaryColor("#fdba74"); setSecondaryColor("#fb923c")}} className="p-4 bg-orange-300 rounded-full border-2 border-orange-400"></p>
+              <p onClick={() => {setPrimaryColor("#fde047"); setSecondaryColor("#facc15")}} className="p-4 bg-yellow-300 rounded-full border-2 border-yellow-400"></p>
+              <p onClick={() => {setPrimaryColor("#ffffff"); setSecondaryColor("#f3f4f6")}} className="p-4 bg-white rounded-full border-2 border-gray-100"></p>
+            </div>
+            <input type="hidden" value={primaryColor} name="primary" />
+            <input type="hidden" value={secondaryColor} name="secondary" />
           </div>
           <input type="hidden" name="badge" value={selectedBadges} />
           <p className="text-left  mt-2">Preview: </p>
-          <OrgCard primaryColor={primaryColor} secondaryColor={secondaryColor} orgData={orgData}/>
+          <OrgCard primaryColor={primaryColor} secondaryColor={secondaryColor} textColor={textColor} orgData={orgData}/>
           <Button className="mt-4 w-full bg-blue-400" type="submit" name="_action" value="submit">Update</Button>
           </Form>
         </CardContent>
