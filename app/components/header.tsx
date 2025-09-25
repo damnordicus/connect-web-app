@@ -28,12 +28,13 @@ export const loader = async ({request}: ActionFunctionArgs) => {
     }
     
     const {data} = await supabase.from('organization').select().eq('user_id', cookies.user_id);
+    const {data: user} = await supabase.from("user").select().eq("id", cookies.user_id)
     
-    return { orgs: data || [], userId: cookies.user_id, isAuthenticated: true };
+    return { orgs: data || [], userId: cookies.user_id, isAuthenticated: true, user };
 }
 
 export default function Header({loaderData}: Route.ComponentProps){
-    const { orgs, userId } = loaderData;
+    const { orgs, userId, user } = loaderData;
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const currentOrg = searchParams.get('org');
@@ -49,13 +50,13 @@ export default function Header({loaderData}: Route.ComponentProps){
             <CardContent className="inline-flex gap-8 justify-between">
                 <div className="flex items-center gap-8">
                 <p className="text-xl text-white">Virtual Directory</p>
-                <select name="current-org" className="text-white border border-white/40 rounded-md px-1 bg-blue-300" value={currentOrg || ""} onChange={(e) => handleOrgChange(e.currentTarget.value)}>
+                {user[0].role !== "SUPERADMIN" && <><select name="current-org" className="text-white border border-white/40 rounded-md px-1 bg-blue-300" value={currentOrg || ""} onChange={(e) => handleOrgChange(e.currentTarget.value)}>
                     <option value="">Select an Org</option>
                     {orgs.map((org, index) => <option key={index} value={org.id}>{org.name}</option>)}
                 </select>
-                <Button onClick={() => navigate("/requestOrg")}>Request Org Admin</Button>
+                <Button onClick={() => navigate("/requestOrg")}>Request Org Admin</Button></>}
                 </div>
-                <Button variant={'default'} onClick={() => {Cookies.remove('user_id'); navigate('/login')}}>Logout</Button>
+                <Button variant={'default'} onClick={() => {Cookies.remove('user_id'); navigate('/')}}>Logout</Button>
             </CardContent>
         </Card>
         <Outlet/>

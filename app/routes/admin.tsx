@@ -3,13 +3,14 @@ import type { Route } from "../+types/root";
 import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
+import { useEffect, useState } from "react";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export const loader = async ({request}: LoaderFunctionArgs) => {
     const cookieHeader = request.headers.get('Cookie');
     if(!cookieHeader){
-        return redirect('/login');
+        return redirect('/');
     }
     const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
         const [name, value] = cookie.trim().split('=');
@@ -30,16 +31,50 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 
 export default function Dashboard ({loaderData}: Route.ComponentProps) {
     const {data: requests} = loaderData;
-    console.log(requests)
-
+    // console.log(requests)
+    const [requestList, setRequestList] = useState(requests)
     const approve = async (userId, orgId, requestId) => {
-        const {data} = await supabase.from("organization").update([{"user_id": userId}]).eq("id", orgId)
+    try {
+        const {data, error: orgError} = await supabase
+            .from("organization")
+            .update({"user_id": userId})
+            .eq("id", orgId)
         
-        const {result} = await supabase.from("request").delete().eq("id", requestId)
+        const {data: result, error: deleteError} = await supabase
+            .from("request")
+            .delete()
+            .eq("id", requestId)
 
-        console.log(data, result)
+        if (!orgError && !deleteError) {
+            // Remove the approved request from local state
+            setRequestList(prev => prev.filter(request => request.id !== requestId))
+        }
         
+        console.log(data, result)
+    } catch (error) {
+        console.error('Error approving request:', error)
     }
+}
+
+const deny = async (requestId) => {
+    try {
+        const {data, error} = await supabase
+            .from("request")
+            .delete()
+            .eq("id", requestId)
+        
+        if (!error) {
+            // Remove the denied request from local state
+            setRequestList(prev => prev.filter(request => request.id !== requestId))
+        }
+    } catch (error) {
+        console.error('Error denying request:', error)
+    }
+}
+
+    useEffect(() => {
+        setRequestList(requests);
+    },[requests])
 
     return (
         <div className="w-full h-screen p-6 bg-linear-to-br from-blue-400 to-teal-300">
@@ -66,7 +101,7 @@ export default function Dashboard ({loaderData}: Route.ComponentProps) {
                             </tr>
                         </thead>
                         <tbody className="text-left">
-                            {requests && requests.map((request, index) => (
+                            {requestList && requestList.map((request, index) => (
                                 <tr key={index} className="bg-white border">
                                     <td className="pl-2">{request.user.email}</td>
                                     <td>{request.organization.name}</td>
@@ -74,7 +109,7 @@ export default function Dashboard ({loaderData}: Route.ComponentProps) {
                                     <td>
                                         <div className="space-x-2">
                                             <Button className="bg-green-500" onClick={() => approve(request.user_id, request.org_id, request.id)}>Approve</Button>
-                                            <Button variant={"destructive"}>Deny</Button>
+                                            <Button variant={"destructive"} onClick={() => deny(request.id)}>Deny</Button>
                                         </div>
                                     </td>
                                 </tr>
