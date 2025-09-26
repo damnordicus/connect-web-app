@@ -20,7 +20,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
         return acc;
     }, {} as Record<string, string>);
     try {
-        const {data} = await supabase.from("request").select(`*, user(email), organization(name)`)
+        const {data} = await supabase.from("request").select(`*, user(email), organization!org_id(name), base!base_id(name)`)
         console.log('test: ', data)
         return {data}
        
@@ -90,7 +90,7 @@ const deny = async (requestId) => {
                                     Email
                                 </th>
                                 <th>
-                                    Organization
+                                    Organization/Base
                                 </th>
                                 <th>
                                     Date
@@ -104,11 +104,11 @@ const deny = async (requestId) => {
                             {requestList && requestList.map((request, index) => (
                                 <tr key={index} className="bg-white border">
                                     <td className="pl-2">{request.user.email}</td>
-                                    <td>{request.organization.name}</td>
+                                    <td>{request.organization?.name ?? request.base?.name}</td>
                                     <td>{new Date(request.created_at).toLocaleDateString()}</td>
                                     <td>
                                         <div className="space-x-2">
-                                            <Button className="bg-green-500" onClick={() => approve(request.user_id, request.org_id, request.id)}>Approve</Button>
+                                            <Button className="bg-green-500" onClick={() => approve(request.user_id, request.org_id ?? request.base_id, request.id)}>Approve</Button>
                                             <Button variant={"destructive"} onClick={() => deny(request.id)}>Deny</Button>
                                         </div>
                                     </td>
