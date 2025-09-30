@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Route } from "../+types/root";
 import { Button } from "./ui/button";
 import Cookies from "js-cookie";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "./ui/select";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -29,32 +30,56 @@ export const loader = async ({request}: ActionFunctionArgs) => {
     
     const {data} = await supabase.from('organization').select().eq('user_id', cookies.user_id);
     const {data: user} = await supabase.from("user").select().eq("id", cookies.user_id)
+    const {data: bases} = await supabase.from("baseDetails").select(`base(*)`).eq("user_id", cookies.user_id)
+    console.log('bases: ', bases)
     
-    return { orgs: data || [], userId: cookies.user_id, isAuthenticated: true, user };
+    return { orgs: data || [], userId: cookies.user_id, isAuthenticated: true, user, bases };
 }
 
 export default function Header({loaderData}: Route.ComponentProps){
-    const { orgs, userId, user } = loaderData;
+    const { orgs, userId, user, bases } = loaderData;
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const currentOrg = searchParams.get('org');
 
-    const handleOrgChange = (selectedOrg: string) => {
-        console.log('test')
-        navigate(`/home?org=${selectedOrg}`, {replace: true});
+    const handleOrgChange = (selectedEnt: string) => {
+        console.log('selectedEnt: ', selectedEnt),
+        console.log('org:', orgs)
+        console.log('bases:', bases)
+        if(orgs.find(ent => ent.id === selectedEnt)){
+            console.log(orgs.includes(selectedEnt))
+            navigate(`/home?org=${selectedEnt}`, {replace: true});
+        }
+        if(bases.find(ent => ent.base.id === selectedEnt)){
+            console.log('bases.includes(selectedEnt)')
+            navigate(`/admin/base?id=${selectedEnt}`, {replace: true});
+        }
     }
-
+    console.log('pi', bases)
     return (
         <>
-        <Card className="w-full h-[50px] rounded-none justify-center bg-blue-400">
+        <Card className="w-full flex-shrink-0 h-[50px] rounded-none justify-center bg-blue-400">
             <CardContent className="inline-flex gap-8 justify-between">
                 <div className="flex items-center gap-8">
                 <p className="text-xl text-white">Virtual Directory</p>
-                {user[0].role !== "SUPERADMIN" && <><select name="current-org" className="text-white border border-white/40 rounded-md px-1 bg-blue-300" value={currentOrg || ""} onChange={(e) => handleOrgChange(e.currentTarget.value)}>
-                    <option value="">Select an Org</option>
-                    {orgs.map((org, index) => <option key={index} value={org.id}>{org.name}</option>)}
-                </select>
-                <Button onClick={() => navigate("/requestOrg")}>Request Org Admin</Button></>}
+                {user[0].role !== "SUPERADMIN" && 
+                <>
+                <Select name="current-org" value={currentOrg || ""} onValueChange={(e) => handleOrgChange(e)}>
+                    <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select an option"/>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            <SelectLabel>Organizations</SelectLabel>
+                            {orgs.length > 0 ? orgs.map((org, index) => <SelectItem key={index} value={org.id}>{org.name}</SelectItem>): <SelectLabel>No Orgs Found</SelectLabel>}
+                        </SelectGroup>
+                        <SelectGroup>
+                            <SelectLabel>Bases</SelectLabel>
+                            {bases.length > 0 ? bases.map((base, index) => <SelectItem key={index} value={base.base.id}>{base.base.name}</SelectItem>) : <SelectLabel>No Bases Found</SelectLabel>}
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
+                <Button onClick={() => navigate("requestOrg")}>Request Org Admin</Button></>}
                 </div>
                 <Button variant={'default'} onClick={() => {Cookies.remove('user_id'); navigate('/')}}>Logout</Button>
             </CardContent>

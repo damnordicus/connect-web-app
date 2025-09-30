@@ -6,7 +6,7 @@ import { Button } from "~/components/ui/button";
 import { Form, redirect, useRouteLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import {  useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import FileInput, { type FileInputProps } from "~/components/FIleUpload";
+import FileInput, { type FileInputProps } from "~/components/FileUpload";
 import { OrgCard } from "~/components/OrgCard";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
@@ -14,7 +14,7 @@ const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const cookieHeader = request.headers.get('Cookie');
   if(!cookieHeader){
-    return redirect('/login');
+    return redirect('login');
   }
    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
         const [name, value] = cookie.trim().split('=');

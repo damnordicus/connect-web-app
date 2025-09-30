@@ -1,5 +1,5 @@
-import { redirect, type LoaderFunctionArgs } from "react-router";
-import type { Route } from "../+types/root";
+import { Outlet, redirect, type LoaderFunctionArgs } from "react-router";
+import type { Route } from "../../+types/root";
 import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -33,28 +33,66 @@ export default function Dashboard ({loaderData}: Route.ComponentProps) {
     const {data: requests} = loaderData;
     // console.log(requests)
     const [requestList, setRequestList] = useState(requests)
-    const approve = async (userId, orgId, requestId) => {
-    try {
-        const {data, error: orgError} = await supabase
-            .from("organization")
-            .update({"user_id": userId})
-            .eq("id", orgId)
-        
-        const {data: result, error: deleteError} = await supabase
-            .from("request")
-            .delete()
-            .eq("id", requestId)
+    const approve = async (userId: string, entId: {id: string, ent: string}, requestId: string) => {
+        try {
+            let updateData = null;
+            let updateError = null;
+            
+            if(entId.ent === "org"){
+                const {data: orgData, error: orgError} = await supabase
+                    .from("organization")
+                    .update({"user_id": userId})
+                    .eq("id", entId.id)
 
-        if (!orgError && !deleteError) {
-            // Remove the approved request from local state
-            setRequestList(prev => prev.filter(request => request.id !== requestId))
+                updateData = orgData;
+                updateError = orgError;
+            } 
+            else if(entId.ent === "base"){
+                const {data: baseData, error: baseError} = await supabase
+                    .from("base")
+                    .update({"user_id": userId})
+                    .eq("id", entId.id)
+
+                updateData = baseData;
+                updateError = baseError;
+            }
+            else {
+                // Handle unexpected entity type
+                console.error('Unknown entity type:', entId.ent);
+                return;
+            }
+
+            // Check if update was successful before proceeding
+            if (updateError) {
+                console.error('Error updating entity:', updateError);
+                return { data: null, error: updateError };
+            }
+
+            // Only delete the request if the update was successful
+            const {data: result, error: deleteError} = await supabase
+                .from("request")
+                .delete()
+                .eq("id", requestId)
+
+            if (deleteError) {
+                console.error('Error deleting request:', deleteError);
+                return { data: updateData, error: deleteError };
+            }
+
+            // Update successful and request deleted - update local state
+            setRequestList(prev => prev.filter(request => request.id !== requestId));
+            
+            console.log('Update data:', updateData);
+            console.log('Delete result:', result);
+            
+            
+            return redirect("/");
+            
+        } catch (error) {
+            console.error('Error approving request:', error);
+            return { data: null, error };
         }
-        
-        console.log(data, result)
-    } catch (error) {
-        console.error('Error approving request:', error)
     }
-}
 
 const deny = async (requestId) => {
     try {
@@ -108,7 +146,7 @@ const deny = async (requestId) => {
                                     <td>{new Date(request.created_at).toLocaleDateString()}</td>
                                     <td>
                                         <div className="space-x-2">
-                                            <Button className="bg-green-500" onClick={() => approve(request.user_id, request.org_id ?? request.base_id, request.id)}>Approve</Button>
+                                            <Button className="bg-green-500" onClick={() => approve(request.user_id, {id: request.org_id ?? request.base_id, ent: request.org_id ? "org" : "base"}, request.id)}>Approve</Button>
                                             <Button variant={"destructive"} onClick={() => deny(request.id)}>Deny</Button>
                                         </div>
                                     </td>

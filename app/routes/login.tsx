@@ -60,7 +60,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             }
             else{
                 const {data, error} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base}).select("id")
-                const response = redirect("/home");
+                const response = redirect("home");
                     response.headers.set('Set-Cookie', `user_id=${data[0].id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
                     return response;
             }

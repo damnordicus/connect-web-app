@@ -70,7 +70,7 @@ export default function RequestOrg({loaderData}: Route.ComponentProps){
     }
 
     return(
-        <div className="w-full h-screen p-4 bg-linear-to-br from-blue-400 to-teal-300">
+        <div className="w-full h-full p-4 bg-linear-to-br from-blue-400 to-teal-300">
             <Tabs defaultValue="organization">
                 <TabsList className={`gap-2 px-4`} >
                     <TabsTrigger value="organization" >Organization</TabsTrigger>
@@ -117,7 +117,7 @@ export default function RequestOrg({loaderData}: Route.ComponentProps){
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    {bases.map((base, index: number) => 
+                                    {bases && bases.length > 0 && bases.map((base, index: number) => 
                                     <SelectItem key={index} value={base.id}>{base.name}</SelectItem>
                                     )}
                                 </SelectGroup>
