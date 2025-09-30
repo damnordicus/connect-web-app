@@ -99,7 +99,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                     <img
                       src={selectedBase.image_url ?? "http://cataas.com/cat"}
                       alt={`${selectedBase.name} cover`}
-                      className="w-full h-100 object-cover rounded-lg border"
+                      className="w-full h-32 object-cover rounded-lg border"
                     />
                     <Button
                       size="sm"
