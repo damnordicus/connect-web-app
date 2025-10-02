@@ -222,18 +222,16 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
       <div className="grid gap-4">
         {/* Base Header Card */}
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="">
             <div className="grid md:grid-cols-3 gap-6">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">
-                    Base Cover Image
-                  </Label>
+                  
                   <div className="relative group">
                     <img
                       src={selectedBase.image_url ?? "http://cataas.com/cat"}
                       alt={`${selectedBase.name} cover`}
-                      className="w-full h-32 object-cover rounded-lg border"
+                      className="w-full h-50 object-cover rounded-lg border"
                     />
                     <Button
                       size="sm"
@@ -312,12 +310,12 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                   <TabsTrigger value={"baseDetails"}>Base Details</TabsTrigger>
                   <TabsTrigger value={"appView"}>App View</TabsTrigger>
                 </TabsList>
-                <TabsContent value={"baseDetails"}>
-                  <Card>
+                <TabsContent value={"baseDetails"} className="mt-4">
+                  {/* <Card>
                     <CardHeader>
                       <CardTitle>Basic Information</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-6"> */}
                       <EditableField
                         label={"Base Name"}
                         name="baseName"
@@ -351,12 +349,12 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                         setFieldEdit={setMottoEdit}
                         type="textarea"
                       />
-                    </CardContent>
-                  </Card>
+                    {/* </CardContent>
+                  </Card> */}
                 </TabsContent>
                 <TabsContent value="appView">
                   <Form method="POST">
-                    <div className="flex flex-cols-[auto_1fr]">
+                    <div className="flex flex-cols-[auto_1fr] gap-4">
                       <div className="relative flex flex-col justify-center">
 
                       <div className="flex items-center gap-4 pb-4">
@@ -403,63 +401,65 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
           {/* Command & Personnel */}
           <Card>
             <CardHeader>
-              <CardTitle>Command & Personnel</CardTitle>
+              <Tabs defaultValue="command">
+                <TabsList>
+                  <TabsTrigger value="command">Command</TabsTrigger>
+                  <TabsTrigger value="appView">App View</TabsTrigger>
+                </TabsList>
+                <TabsContent value="command" className="mt-4">
+                  <EditableField
+                                  field={commander}
+                                  name="commander"
+                                  setField={setCommander}
+                                  label="Base Commander"
+                                  fieldEdit={commanderEdit}
+                                  setFieldEdit={setCommanderEdit}
+                                  Icon={Shield}
+                                />
+                </TabsContent>
+                <TabsContent value="appView">
+
+                </TabsContent>
+              </Tabs>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <EditableField
-                field={commander}
-                name="commander"
-                setField={setCommander}
-                label="Base Commander"
-                fieldEdit={commanderEdit}
-                setFieldEdit={setCommanderEdit}
-                Icon={Shield}
-              />
-
-              {/* <EditableField
-                field="population"
-                label="Base Population"
-                value={selectedBase.population || 0}
-                icon={Users}
-              />
-
-              <EditableField
-                field="organizations"
-                label="Number of Organizations"
-                value={selectedBase.organizations || ""}
-                icon={Building}
-              /> */}
-            </CardContent>
           </Card>
 
           {/* Contact Information */}
-          <Card className="lg:col-span-2">
+          <Card className="">
             <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                <EditableField
-                  field={phone}
-                  setField={setPhone}
-                  fieldEdit={phoneEdit}
-                  setFieldEdit={setPhoneEdit}
-                  name="phone"
-                  label="Phone Number"
-                  Icon={Phone}
-                />
+              <Tabs defaultValue="contact">
+                <TabsList>
+                  <TabsTrigger value="contact">Contact Information</TabsTrigger>
+                  <TabsTrigger value="appView">App View</TabsTrigger>
+                </TabsList>
+                <TabsContent value="contact" className="mt-4">
+                  <div className="space-y-6">
+                  <EditableField
+                    field={phone}
+                    setField={setPhone}
+                    fieldEdit={phoneEdit}
+                    setFieldEdit={setPhoneEdit}
+                    name="phone"
+                    label="Phone Number"
+                    Icon={Phone}
+                  />
 
-                <EditableField
-                  field={email}
-                  setField={setEmail}
-                  fieldEdit={emailEdit}
-                  setFieldEdit={setEmailEdit}
-                  name="email"
-                  label="Email Address"
-                  Icon={Mail}
-                />
-              </div>
-            </CardContent>
+                  <EditableField
+                    field={email}
+                    setField={setEmail}
+                    fieldEdit={emailEdit}
+                    setFieldEdit={setEmailEdit}
+                    name="email"
+                    label="Email Address"
+                    Icon={Mail}
+                  />
+                </div>
+                </TabsContent>
+                <TabsContent value="appView">
+
+                </TabsContent>
+              </Tabs>
+            </CardHeader>
           </Card>
         </div>
       </div>
