@@ -20,10 +20,12 @@ import {
   MapPin,
   MapPinIcon,
   Phone,
+  QuoteIcon,
   Save,
   SaveIcon,
   Shield,
   SpeakerIcon,
+  UserRound,
   Users,
   X,
 } from "lucide-react";
@@ -338,19 +340,6 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                           Location cannot be modified
                         </p>
                       </div>
-
-                      <EditableField
-                        field={motto}
-                        name="motto"
-                        label="Base Motto"
-                        setField={setMotto}
-                        Icon={Building}
-                        fieldEdit={mottoEdit}
-                        setFieldEdit={setMottoEdit}
-                        type="textarea"
-                      />
-                    {/* </CardContent>
-                  </Card> */}
                 </TabsContent>
                 <TabsContent value="appView">
                   <Form method="POST">
@@ -363,7 +352,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                       </div>
                     <Button type="submit" name="submit" value="showName-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
                       </div>
-                      <div className="relative w-[400px] h-[200px] mx-auto rounded-xl bg-gray-200">
+                      <div className="relative w-[400px] h-[200px] mx-auto rounded-xl bg-gray-200 shadow-lg">
                         <img src={selectedBase.image_url} className="w-full h-[200px] object-cover rounded-xl"/>
                         {showName && <div className="bg-black/40 rounded-xl absolute inset-0 items-center flex flex-col justify-center text-white">
                           <p className="text-center text-xl font-bold">{selectedBase.base.name}</p>
@@ -390,9 +379,23 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                   <EditableField label="Motto" name="motto" field={motto} setField={setMotto} Icon={SpeakerIcon} fieldEdit={mottoEdit} setFieldEdit={setMottoEdit} />
                 </TabsContent>
                 <TabsContent value="appView">
-                  <div className="flex flex-cols-[auto_1fr]">
-
-                  </div>
+                <Form method="POST">
+                    <div className="flex flex-cols-[auto_1fr] gap-4">
+                      <div className="relative flex flex-col justify-center">
+                        <div className="flex items-center gap-4 pb-4">
+                          <Checkbox name="showName" checked={showName} onCheckedChange={() => setShowName(!showName)} />
+                          <label className="text-sm">Show motto card? </label>
+                        </div>
+                      <Button type="submit" name="submit" value="showName-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
+                      </div>
+                      <div className="relative w-[300px] h-[100px] mx-auto rounded-xl bg-white shadow-md">
+                        <div className="bg-blue-100 rounded-xl absolute inset-0 items-start flex flex-col justify-center text-black pl-6 gap-2">
+                          <p className="inline-flex gap-2"><QuoteIcon size={14} className="translate-y-1.5 text-blue-600 fill-blue-600" />Base Motto </p>
+                          <p className=" text-gray-500 italic text-md ">"{selectedBase.motto}"</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Form>
                 </TabsContent>
               </Tabs>
             </CardHeader>
@@ -408,17 +411,43 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                 </TabsList>
                 <TabsContent value="command" className="mt-4">
                   <EditableField
-                                  field={commander}
-                                  name="commander"
-                                  setField={setCommander}
-                                  label="Base Commander"
-                                  fieldEdit={commanderEdit}
-                                  setFieldEdit={setCommanderEdit}
-                                  Icon={Shield}
-                                />
+                    field={commander}
+                    name="commander"
+                    setField={setCommander}
+                    label="Base Commander"
+                    fieldEdit={commanderEdit}
+                    setFieldEdit={setCommanderEdit}
+                    Icon={Shield}
+                  />
                 </TabsContent>
                 <TabsContent value="appView">
+                <Form method="POST">
+                    <div className="flex flex-cols-[auto_1fr] gap-4">
+                      <div className="relative flex flex-col justify-center">
+                        <div className="flex items-center gap-4 pb-4">
+                          <Checkbox name="showName" checked={showName} onCheckedChange={() => setShowName(!showName)} />
+                          <label className="text-sm">Show commander card? </label>
+                        </div>
+                      <Button type="submit" name="submit" value="showName-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
+                      </div>
+                      <div className="w-[300px] h-[100px] mx-auto rounded-xl bg-white shadow-md border">
+                        <div className="flex flex-cols-[auto_1fr] ">
+                          <div className="p-6 flex items-center justify-center">
+                            <div className="bg-purple-300/30 rounded-full p-3 text-purple-400">
+                            <UserRound size={24} className="fill-purple-400"/>
+                            </div>
+                          </div>
+                          <div className="flex flex-col justify-center text-left my-5">
+                            <p className="mb-1">Commander</p>
+                            <p className="text-xl font-semibold">{selectedBase.commander}</p>
+                          </div>
 
+                        </div>
+                          
+                        
+                      </div>
+                    </div>
+                  </Form>
                 </TabsContent>
               </Tabs>
             </CardHeader>
