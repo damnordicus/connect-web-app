@@ -15,12 +15,15 @@ import {
   Building,
   Edit,
   Edit2,
+  FileIcon,
   Mail,
   MapPin,
   MapPinIcon,
   Phone,
   Save,
+  SaveIcon,
   Shield,
+  SpeakerIcon,
   Users,
   X,
 } from "lucide-react";
@@ -60,12 +63,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const { data } = await supabase
       .from("baseDetails")
       .select(`*, base(*), user(*)`);
-    console.log("bd", data);
     const { count, error } = await supabase
       .from("organization")
       .select("*", { count: "exact", head: true })
       .eq("base_id", baseId);
-    console.log("oc: ", count);
     return { data, orgCount: count };
   } catch (error) {
     console.error("Error: ", error);
@@ -78,7 +79,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const searchParams = new URL(request.url).searchParams
   const baseId = searchParams.get("id")
 
-  const coverImage = formData.get("cover");
+  const coverImage = formData.get("coverImage") as File;
   const baseName = formData.get("baseName");
   const motto = formData.get("motto");
   const commander = formData.get("commander");
@@ -88,8 +89,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const _action = formData.get("submit");
   const toggle = showName === 'on' ? true : false
 
-  console.log('data: ', formData)
-  console.log('toggle: ', toggle)
+  let imageUrl = null;
+
+  console.log(formData.get("submit"), toggle)
 
   switch (_action) {
     case "motto-submit": await supabase.from("baseDetails").update({ "motto": motto }).eq('base_id', baseId);
@@ -102,6 +104,28 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       break;
     case "showName-submit": await supabase.from("baseDetails").update({ "show_name": toggle }).eq("base_id", baseId);
       break;
+    case "coverImage-submit": if(coverImage && coverImage.size > 0){
+      console.log('here')
+      const fileExt = coverImage.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const {data: uploadData, error: uploadError} = await supabase.storage.from('images')
+      .upload(fileName, coverImage, {
+        cacheControl: '3600', upsert: false
+      });
+      if(uploadError){
+        return {success: false, error: uploadError.message};
+      }
+      const {data: urlData} = supabase.storage.from('images').getPublicUrl(fileName);
+      imageUrl = urlData.publicUrl;
+      console.log(imageUrl)
+
+      const { error: updateError } = await supabase.from("baseDetails").update({"image_url": imageUrl}).eq('base_id', baseId);
+      if(updateError){
+        return {success: false, error: updateError.message};
+      }
+    }
+    break;
+    
   }
 }
 
@@ -333,13 +357,17 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                 <TabsContent value="appView">
                   <Form method="POST">
                     <div className="flex flex-cols-[auto_1fr]">
-                      <div className="flex items-center gap-4">
-                        <Checkbox id="showName" checked={showName} onCheckedChange={() => setShowName(!showName)} />
+                      <div className="relative flex flex-col justify-center">
+
+                      <div className="flex items-center gap-4 pb-4">
+                        <Checkbox name="showName" checked={showName} onCheckedChange={() => setShowName(!showName)} />
                         <label className="text-sm">Show Base name on image card? </label>
+                      </div>
+                    <Button type="submit" name="submit" value="showName-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
                       </div>
                       <div className="relative w-[400px] h-[200px] mx-auto rounded-xl bg-gray-200">
                         <img src={selectedBase.image_url} className="w-full h-[200px] object-cover rounded-xl"/>
-                        {showName && <div className="bg-gray-400/40 rounded-xl absolute inset-0 items-center flex flex-col justify-center text-white">
+                        {showName && <div className="bg-black/40 rounded-xl absolute inset-0 items-center flex flex-col justify-center text-white">
                           <p className="text-center text-xl font-bold">{selectedBase.base.name}</p>
                           <p>{selectedBase.base.city + ", " + selectedBase.base.state}</p>
                         </div>}
@@ -347,15 +375,31 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                     </div>
 
                     {/* <input type="checkbox" name="showName" checked={showName} onChange={() => setShowName(!showName)}/> */}
-                    <button type="submit" name="submit" value="showName-submit">Save</button>
                   </Form>
                 </TabsContent>
               </Tabs>
             </CardHeader>
           </Card>
           {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <Tabs defaultValue="details">
+                <TabsList>
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="appView">App View</TabsTrigger>
+                </TabsList>
+                <TabsContent value="details">
+                  <EditableField label="Motto" name="motto" field={motto} setField={setMotto} Icon={SpeakerIcon} fieldEdit={mottoEdit} setFieldEdit={setMottoEdit} />
+                </TabsContent>
+                <TabsContent value="appView">
+                  <div className="flex flex-cols-[auto_1fr]">
 
-
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardHeader>
+          </Card>
+          
           {/* Command & Personnel */}
           <Card>
             <CardHeader>

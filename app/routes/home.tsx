@@ -74,7 +74,6 @@ export const action = async ({request}: ActionFunctionArgs) => {
             .getPublicUrl(filename);
 
           imageUrl = urlData.publicUrl;
-          console.log(imageUrl)
 
           const { error: updateError } = await supabase.from("organization").update({image_url: imageUrl}).eq('id', id);
           if(updateError){
