@@ -89,6 +89,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const email = formData.get("email");
   const showName = formData.get("showName");
   const _action = formData.get("submit");
+  const showCommand = formData.get("showCommand");
+  const showMotto = formData.get("showMotto");
+  const showContactEmail = formData.get("showEmail");
+  const showContactPhone = formData.get("showPhone");
   const toggle = showName === 'on' ? true : false
 
   let imageUrl = null;
@@ -127,6 +131,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
     break;
+    case "showCommand-submit": await supabase.from("baseDetails").update({ "show_command": showCommand}).eq("base_id", baseId);
+      break;
+    case "showMotto-submit": await supabase.from("baseDetails").update({ "show_motto": showMotto}).eq("base_id", baseId);
+      break;
     
   }
 }
@@ -218,6 +226,11 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
   const [commander, setCommander] = useState(selectedBase.commander);
   const [commanderEdit, setCommanderEdit] = useState(false);
   const [showName, setShowName] = useState(selectedBase.show_name);
+  const [showMotto, setShowMotto] = useState(selectedBase.show_motto);
+  const [showCommand, setShowCommand] = useState(selectedBase.show_command);
+  const [showContactPhone, setShowContactPhone] = useState(selectedBase.show_phone);
+  const [showContactEmail, setShowContactEmail] = useState(selectedBase.show_email);
+
 
   return (
     <div className="w-full flex-1 overflow-auto p-4 bg-linear-to-br from-blue-400 to-teal-300">
@@ -383,10 +396,10 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                     <div className="flex flex-cols-[auto_1fr] gap-4">
                       <div className="relative flex flex-col justify-center">
                         <div className="flex items-center gap-4 pb-4">
-                          <Checkbox name="showName" checked={showName} onCheckedChange={() => setShowName(!showName)} />
+                          <Checkbox name="showMotto" checked={showMotto} onCheckedChange={() => setShowMotto(!showMotto)} />
                           <label className="text-sm">Show motto card? </label>
                         </div>
-                      <Button type="submit" name="submit" value="showName-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
+                      <Button type="submit" name="submit" value="showMotto-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
                       </div>
                       <div className="relative w-[300px] h-[100px] mx-auto rounded-xl bg-white shadow-md">
                         <div className="bg-blue-100 rounded-xl absolute inset-0 items-start flex flex-col justify-center text-black pl-6 gap-2">
@@ -425,10 +438,10 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                     <div className="flex flex-cols-[auto_1fr] gap-4">
                       <div className="relative flex flex-col justify-center">
                         <div className="flex items-center gap-4 pb-4">
-                          <Checkbox name="showName" checked={showName} onCheckedChange={() => setShowName(!showName)} />
+                          <Checkbox name="showCommand" checked={showCommand} onCheckedChange={() => setShowCommand(!showCommand)} />
                           <label className="text-sm">Show commander card? </label>
                         </div>
-                      <Button type="submit" name="submit" value="showName-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
+                      <Button type="submit" name="submit" value="showCommand-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
                       </div>
                       <div className="w-[300px] h-[100px] mx-auto rounded-xl bg-white shadow-md border">
                         <div className="flex flex-cols-[auto_1fr] ">
