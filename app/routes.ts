@@ -5,6 +5,7 @@ export default [
     layout("components/header.tsx",{id: "header"},[
         route("admin","routes/admin/admin.tsx"),
         route("admin/base", "routes/admin/base.tsx"),
+        route("admin/org", "routes/admin/org.tsx"),
         route("home","routes/home.tsx"),
         route("requestOrg", "routes/requestOrg.tsx"),
     ]),

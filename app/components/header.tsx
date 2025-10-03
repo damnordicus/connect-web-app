@@ -48,7 +48,7 @@ export default function Header({loaderData}: Route.ComponentProps){
         console.log('bases:', bases)
         if(orgs.find(ent => ent.id === selectedEnt)){
             console.log(orgs.includes(selectedEnt))
-            navigate(`/home?org=${selectedEnt}`, {replace: true});
+            navigate(`/admin/org?org=${selectedEnt}`, {replace: true});
         }
         if(bases.find(ent => ent.base.id === selectedEnt)){
             console.log('bases.includes(selectedEnt)')
