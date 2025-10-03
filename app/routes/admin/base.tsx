@@ -1,9 +1,6 @@
 import {
   Form,
-  Navigate,
-  Outlet,
   redirect,
-  useNavigate,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
 } from "react-router";
@@ -20,6 +17,7 @@ import {
   MapPin,
   MapPinIcon,
   Phone,
+  PhoneIcon,
   QuoteIcon,
   Save,
   SaveIcon,
@@ -69,7 +67,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       .from("organization")
       .select("*", { count: "exact", head: true })
       .eq("base_id", baseId);
-    return { data, orgCount: count };
+    const { data: appFieldData } = await supabase.from("appFields").select("*").eq("base_id", baseId)
+    return { data, orgCount: count, appFieldData };
   } catch (error) {
     console.error("Error: ", error);
   }
@@ -87,17 +86,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const commander = formData.get("commander");
   const phone = formData.get("phone");
   const email = formData.get("email");
-  const showName = formData.get("showName");
+  const showName = formData.get("showName") === "on";
   const _action = formData.get("submit");
-  const showCommand = formData.get("showCommand");
-  const showMotto = formData.get("showMotto");
-  const showContactEmail = formData.get("showEmail");
-  const showContactPhone = formData.get("showPhone");
-  const toggle = showName === 'on' ? true : false
+  const showCommand = formData.get("showCommand") === "on";
+  const showMotto = formData.get("showMotto") === "on";
+  const showContactEmail = formData.get("showEmail") === "on";
+  const showContactPhone = formData.get("showPhone") === "on";
+  // const toggle = showName === 'on' ? true : false
 
   let imageUrl = null;
 
-  console.log(formData.get("submit"), toggle)
+  // console.log(formData.get("submit"), toggle)
 
   switch (_action) {
     case "motto-submit": await supabase.from("baseDetails").update({ "motto": motto }).eq('base_id', baseId);
@@ -108,7 +107,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       break;
     case "email-submit": await supabase.from("baseDetails").update({ "email": email }).eq("base_id", baseId);
       break;
-    case "showName-submit": await supabase.from("baseDetails").update({ "show_name": toggle }).eq("base_id", baseId);
+    case "showName-submit": await supabase.from("appFields").update({ "show_name": showName }).eq("base_id", baseId);
       break;
     case "coverImage-submit": if(coverImage && coverImage.size > 0){
       console.log('here')
@@ -131,9 +130,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
     break;
-    case "showCommand-submit": await supabase.from("baseDetails").update({ "show_command": showCommand}).eq("base_id", baseId);
+    case "showCommand-submit": await supabase.from("appFields").update({ "show_commander": showCommand}).eq("base_id", baseId);
       break;
-    case "showMotto-submit": await supabase.from("baseDetails").update({ "show_motto": showMotto}).eq("base_id", baseId);
+    case "showMotto-submit": await supabase.from("appFields").update({ "show_motto": showMotto}).eq("base_id", baseId);
       break;
     
   }
@@ -210,7 +209,7 @@ const EditableField = ({
 };
 
 export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
-  const { data, orgCount } = loaderData;
+  const { data, orgCount, appFieldData } = loaderData;
   const selectedBase = data[0];
   const [showModal, setShowModal] = useState(false);
 
@@ -226,10 +225,10 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
   const [commander, setCommander] = useState(selectedBase.commander);
   const [commanderEdit, setCommanderEdit] = useState(false);
   const [showName, setShowName] = useState(selectedBase.show_name);
-  const [showMotto, setShowMotto] = useState(selectedBase.show_motto);
-  const [showCommand, setShowCommand] = useState(selectedBase.show_command);
-  const [showContactPhone, setShowContactPhone] = useState(selectedBase.show_phone);
-  const [showContactEmail, setShowContactEmail] = useState(selectedBase.show_email);
+  const [showMotto, setShowMotto] = useState(appFieldData[0].show_motto);
+  const [showCommand, setShowCommand] = useState(appFieldData[0].show_commander);
+  const [showContactPhone, setShowContactPhone] = useState(appFieldData[0].show_phone);
+  const [showContactEmail, setShowContactEmail] = useState(appFieldData[0].show_email);
 
 
   return (
@@ -498,7 +497,37 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                 </div>
                 </TabsContent>
                 <TabsContent value="appView">
-
+                  <div className="w-full flex flex-cols[auto_1fr]">
+                    <div className="flex flex-col justify-center items-start gap-2">
+                      <div className="inline-flex items-center w-full justify-start gap-4">
+                          <Checkbox name="showContactPhone" checked={showContactPhone} onCheckedChange={() => {setShowContactPhone(!showContactPhone)}}/>
+                          <p className="text-sm">Show phone field? </p>
+                      </div>
+                      <div className="inline-flex items-center w-full justify-start gap-4">
+                          <Checkbox name="showContactPhone" checked={showContactPhone} onCheckedChange={() => {setShowContactPhone(!showContactPhone)}}/>
+                          <p className="text-sm">Show email field? </p>
+                      </div>
+                      <Button variant={"outline"} className="w-full"><SaveIcon />Save</Button>
+                    </div>
+                    <div className="w-[300px] h-[200px] bg-green-100 mx-auto rounded-xl">
+                          <div className="flex flex-col justify-center items-start pl-">
+                            <p className="font-semibold pt-2">Contact Information</p>
+                            <div className="flex flex-col-[auto_1fr]">
+                              <div className=" flex items-center p">
+                              <PhoneIcon size={22}/>
+                              </div>
+                              <div>
+                                <p>Phone:</p>
+                              <p>{phone}</p>
+                              </div>
+                              
+                            </div>
+                            
+                            <p>Email: </p>
+                            <p>{email}</p>
+                          </div>
+                    </div>
+                  </div>
                 </TabsContent>
               </Tabs>
             </CardHeader>
