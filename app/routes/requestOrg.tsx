@@ -4,8 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card"
 import { createClient } from "@supabase/supabase-js";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
-import { Tabs, TabsList } from "~/components/ui/tabs";
-import { TabsContent, TabsTrigger } from "@radix-ui/react-tabs";
+import { Tabs, TabsList,  TabsContent, TabsTrigger } from "~/components/ui/tabs";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 
@@ -72,9 +71,8 @@ export default function RequestOrg({loaderData}: Route.ComponentProps){
     return(
         <div className="w-full h-full p-4 bg-linear-to-br from-blue-400 to-teal-300">
             <Tabs defaultValue="organization">
-                <TabsList className={`gap-2 px-4`} >
+                <TabsList >
                     <TabsTrigger value="organization" >Organization</TabsTrigger>
-                    <Separator orientation="vertical"/>
                     <TabsTrigger value="base">Base</TabsTrigger>
                 </TabsList>
                 <TabsContent value="organization">
