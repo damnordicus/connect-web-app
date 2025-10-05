@@ -17,19 +17,19 @@ import {
   Image as ImageIcon,
   Palette,
 } from "lucide-react";
+import type { Route } from "../+types/home";
+import type { LoaderFunctionArgs } from "react-router";
+import { createClient } from "@supabase/supabase-js";
 
-// Mock data for demonstration
-const mockOrgData = {
-  id: "1",
-  name: "42nd Attack Squadron",
-  description: "Elite fighter squadron specializing in air-to-ground operations",
-  contact: "Maj. Sarah Johnson",
-  type: "SQUADRON",
-  image_url: "https://images.unsplash.com/photo-1541544537156-7627a7a4aa1c?w=400",
-  primary_color: "#57fa5a",
-  secondary_color: "#4ade80",
-  text_color: "#000000",
-};
+const supabase = createClient( import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const searchParams = new URL(request.url).searchParams;
+  const org = searchParams.get("org");
+  console.log('org', org)
+  const { data } = await supabase.from("organization").select("*").eq("id", org)
+  return {orgData: data}
+}
 
 const EditableField = ({
   label,
@@ -95,9 +95,10 @@ const EditableField = ({
   );
 };
 
-export default function OrgDetailsRedesign() {
-  const orgData = mockOrgData;
-  
+export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
+  const {orgData: orgs} = loaderData;
+  const orgData = orgs[0]
+  console.log(orgData)
   const [name, setName] = useState(orgData.name);
   const [nameEdit, setNameEdit] = useState(false);
   const [description, setDescription] = useState(orgData.description);
@@ -153,13 +154,11 @@ export default function OrgDetailsRedesign() {
               <div className="space-y-4">
                 <div className="relative group">
                   {orgData.image_url && (
-                    <div className="w-full h-48 flex justify-center items-center bg-white rounded-lg border p-4">
                       <img
                         src={orgData.image_url}
                         alt={`${orgData.name} logo`}
                         className="max-h-40 max-w-full object-contain"
                       />
-                    </div>
                   )}
                   <Button
                     size="sm"
@@ -181,16 +180,6 @@ export default function OrgDetailsRedesign() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Card className="shadow-md">
-                    <CardContent className="flex flex-col justify-center text-center space-y-1 py-4">
-                      <div className="flex gap-2 items-center justify-center">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-muted-foreground">Members</p>
-                      </div>
-                      <span className="font-medium text-xl">127</span>
-                    </CardContent>
-                  </Card>
-
                   <Card className="shadow-md">
                     <CardContent className="flex flex-col justify-center text-center space-y-1 py-4">
                       <div className="flex gap-2 items-center justify-center">
@@ -235,6 +224,7 @@ export default function OrgDetailsRedesign() {
                     Icon={Building}
                     fieldEdit={nameEdit}
                     setFieldEdit={setNameEdit}
+                    type="text"
                   />
 
                   <EditableField
@@ -369,6 +359,7 @@ export default function OrgDetailsRedesign() {
                     Icon={Users}
                     fieldEdit={pocEdit}
                     setFieldEdit={setPocEdit}
+                    type="text"
                   />
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">
@@ -402,8 +393,8 @@ export default function OrgDetailsRedesign() {
                       <Palette className="h-4 w-4" />
                       <Label>Select Card Color Scheme</Label>
                     </div>
-                    <div className="flex justify-between gap-2">
-                      {colorOptions.slice(0, 4).map((option, index) => (
+                    <div className="flex gap-4 justify-around">
+                      {colorOptions.map((option, index) => (
                         <button
                           key={index}
                           onClick={() => {
@@ -419,7 +410,7 @@ export default function OrgDetailsRedesign() {
                         />
                       ))}
                     </div>
-                    <div className="flex justify-between gap-2">
+                    {/* <div className="flex justify-between gap-2">
                       {colorOptions.slice(4).map((option, index) => (
                         <button
                           key={index}
@@ -435,7 +426,7 @@ export default function OrgDetailsRedesign() {
                           title={option.name}
                         />
                       ))}
-                    </div>
+                    </div> */}
                   </div>
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">
