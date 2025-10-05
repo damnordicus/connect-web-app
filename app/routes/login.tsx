@@ -5,14 +5,16 @@ import { Form, redirect, useActionData, type ActionFunctionArgs, type LoaderFunc
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
 import InputWithLabel from "~/components/ui/input-with-label";
-import Cookies from 'js-cookie'
-import { Separator } from "@radix-ui/react-dropdown-menu";
 import type { Route } from "../+types/root";
+import { Tabs, TabsList, TabsContent, TabsTrigger } from "~/components/ui/tabs";
+import { Select, SelectItem, SelectTrigger, SelectValue, SelectContent} from "~/components/ui/select";
+import { Separator } from "~/components/ui/separator";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 export const loader = async ({}: LoaderFunctionArgs) => {
-    const {data: bases} = await supabase.from("base").select()
-    return {bases}
+    const {data: bases} = await supabase.from("base").select();
+    const {data: orgs} = await supabase.from("organization").select();
+    return {bases, orgs}
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -52,18 +54,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     if(_action === "register"){
+        console.log(formData)
         try{
-            const {data, error} = await supabase.from("user").select().eq("email", email)
-            console.log("data: ", data, " error: ", error)
-            if(data && data.length){
-                return {success: false, message:"email address already exists"}
-            }
-            else{
-                const {data, error} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base}).select("id")
-                const response = redirect("home");
-                    response.headers.set('Set-Cookie', `user_id=${data[0].id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
-                    return response;
-            }
+            // const {data, error} = await supabase.from("user").select().eq("email", email)
+            // console.log("data: ", data, " error: ", error)
+            // if(data && data.length){
+            //     return {success: false, message:"email address already exists"}
+            // }
+            // else{
+            //     const {data, error} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base}).select("id")
+            //     const response = redirect("home");
+            //         response.headers.set('Set-Cookie', `user_id=${data[0].id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
+            //         return response;
+            // }
 
         }catch(error){
             console.error(error)
@@ -72,20 +75,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 }
 
 export default function Login({loaderData}: Route.ComponentProps){
-    const {bases} = loaderData;
+    const {bases, orgs} = loaderData;
     const [baseList, setBaseList] = useState(bases);
+    const [orgList, setOrgList] = useState(orgs);
     const [selectedBase, setSelectedBase] = useState("");
+    const [selectedOrg, setSelectedOrg] = useState("");
     const [showLogin, setShowLogin] = useState(true);
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const actionData = useActionData();
     const [showEmailError, setShowEmailError] = useState(false);
+    const [filteredOrgList, setFilteredOrgList] = useState([])
 
     useEffect(() => {
         if(actionData && !actionData.success){
             setShowEmailError(true);
         }
     }, [actionData])
+
+    function handleBaseChange(e){
+        const newList = orgList.filter((org: { base_id: string; }) => org.base_id === e)
+        setFilteredOrgList(newList)
+        setSelectedBase(e)
+    }
 
     return (
         <div className="w-full h-screen flex justify-center items-center bg-linear-to-br from-blue-400 to-teal-300">
@@ -107,7 +119,7 @@ export default function Login({loaderData}: Route.ComponentProps){
                 </CardFooter>
                 </Form>
             </Card>}
-            {!showLogin && <Card className="w-fit shadow-xl">
+            {!showLogin && <Card className="lg:w-1/3 w-full mx-40 shadow-xl">
                 <Form method="POST">
                 <CardHeader className="text-2xl">
                     Register
@@ -117,13 +129,51 @@ export default function Login({loaderData}: Route.ComponentProps){
                     {showEmailError && <p className="text-red-500 text-xs -mt-3 ml-0.5">Email already in use.</p>}
                     <InputWithLabel label="Password" type="password" value={password} setter={setPassword} name="password"/>
                     <div className="">
-                        <p>Your base: </p>
-                        <select className="bg-gray-200 p-1 border rounded-md" onChange={(e) => setSelectedBase(e.currentTarget.value)}>
-                            <option>Select a base</option>
-                            {baseList.map((base, index) => <option key={index} value={base.id}>{base.name}</option>)}
-                        </select>
+                        <Tabs defaultValue="organization">
+                            <TabsList>
+                                <TabsTrigger value="organization">Organization Admin</TabsTrigger>
+                                <TabsTrigger value="base">Base Admin</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="organization" className="space-y-4 mt-3">
+                                <Separator/>
+                                <p>Select your base:</p>
+                                <Select onValueChange={(e) => handleBaseChange(e)}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="..."/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {baseList.sort((a, b) => a.name.localeCompare(b.name)).map((base, index) => <SelectItem value={base.id} key={index}>{base.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                {filteredOrgList.length > 0 && <>
+                                <p>Select an organization:</p>
+                                <Select onValueChange={(e) => setSelectedOrg(e)}>
+                                    <SelectTrigger className="w-full">
+                                       <SelectValue placeholder="..."/>
+                                    </SelectTrigger>
+                                    <SelectContent >
+                                        {filteredOrgList.sort((a, b) => a.name.localeCompare(b.name)).map((org, index) => <SelectItem value={org.id} key={index}>{org.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                </>}
+                            </TabsContent>
+                            <TabsContent value="base" className="space-y-4 mt-3">
+                                <Separator />
+                                <p>Select your base: </p>
+                                <Select>
+                                    <SelectTrigger className="w-full" >
+                                        <SelectValue placeholder="..."/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {baseList.sort((a, b) => a.name.localeCompare(b.name)).map((base, index) => <SelectItem key={index} value={base.id}>{base.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </TabsContent>
+                        </Tabs>
+                        
                     </div>
                     <input type="hidden" name="base" value={selectedBase} />
+                    <input type="hidden" name="org" value={selectedOrg} />
                 </CardContent>
                 <hr className="my-4"/>
                 <CardFooter className="flex flex-col gap-y-2">

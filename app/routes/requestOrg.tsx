@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsList,  TabsContent, TabsTrigger } from "~/components/ui/tabs";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
-import { Separator } from "~/components/ui/separator";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -28,12 +27,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (!cookies.user_id) {
         return { orgs: [], userId: null, isAuthenticated: false };
     }
-    const {data: baseId} = await supabase.from("user").select("current_base").eq("id", cookies.user_id)
+    const {data: user} = await supabase.from("user").select("*").eq("id", cookies.user_id)
     // console.log(baseId[0].current_base)
-    const { data: orgs } = await supabase.from("organization").select().eq("base_id", baseId[0].current_base).is("user_id", null)
-    const { data: bases } = await supabase.from("base").select().is("user_id", null)
-    console.log(orgs)
-    return {orgs, userId: cookies.user_id, bases}
+    const baseId = user[0].current_base;
+    const userId = user[0].id;
+    if(user && user[0].role === "ORG"){
+        console.log(baseId, userId)
+        const { data: orgs } = await supabase.from("organization").select("*").eq("base_id", baseId).is("user_id", null)
+        return {orgs, userId}
+    } else if(user && user[0].role === "BASE"){
+        const { data: bases } = await supabase.from("base").select("*").is("user_id", null)
+        return {bases, userId}
+    }
+    // return {orgs, userId: cookies.user_id, bases}
 }
 
 export const action = async ({request}: ActionFunctionArgs) => {
@@ -67,15 +73,10 @@ export default function RequestOrg({loaderData}: Route.ComponentProps){
     const handleBaseSelect = (e) => {
         setSelectedBaseId(e);
     }
-
+    console.log(loaderData)
     return(
         <div className="w-full h-full p-4 bg-linear-to-br from-blue-400 to-teal-300">
-            <Tabs defaultValue="organization">
-                <TabsList >
-                    <TabsTrigger value="organization" >Organization</TabsTrigger>
-                    <TabsTrigger value="base">Base</TabsTrigger>
-                </TabsList>
-                <TabsContent value="organization">
+            {orgs && 
                     <Card>
                         <CardHeader>
                             Select an organization: 
@@ -102,8 +103,8 @@ export default function RequestOrg({loaderData}: Route.ComponentProps){
                             </Form>
                         </CardFooter>
                     </Card>
-                </TabsContent>
-                <TabsContent value="base">
+                }
+                {bases && 
                     <Card>
                     <CardHeader>
                         Select a base: 
@@ -130,8 +131,7 @@ export default function RequestOrg({loaderData}: Route.ComponentProps){
                         </Form>
                     </CardFooter>
                 </Card>
-                </TabsContent>
-            </Tabs>
+                }
         </div>
     )
 }
