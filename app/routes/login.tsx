@@ -128,14 +128,13 @@ export default function Login({loaderData}: Route.ComponentProps){
                     <InputWithLabel label="Email" type="email" value={email} setter={setEmail} name="email"/>
                     {showEmailError && <p className="text-red-500 text-xs -mt-3 ml-0.5">Email already in use.</p>}
                     <InputWithLabel label="Password" type="password" value={password} setter={setPassword} name="password"/>
-                    <div className="">
+                    <div className="pt-2">
                         <Tabs defaultValue="organization">
                             <TabsList>
                                 <TabsTrigger value="organization">Organization Admin</TabsTrigger>
                                 <TabsTrigger value="base">Base Admin</TabsTrigger>
                             </TabsList>
                             <TabsContent value="organization" className="space-y-4 mt-3">
-                                <Separator/>
                                 <p>Select your base:</p>
                                 <Select onValueChange={(e) => handleBaseChange(e)}>
                                     <SelectTrigger className="w-full">
@@ -158,7 +157,6 @@ export default function Login({loaderData}: Route.ComponentProps){
                                 </>}
                             </TabsContent>
                             <TabsContent value="base" className="space-y-4 mt-3">
-                                <Separator />
                                 <p>Select your base: </p>
                                 <Select>
                                     <SelectTrigger className="w-full" >
