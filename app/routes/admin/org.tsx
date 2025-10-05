@@ -18,8 +18,9 @@ import {
   Palette,
 } from "lucide-react";
 import type { Route } from "../+types/home";
-import type { LoaderFunctionArgs } from "react-router";
+import { Form, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { createClient } from "@supabase/supabase-js";
+import UploadModal from "~/components/UploadModal";
 
 const supabase = createClient( import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
 
@@ -31,6 +32,63 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return {orgData: data}
 }
 
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const formData = await request.formData();
+  const searchParams = new URL(request.url).searchParams
+  const orgId = searchParams.get("org")
+  console.log(formData)
+  const coverImage = formData.get("coverImage") as File;
+  const name = formData.get("name");
+  const description = formData.get("description");
+  const type = formData.get("type");
+  const poc = formData.get("poc");
+  const email = formData.get("email");
+  const showName = formData.get("showName") === "on";
+  const _action = formData.get("submit");
+  const showCommand = formData.get("showCommand") === "on";
+  const showMotto = formData.get("showMotto") === "on";
+  const showContactEmail = formData.get("showEmail") === "on";
+  const showContactPhone = formData.get("showPhone") === "on";
+  // const toggle = showName === 'on' ? true : false
+
+  let imageUrl = null;
+
+  // console.log(formData.get("submit"), toggle)
+
+  switch (_action) {
+    case "name-submit": await supabase.from("organization").update({ "name": name }).eq('id', orgId);
+      break;
+    case "description-submit": await supabase.from("organization").update({"description": description }).eq('id', orgId);
+      break;
+    case "type-submit": await supabase.from("organization").update({"type": type}).eq("id", orgId);
+      break;
+    case "poc-submit": await supabase.from("organization").update({ "contact": poc }).eq("id", orgId);
+      break;
+    case "coverImage-submit": if(coverImage && coverImage.size > 0){
+      console.log('here')
+      const fileExt = coverImage.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const {data: uploadData, error: uploadError} = await supabase.storage.from('images')
+      .upload(fileName, coverImage, {
+        cacheControl: '3600', upsert: false
+      });
+      if(uploadError){
+        return {success: false, error: uploadError.message};
+      }
+      const {data: urlData} = supabase.storage.from('images').getPublicUrl(fileName);
+      imageUrl = urlData.publicUrl;
+      console.log(imageUrl)
+
+      const { error: updateError } = await supabase.from("baseDetails").update({"image_url": imageUrl}).eq('base_id', baseId);
+      if(updateError){
+        return {success: false, error: updateError.message};
+      }
+    }
+    break;
+    
+  }
+}
+
 const EditableField = ({
   label,
   name,
@@ -40,65 +98,74 @@ const EditableField = ({
   fieldEdit,
   setFieldEdit,
   type,
+}: {
+  label: string;
+  name: string;
+  field: string;
+  setField: any;
+  Icon: any;
+  fieldEdit: boolean;
+  setFieldEdit: any;
+  type?: string;
 }) => {
   return (
     <div>
-      <div className="flex justify-between">
-        <div className="flex gap-2 mb-2">
-          <Icon className="h-4 w-4" />
-          <Label>{label}</Label>
-        </div>
-        <div>
-          {fieldEdit && (
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                onClick={() => setFieldEdit(false)}
-              >
-                <Save className="w-4 h-4 hover:bg-gray-200 hover:rounded" />
-              </button>
-              <X
-                onClick={() => setFieldEdit(false)}
-                className="w-4 h-4 hover:bg-gray-200 hover:rounded cursor-pointer"
+      <Form method="POST">
+        <div className="flex justify-between">
+          <div className="flex gap-2 mb-2">
+            <Icon className="h-4 w-4" />
+            <Label>{label}</Label>
+          </div>
+          <div>
+            {fieldEdit && (
+              <div className="flex gap-2">
+                <button type="submit" value={`${name}-submit`} name="submit"><Save className="w-4 h-4 hover:bg-gray-200 hover:rounded" /></button>
+                <X
+                  onClick={() => setFieldEdit(false)}
+                  className="w-4 h-4 hover:bg-gray-200 hover:rounded"
+                />
+              </div>
+            )}
+            {!fieldEdit && (
+              <Edit2
+                onClick={() => setFieldEdit(true)}
+                className="w-4 h-4 hover:bg-gray-200 hover:rounded"
               />
-            </div>
-          )}
-          {!fieldEdit && (
-            <Edit2
-              onClick={() => setFieldEdit(true)}
-              className="w-4 h-4 hover:bg-gray-200 hover:rounded cursor-pointer"
-            />
-          )}
+            )}
+          </div>
         </div>
-      </div>
-      {!fieldEdit && (
-        <p className="bg-gray-50 p-2 rounded text-sm font-medium">{field}</p>
-      )}
-      {fieldEdit && type === "textarea" && (
-        <textarea
-          name={name}
-          className="w-full p-2 font-medium text-sm border rounded-lg"
-          value={field}
-          onChange={(e) => setField(e.target.value)}
-        />
-      )}
-      {fieldEdit && type !== "textarea" && (
-        <input
-          type="text"
-          name={name}
-          className="w-full p-2 font-medium text-sm border rounded-lg"
-          value={field}
-          onChange={(e) => setField(e.target.value)}
-        />
-      )}
+        {!fieldEdit && (
+          <p className="bg-gray-50 p-2 rounded text-sm font-medium">{field}</p>
+        )}
+        {fieldEdit && (!type || type === "text") && (
+          <input
+            type="text"
+            name={name}
+            className="w-full p-2 font-medium text-sm border rounded-lg"
+            value={field}
+            onChange={(e) => setField(e.currentTarget.value)}
+          />
+        )}
+        {fieldEdit && type === "textarea" && (
+          <textarea
+            name={name}
+            className="w-full p-2 font-medium text-sm border rounded-lg"
+            value={field}
+            onChange={(e) => setField(e.currentTarget.value)}
+          />
+        )}
+      </Form>
     </div>
   );
 };
+
 
 export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
   const {orgData: orgs} = loaderData;
   const orgData = orgs[0]
   console.log(orgData)
+  const [showModal, setShowModal] = useState(false);
+  const [coverImage, setCoverImage] = useState(orgData.image_url)
   const [name, setName] = useState(orgData.name);
   const [nameEdit, setNameEdit] = useState(false);
   const [description, setDescription] = useState(orgData.description);
@@ -163,6 +230,7 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                   <Button
                     size="sm"
                     variant="secondary"
+                    onClick={() => setShowModal(true)}
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Edit2 className="h-3 w-3" />
@@ -302,19 +370,27 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                       <Shield className="h-4 w-4" />
                       <Label>Organization Type</Label>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <div className="space-x-2">
                       {categories.map((item, index) => (
                         <Badge
-                          key={index}
-                          variant="outline"
-                          onClick={() => setSelectedBadge(item.type)}
-                          className={`py-2 px-3 shadow-md border cursor-pointer ${
-                            selectedBadge === item.type ? item.color : ""
-                          } hover:-translate-y-1 hover:shadow-lg transition-all`}
+                        key={index}
+                        variant="outline"
+                        onClick={() => setSelectedBadge(item.type)}
+                        className={`py-2 px-3 shadow-md border cursor-pointer ${
+                          selectedBadge === item.type ? item.color : ""
+                        } hover:-translate-y-1 hover:shadow-lg transition-all`}
                         >
                           {item.type}
                         </Badge>
                       ))}
+                      </div>
+                      {(orgData.type !== selectedBadge) && 
+                      <Form method="POST" className="flex items-center">
+                        <input type="hidden" name="type" value={selectedBadge}/>
+                        <button name="submit" type="submit" value="type-submit"><SaveIcon size={18}/></button>
+                      </Form>
+                      }
                     </div>
                   </div>
                 </TabsContent>
@@ -389,9 +465,12 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                 </TabsList>
                 <TabsContent value="colors" className="mt-4">
                   <div className="space-y-4">
-                    <div className="flex gap-2 mb-2">
-                      <Palette className="h-4 w-4" />
-                      <Label>Select Card Color Scheme</Label>
+                    <div className="flex justify-between mb-2">
+                      <div className="flex gap-2">
+                        <Palette className="h-4 w-4" />
+                        <Label>Select Card Color Scheme</Label>
+                      </div>
+                      {(orgData.primary_color !== primaryColor) && <button><SaveIcon size={18}/></button>}
                     </div>
                     <div className="flex gap-4 justify-around">
                       {colorOptions.map((option, index) => (
@@ -401,7 +480,7 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                             setPrimaryColor(option.primary);
                             setSecondaryColor(option.secondary);
                           }}
-                          className="p-4 rounded-full border-2 hover:scale-110 transition-transform"
+                          className={`p-4 rounded-full border-2 hover:scale-130 hover:shadow-xl shadow-md transition-transform ${primaryColor === option.primary ? `scale-120 shadow-lg` : ''}`}
                           style={{
                             backgroundColor: option.primary,
                             borderColor: option.secondary,
@@ -452,16 +531,14 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
             </CardHeader>
           </Card>
         </div>
-
-        {/* Update Button */}
-        <Card>
-          <CardContent className="pt-6">
-            <Button className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
-              Update Organization
-            </Button>
-          </CardContent>
-        </Card>
       </div>
+      {showModal && (
+              <UploadModal
+                isOpen={showModal}
+                onClose={setShowModal}
+                setCoverImage={setCoverImage}
+              ></UploadModal>
+            )}
     </div>
   );
 }
