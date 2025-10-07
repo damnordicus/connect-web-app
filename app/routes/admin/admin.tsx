@@ -20,9 +20,10 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
         return acc;
     }, {} as Record<string, string>);
     try {
-        const {data} = await supabase.from("request").select(`*, user(email), organization!org_id(name), base!base_id(name)`)
+        const {data} = await supabase.from("request").select(`*, user(email), organization!org_id(name), base!base_id(name)`).eq("data", null)
+        const {data: updateData} = await supabase.from("request").select(`*, user(email), organization!org_id(name), base!base_id(name)`).neq("data", null)
         console.log('test: ', data)
-        return {data}
+        return {data, updateData}
        
     }catch(error){
         console.error('Error: ', error)
@@ -30,9 +31,10 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 }
 
 export default function Dashboard ({loaderData}: Route.ComponentProps) {
-    const {data: requests} = loaderData;
+    const {data: requests, updateData} = loaderData;
     // console.log(requests)
     const [requestList, setRequestList] = useState(requests)
+    const [updateDataList, setUpdateDataList] = useState(updateData)
     const approve = async (userId: string, entId: {id: string, ent: string}, requestId: string) => {
         try {
             let updateData = null;
@@ -49,7 +51,7 @@ export default function Dashboard ({loaderData}: Route.ComponentProps) {
             } 
             else if(entId.ent === "base"){
                 const {data: baseData, error: baseError} = await supabase
-                    .from("base")
+                    .from("baseDetails")
                     .update({"user_id": userId})
                     .eq("id", entId.id)
 
@@ -113,14 +115,14 @@ const deny = async (requestId) => {
     useEffect(() => {
         setRequestList(requests);
     },[requests])
-
     return (
-        <div className="w-full h-screen p-6 bg-linear-to-br from-blue-400 to-teal-300">
+        <div className="w-full h-screen p-6 space-y-6 bg-linear-to-br from-blue-400 to-teal-300">
             <Card className="">
                 <CardHeader>
-                    Admin Requests
+                    Account Requests
                 </CardHeader>
                 <CardContent>
+                    {requestList.length > 0 ? 
                     <table className="w-full  bg-gray-200 rounded-t-lg">
                         <thead className="text-left">
                             <tr>
@@ -129,6 +131,9 @@ const deny = async (requestId) => {
                                 </th>
                                 <th>
                                     Organization/Base
+                                </th>
+                                <th>
+                                    Data
                                 </th>
                                 <th>
                                     Date
@@ -143,6 +148,52 @@ const deny = async (requestId) => {
                                 <tr key={index} className="bg-white border">
                                     <td className="pl-2">{request.user.email}</td>
                                     <td>{request.organization?.name ?? request.base?.name}</td>
+                                    <td><Button className="m-2" variant={"outline"}>View Data</Button></td>
+                                    <td>{new Date(request.created_at).toLocaleDateString()}</td>
+                                    <td>
+                                        <div className="space-x-2">
+                                            <Button className="bg-green-500" onClick={() => approve(request.user_id, {id: request.org_id ?? request.base_id, ent: request.org_id ? "org" : "base"}, request.id)}>Approve</Button>
+                                            <Button variant={"destructive"} onClick={() => deny(request.id)}>Deny</Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {!requests && <tr></tr>}
+                        </tbody>
+                    </table> : <p className="italic text-gray-400 text-center">No Account Requests!</p>}
+                </CardContent>
+            </Card>
+            <Card className="">
+                <CardHeader>
+                    Update Requests
+                </CardHeader>
+                <CardContent>
+                    <table className="w-full  bg-gray-200 rounded-t-lg">
+                        <thead className="text-left">
+                            <tr>
+                                <th className="pl-2">
+                                    Email
+                                </th>
+                                <th>
+                                    Organization/Base
+                                </th>
+                                <th>
+                                    Data
+                                </th>
+                                <th>
+                                    Date
+                                </th>
+                                <th>
+                                    Action
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-left">
+                            {updateDataList && updateDataList.map((request, index) => (
+                                <tr key={index} className="bg-white border">
+                                    <td className="pl-2">{request.user.email}</td>
+                                    <td>{request.organization?.name ?? request.base?.name}</td>
+                                    <td><Button className="m-2" variant={"outline"}>View Data</Button></td>
                                     <td>{new Date(request.created_at).toLocaleDateString()}</td>
                                     <td>
                                         <div className="space-x-2">

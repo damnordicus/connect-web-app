@@ -18,24 +18,39 @@ import {
   Palette,
 } from "lucide-react";
 import type { Route } from "../+types/home";
-import { Form, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { Form, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { createClient } from "@supabase/supabase-js";
 import UploadModal from "~/components/UploadModal";
+import { json } from "stream/consumers";
 
 const supabase = createClient( import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const cookieHeader = request.headers.get('Cookie');
+    if(!cookieHeader){
+        return redirect('/');
+    }
+    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        if (name && value) {
+            acc[name] = decodeURIComponent(value);
+        }
+        return acc;
+    }, {} as Record<string, string>);
+  console.log(cookies.user_id)
+
   const searchParams = new URL(request.url).searchParams;
   const org = searchParams.get("org");
   console.log('org', org)
   const { data } = await supabase.from("organization").select("*").eq("id", org)
-  return {orgData: data}
+  return {orgData: data, userId: cookies.user_id}
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const searchParams = new URL(request.url).searchParams
   const orgId = searchParams.get("org")
+  const userId = formData.get("userId");
   console.log(formData)
   const coverImage = formData.get("coverImage") as File;
   const name = formData.get("name");
@@ -49,44 +64,46 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const showMotto = formData.get("showMotto") === "on";
   const showContactEmail = formData.get("showEmail") === "on";
   const showContactPhone = formData.get("showPhone") === "on";
+  
+  const {data: requestData, error: requestError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "org_id": orgId, "data": Object.fromEntries(formData.entries()), "user_id": userId})
   // const toggle = showName === 'on' ? true : false
-
+  console.log(requestError)
   let imageUrl = null;
 
   // console.log(formData.get("submit"), toggle)
 
-  switch (_action) {
-    case "name-submit": await supabase.from("organization").update({ "name": name }).eq('id', orgId);
-      break;
-    case "description-submit": await supabase.from("organization").update({"description": description }).eq('id', orgId);
-      break;
-    case "type-submit": await supabase.from("organization").update({"type": type}).eq("id", orgId);
-      break;
-    case "poc-submit": await supabase.from("organization").update({ "contact": poc }).eq("id", orgId);
-      break;
-    case "coverImage-submit": if(coverImage && coverImage.size > 0){
-      console.log('here')
-      const fileExt = coverImage.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const {data: uploadData, error: uploadError} = await supabase.storage.from('images')
-      .upload(fileName, coverImage, {
-        cacheControl: '3600', upsert: false
-      });
-      if(uploadError){
-        return {success: false, error: uploadError.message};
-      }
-      const {data: urlData} = supabase.storage.from('images').getPublicUrl(fileName);
-      imageUrl = urlData.publicUrl;
-      console.log(imageUrl)
+  // switch (_action) {
+  //   case "name-submit": await supabase.from("organization").update({ "name": name }).eq('id', orgId);
+  //     break;
+  //   case "description-submit": await supabase.from("organization").update({"description": description }).eq('id', orgId);
+  //     break;
+  //   case "type-submit": await supabase.from("organization").update({"type": type}).eq("id", orgId);
+  //     break;
+  //   case "poc-submit": await supabase.from("organization").update({ "contact": poc }).eq("id", orgId);
+  //     break;
+  //   case "coverImage-submit": if(coverImage && coverImage.size > 0){
+  //     console.log('here')
+  //     const fileExt = coverImage.name.split('.').pop();
+  //     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  //     const {data: uploadData, error: uploadError} = await supabase.storage.from('images')
+  //     .upload(fileName, coverImage, {
+  //       cacheControl: '3600', upsert: false
+  //     });
+  //     if(uploadError){
+  //       return {success: false, error: uploadError.message};
+  //     }
+  //     const {data: urlData} = supabase.storage.from('images').getPublicUrl(fileName);
+  //     imageUrl = urlData.publicUrl;
+  //     console.log(imageUrl)
 
-      const { error: updateError } = await supabase.from("baseDetails").update({"image_url": imageUrl}).eq('base_id', baseId);
-      if(updateError){
-        return {success: false, error: updateError.message};
-      }
-    }
-    break;
+  //     const { error: updateError } = await supabase.from("baseDetails").update({"image_url": imageUrl}).eq('base_id', baseId);
+  //     if(updateError){
+  //       return {success: false, error: updateError.message};
+  //     }
+  //   }
+  //   break;
     
-  }
+  // }
 }
 
 const EditableField = ({
@@ -98,6 +115,7 @@ const EditableField = ({
   fieldEdit,
   setFieldEdit,
   type,
+  userId,
 }: {
   label: string;
   name: string;
@@ -107,10 +125,13 @@ const EditableField = ({
   fieldEdit: boolean;
   setFieldEdit: any;
   type?: string;
+  userId?: string;
 }) => {
+  console.log(userId)
   return (
     <div>
       <Form method="POST">
+        <input type="hidden" name="userId" value={userId} />
         <div className="flex justify-between">
           <div className="flex gap-2 mb-2">
             <Icon className="h-4 w-4" />
@@ -161,7 +182,7 @@ const EditableField = ({
 
 
 export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
-  const {orgData: orgs} = loaderData;
+  const {orgData: orgs, userId} = loaderData;
   const orgData = orgs[0]
   console.log(orgData)
   const [showModal, setShowModal] = useState(false);
@@ -293,6 +314,7 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                     fieldEdit={nameEdit}
                     setFieldEdit={setNameEdit}
                     type="text"
+                    userId={userId}
                   />
 
                   <EditableField
@@ -304,6 +326,7 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                     fieldEdit={descriptionEdit}
                     setFieldEdit={setDescriptionEdit}
                     type="textarea"
+                    userId={userId}
                   />
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">
@@ -436,6 +459,7 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                     fieldEdit={pocEdit}
                     setFieldEdit={setPocEdit}
                     type="text"
+                    userId={userId}
                   />
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">

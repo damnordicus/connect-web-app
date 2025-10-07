@@ -23,6 +23,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const email = formData.get("email");
     const password = formData.get("password");
     const base = formData.get("base");
+    const org = formData.get("org");
+    const type = formData.get("type");
 
     if(_action === "login"){
        try{
@@ -54,20 +56,27 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     if(_action === "register"){
-        console.log(formData)
         try{
-            // const {data, error} = await supabase.from("user").select().eq("email", email)
-            // console.log("data: ", data, " error: ", error)
-            // if(data && data.length){
-            //     return {success: false, message:"email address already exists"}
-            // }
-            // else{
-            //     const {data, error} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base}).select("id")
-            //     const response = redirect("home");
-            //         response.headers.set('Set-Cookie', `user_id=${data[0].id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
-            //         return response;
-            // }
-
+            const {data, error} = await supabase.from("user").select().eq("email", email)
+            console.log("data: ", data, " error: ", error)
+            if(data && data.length){
+                return {success: false, message:"email address already exists"}
+            }
+            else{
+                const {data: userData, error: userError} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base, "role": type?.toString().toUpperCase()}).select("id");
+                if(type === "org"){
+                    const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "org_id": org})
+                    // return {requestResponse, insertError}
+                }
+                if(type === "base"){
+                    const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "base_id": base})
+                    console.log(insertError)
+                    // return {requestResponse, insertError}
+                }
+                const response = redirect("home");
+                response.headers.set('Set-Cookie', `user_id=${userData[0].id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
+                return response;
+            } 
         }catch(error){
             console.error(error)
         }
@@ -85,7 +94,8 @@ export default function Login({loaderData}: Route.ComponentProps){
     const [password, setPassword] = useState<string>("");
     const actionData = useActionData();
     const [showEmailError, setShowEmailError] = useState(false);
-    const [filteredOrgList, setFilteredOrgList] = useState([])
+    const [filteredOrgList, setFilteredOrgList] = useState([]);
+    const [baseOrg, setBaseOrg] = useState<"base" | "org" >("org")
 
     useEffect(() => {
         if(actionData && !actionData.success){
@@ -96,7 +106,13 @@ export default function Login({loaderData}: Route.ComponentProps){
     function handleBaseChange(e){
         const newList = orgList.filter((org: { base_id: string; }) => org.base_id === e)
         setFilteredOrgList(newList)
+        setBaseOrg('base')
         setSelectedBase(e)
+    }
+
+    function handleOrgChange(e){
+        setBaseOrg('org')
+        setSelectedOrg(e)
     }
 
     return (
@@ -146,7 +162,7 @@ export default function Login({loaderData}: Route.ComponentProps){
                                 </Select>
                                 {filteredOrgList.length > 0 && <>
                                 <p>Select an organization:</p>
-                                <Select onValueChange={(e) => setSelectedOrg(e)}>
+                                <Select onValueChange={(e) => handleOrgChange(e)}>
                                     <SelectTrigger className="w-full">
                                        <SelectValue placeholder="..."/>
                                     </SelectTrigger>
@@ -158,7 +174,7 @@ export default function Login({loaderData}: Route.ComponentProps){
                             </TabsContent>
                             <TabsContent value="base" className="space-y-4 mt-3">
                                 <p>Select your base: </p>
-                                <Select>
+                                <Select onValueChange={(e) => handleBaseChange(e)}>
                                     <SelectTrigger className="w-full" >
                                         <SelectValue placeholder="..."/>
                                     </SelectTrigger>
@@ -172,6 +188,7 @@ export default function Login({loaderData}: Route.ComponentProps){
                     </div>
                     <input type="hidden" name="base" value={selectedBase} />
                     <input type="hidden" name="org" value={selectedOrg} />
+                    <input type="hidden" name="type" value={baseOrg} />
                 </CardContent>
                 <hr className="my-4"/>
                 <CardFooter className="flex flex-col gap-y-2">
