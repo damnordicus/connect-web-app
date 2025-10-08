@@ -18,12 +18,19 @@ import {
   Palette,
 } from "lucide-react";
 import type { Route } from "../+types/home";
-import { Form, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import {
+  Form,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+} from "react-router";
 import { createClient } from "@supabase/supabase-js";
 import UploadModal from "~/components/UploadModal";
-import { json } from "stream/consumers";
+import { EditableField } from "~/components/EditableField";
 
-const supabase = createClient( import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+);
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const cookieHeader = request.headers.get('Cookie');
@@ -41,17 +48,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const searchParams = new URL(request.url).searchParams;
   const org = searchParams.get("org");
-  console.log('org', org)
-  const { data } = await supabase.from("organization").select("*").eq("id", org)
-  return {orgData: data, userId: cookies.user_id}
-}
+  console.log("org", org);
+  const { data } = await supabase
+    .from("organization")
+    .select("*")
+    .eq("id", org);
+  return { orgData: data };
+};
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
-  const searchParams = new URL(request.url).searchParams
-  const orgId = searchParams.get("org")
-  const userId = formData.get("userId");
-  console.log(formData)
+  const searchParams = new URL(request.url).searchParams;
+  const orgId = searchParams.get("org");
+  console.log(formData);
   const coverImage = formData.get("coverImage") as File;
   const name = formData.get("name");
   const description = formData.get("description");
@@ -72,121 +81,71 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // console.log(formData.get("submit"), toggle)
 
-  // switch (_action) {
-  //   case "name-submit": await supabase.from("organization").update({ "name": name }).eq('id', orgId);
-  //     break;
-  //   case "description-submit": await supabase.from("organization").update({"description": description }).eq('id', orgId);
-  //     break;
-  //   case "type-submit": await supabase.from("organization").update({"type": type}).eq("id", orgId);
-  //     break;
-  //   case "poc-submit": await supabase.from("organization").update({ "contact": poc }).eq("id", orgId);
-  //     break;
-  //   case "coverImage-submit": if(coverImage && coverImage.size > 0){
-  //     console.log('here')
-  //     const fileExt = coverImage.name.split('.').pop();
-  //     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  //     const {data: uploadData, error: uploadError} = await supabase.storage.from('images')
-  //     .upload(fileName, coverImage, {
-  //       cacheControl: '3600', upsert: false
-  //     });
-  //     if(uploadError){
-  //       return {success: false, error: uploadError.message};
-  //     }
-  //     const {data: urlData} = supabase.storage.from('images').getPublicUrl(fileName);
-  //     imageUrl = urlData.publicUrl;
-  //     console.log(imageUrl)
+  switch (_action) {
+    case "name-submit":
+      await supabase
+        .from("organization")
+        .update({ name: name })
+        .eq("id", orgId);
+      break;
+    case "description-submit":
+      await supabase
+        .from("organization")
+        .update({ description: description })
+        .eq("id", orgId);
+      break;
+    case "type-submit":
+      await supabase
+        .from("organization")
+        .update({ type: type })
+        .eq("id", orgId);
+      break;
+    case "poc-submit":
+      await supabase
+        .from("organization")
+        .update({ contact: poc })
+        .eq("id", orgId);
+      break;
+    case "coverImage-submit":
+      if (coverImage && coverImage.size > 0) {
+        console.log("here");
+        const fileExt = coverImage.name.split(".").pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("images")
+          .upload(fileName, coverImage, {
+            cacheControl: "3600",
+            upsert: false,
+          });
+        if (uploadError) {
+          return { success: false, error: uploadError.message };
+        }
+        const { data: urlData } = supabase.storage
+          .from("images")
+          .getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
+        console.log(imageUrl);
 
-  //     const { error: updateError } = await supabase.from("baseDetails").update({"image_url": imageUrl}).eq('base_id', baseId);
-  //     if(updateError){
-  //       return {success: false, error: updateError.message};
-  //     }
-  //   }
-  //   break;
-    
-  // }
-}
-
-const EditableField = ({
-  label,
-  name,
-  field,
-  setField,
-  Icon,
-  fieldEdit,
-  setFieldEdit,
-  type,
-  userId,
-}: {
-  label: string;
-  name: string;
-  field: string;
-  setField: any;
-  Icon: any;
-  fieldEdit: boolean;
-  setFieldEdit: any;
-  type?: string;
-  userId?: string;
-}) => {
-  console.log(userId)
-  return (
-    <div>
-      <Form method="POST">
-        <input type="hidden" name="userId" value={userId} />
-        <div className="flex justify-between">
-          <div className="flex gap-2 mb-2">
-            <Icon className="h-4 w-4" />
-            <Label>{label}</Label>
-          </div>
-          <div>
-            {fieldEdit && (
-              <div className="flex gap-2">
-                <button type="submit" value={`${name}-submit`} name="submit"><Save className="w-4 h-4 hover:bg-gray-200 hover:rounded" /></button>
-                <X
-                  onClick={() => setFieldEdit(false)}
-                  className="w-4 h-4 hover:bg-gray-200 hover:rounded"
-                />
-              </div>
-            )}
-            {!fieldEdit && (
-              <Edit2
-                onClick={() => setFieldEdit(true)}
-                className="w-4 h-4 hover:bg-gray-200 hover:rounded"
-              />
-            )}
-          </div>
-        </div>
-        {!fieldEdit && (
-          <p className="bg-gray-50 p-2 rounded text-sm font-medium">{field}</p>
-        )}
-        {fieldEdit && (!type || type === "text") && (
-          <input
-            type="text"
-            name={name}
-            className="w-full p-2 font-medium text-sm border rounded-lg"
-            value={field}
-            onChange={(e) => setField(e.currentTarget.value)}
-          />
-        )}
-        {fieldEdit && type === "textarea" && (
-          <textarea
-            name={name}
-            className="w-full p-2 font-medium text-sm border rounded-lg"
-            value={field}
-            onChange={(e) => setField(e.currentTarget.value)}
-          />
-        )}
-      </Form>
-    </div>
-  );
+        const { error: updateError } = await supabase
+          .from("baseDetails")
+          .update({ image_url: imageUrl })
+          .eq("base_id", baseId);
+        if (updateError) {
+          return { success: false, error: updateError.message };
+        }
+      }
+      break;
+  }
 };
 
-
-export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
-  const {orgData: orgs, userId} = loaderData;
-  const orgData = orgs[0]
-  console.log(orgData)
+export default function OrgDetailsRedesign({
+  loaderData,
+}: Route.ComponentProps) {
+  const { orgData: orgs } = loaderData;
+  const orgData = orgs[0];
+  console.log(orgData);
   const [showModal, setShowModal] = useState(false);
-  const [coverImage, setCoverImage] = useState(orgData.image_url)
+  const [coverImage, setCoverImage] = useState(orgData.image_url);
   const [name, setName] = useState(orgData.name);
   const [nameEdit, setNameEdit] = useState(false);
   const [description, setDescription] = useState(orgData.description);
@@ -202,23 +161,28 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
   const categories = [
     {
       type: "WING",
-      color: "border-[#fa6257] bg-[#fa6257]/15 text-[#fa6257] hover:shadow-[#fa6257]/35",
+      color:
+        "border-[#fa6257] bg-[#fa6257]/15 text-[#fa6257] hover:shadow-[#fa6257]/35",
     },
     {
       type: "GROUP",
-      color: "border-[#fab657] bg-[#fab657]/15 text-[#fab657] hover:shadow-[#fab657]/35",
+      color:
+        "border-[#fab657] bg-[#fab657]/15 text-[#fab657] hover:shadow-[#fab657]/35",
     },
     {
       type: "SQUADRON",
-      color: "border-[#57fa5a] bg-[#57fa5a]/15 text-[#57fa5a] hover:shadow-[#57fa5a]/35",
+      color:
+        "border-[#57fa5a] bg-[#57fa5a]/15 text-[#57fa5a] hover:shadow-[#57fa5a]/35",
     },
     {
       type: "AGENCY",
-      color: "border-[#579efa] bg-[#579efa]/15 text-[#579efa] hover:shadow-[#579efa]/35",
+      color:
+        "border-[#579efa] bg-[#579efa]/15 text-[#579efa] hover:shadow-[#579efa]/35",
     },
     {
       type: "SUPPORT",
-      color: "border-[#e257fa] bg-[#e257fa]/15 text-[#e257fa] hover:shadow-[#e257fa]/35",
+      color:
+        "border-[#e257fa] bg-[#e257fa]/15 text-[#e257fa] hover:shadow-[#e257fa]/35",
     },
   ];
 
@@ -242,11 +206,11 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
               <div className="space-y-4">
                 <div className="relative group">
                   {orgData.image_url && (
-                      <img
-                        src={orgData.image_url}
-                        alt={`${orgData.name} logo`}
-                        className="max-h-40 max-w-full object-contain"
-                      />
+                    <img
+                      src={orgData.image_url}
+                      alt={`${orgData.name} logo`}
+                      className="max-h-40 max-w-full object-contain"
+                    />
                   )}
                   <Button
                     size="sm"
@@ -262,7 +226,10 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
               <div className="md:col-span-2 space-y-4">
                 <div className="flex items-center gap-4 flex-wrap">
                   <h2 className="text-2xl font-bold">{orgData.name}</h2>
-                  <Badge variant="secondary" className="flex items-center gap-1">
+                  <Badge
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
                     <Shield className="h-3 w-3" />
                     {orgData.type}
                   </Badge>
@@ -275,7 +242,9 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         <p className="text-muted-foreground">Contact</p>
                       </div>
-                      <span className="font-medium text-sm">{orgData.contact}</span>
+                      <span className="font-medium text-sm">
+                        {orgData.contact}
+                      </span>
                     </CardContent>
                   </Card>
 
@@ -301,7 +270,9 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
             <CardHeader>
               <Tabs defaultValue="details">
                 <TabsList>
-                  <TabsTrigger value="details">Organization Details</TabsTrigger>
+                  <TabsTrigger value="details">
+                    Organization Details
+                  </TabsTrigger>
                   <TabsTrigger value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details" className="mt-4 space-y-6">
@@ -314,7 +285,7 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                     fieldEdit={nameEdit}
                     setFieldEdit={setNameEdit}
                     type="text"
-                    userId={userId}
+                    disabled={false}
                   />
 
                   <EditableField
@@ -326,7 +297,7 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                     fieldEdit={descriptionEdit}
                     setFieldEdit={setDescriptionEdit}
                     type="textarea"
-                    userId={userId}
+                    disabled={false}
                   />
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">
@@ -344,7 +315,9 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                           checked={showType}
                           onCheckedChange={() => setShowType(!showType)}
                         />
-                        <label className="text-sm">Show organization type?</label>
+                        <label className="text-sm">
+                          Show organization type?
+                        </label>
                       </div>
                       <Button variant="outline" className="w-full">
                         <SaveIcon size={18} />
@@ -395,40 +368,54 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                     </div>
                     <div className="flex flex-wrap justify-between gap-2">
                       <div className="space-x-2">
-                      {categories.map((item, index) => (
-                        <Badge
-                        key={index}
-                        variant="outline"
-                        onClick={() => setSelectedBadge(item.type)}
-                        className={`py-2 px-3 shadow-md border cursor-pointer ${
-                          selectedBadge === item.type ? item.color : ""
-                        } hover:-translate-y-1 hover:shadow-lg transition-all`}
-                        >
-                          {item.type}
-                        </Badge>
-                      ))}
+                        {categories.map((item, index) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            onClick={() => setSelectedBadge(item.type)}
+                            className={`py-2 px-3 shadow-md border cursor-pointer ${
+                              selectedBadge === item.type ? item.color : ""
+                            } hover:-translate-y-1 hover:shadow-lg transition-all`}
+                          >
+                            {item.type}
+                          </Badge>
+                        ))}
                       </div>
-                      {(orgData.type !== selectedBadge) && 
-                      <Form method="POST" className="flex items-center">
-                        <input type="hidden" name="type" value={selectedBadge}/>
-                        <button name="submit" type="submit" value="type-submit"><SaveIcon size={18}/></button>
-                      </Form>
-                      }
+                      {orgData.type !== selectedBadge && (
+                        <Form method="POST" className="flex items-center">
+                          <input
+                            type="hidden"
+                            name="type"
+                            value={selectedBadge}
+                          />
+                          <button
+                            name="submit"
+                            type="submit"
+                            value="type-submit"
+                          >
+                            <SaveIcon size={18} />
+                          </button>
+                        </Form>
+                      )}
                     </div>
                   </div>
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">
                   <div className="flex flex-col gap-4">
                     <p className="text-sm text-muted-foreground">
-                      Preview of how the organization type badge appears in the app
+                      Preview of how the organization type badge appears in the
+                      app
                     </p>
                     <div className="w-full h-[120px] bg-white rounded-xl shadow-md flex items-center justify-center border">
                       <div className="flex flex-col items-center gap-3">
-                        <p className="text-sm text-muted-foreground">Organization Type</p>
+                        <p className="text-sm text-muted-foreground">
+                          Organization Type
+                        </p>
                         <Badge
                           variant="outline"
                           className={`py-2 px-4 shadow-md border ${
-                            categories.find((c) => c.type === selectedBadge)?.color
+                            categories.find((c) => c.type === selectedBadge)
+                              ?.color
                           }`}
                         >
                           {selectedBadge}
@@ -469,7 +456,9 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                         <Users className="h-6 w-6 text-blue-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Point of Contact</p>
+                        <p className="text-sm text-muted-foreground">
+                          Point of Contact
+                        </p>
                         <p className="text-lg font-semibold">{poc}</p>
                       </div>
                     </div>
@@ -494,7 +483,11 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                         <Palette className="h-4 w-4" />
                         <Label>Select Card Color Scheme</Label>
                       </div>
-                      {(orgData.primary_color !== primaryColor) && <button><SaveIcon size={18}/></button>}
+                      {orgData.primary_color !== primaryColor && (
+                        <button>
+                          <SaveIcon size={18} />
+                        </button>
+                      )}
                     </div>
                     <div className="flex gap-4 justify-around">
                       {colorOptions.map((option, index) => (
@@ -504,7 +497,7 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
                             setPrimaryColor(option.primary);
                             setSecondaryColor(option.secondary);
                           }}
-                          className={`p-4 rounded-full border-2 hover:scale-130 hover:shadow-xl shadow-md transition-transform ${primaryColor === option.primary ? `scale-120 shadow-lg` : ''}`}
+                          className={`p-4 rounded-full border-2 hover:scale-130 hover:shadow-xl shadow-md transition-transform ${primaryColor === option.primary ? `scale-120 shadow-lg` : ""}`}
                           style={{
                             backgroundColor: option.primary,
                             borderColor: option.secondary,
@@ -557,12 +550,12 @@ export default function OrgDetailsRedesign({loaderData}: Route.ComponentProps) {
         </div>
       </div>
       {showModal && (
-              <UploadModal
-                isOpen={showModal}
-                onClose={setShowModal}
-                setCoverImage={setCoverImage}
-              ></UploadModal>
-            )}
+        <UploadModal
+          isOpen={showModal}
+          onClose={setShowModal}
+          setCoverImage={setCoverImage}
+        ></UploadModal>
+      )}
     </div>
   );
 }
