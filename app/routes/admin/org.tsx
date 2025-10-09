@@ -20,6 +20,7 @@ import {
 import type { Route } from "../+types/home";
 import {
   Form,
+  redirect,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
 } from "react-router";
@@ -53,7 +54,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .from("organization")
     .select("*")
     .eq("id", org);
-  return { orgData: data };
+  return { orgData: data , userId: cookies.user_id};
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -73,6 +74,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const showMotto = formData.get("showMotto") === "on";
   const showContactEmail = formData.get("showEmail") === "on";
   const showContactPhone = formData.get("showPhone") === "on";
+  const userId = formData.get("userId");
   
   const {data: requestData, error: requestError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "org_id": orgId, "data": Object.fromEntries(formData.entries()), "user_id": userId})
   // const toggle = showName === 'on' ? true : false
@@ -141,9 +143,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function OrgDetailsRedesign({
   loaderData,
 }: Route.ComponentProps) {
-  const { orgData: orgs } = loaderData;
+  const { orgData: orgs, userId } = loaderData;
+  console.log('orgData', orgs);
   const orgData = orgs[0];
-  console.log(orgData);
   const [showModal, setShowModal] = useState(false);
   const [coverImage, setCoverImage] = useState(orgData.image_url);
   const [name, setName] = useState(orgData.name);
@@ -199,6 +201,8 @@ export default function OrgDetailsRedesign({
   return (
     <div className="w-full flex-1 overflow-auto p-4 bg-gradient-to-br from-blue-400 to-teal-300">
       <div className="grid gap-4">
+        <Form method="POST">
+
         {/* Organization Header Card */}
         <Card>
           <CardContent className="pt-6">
@@ -207,9 +211,9 @@ export default function OrgDetailsRedesign({
                 <div className="relative group">
                   {orgData.image_url && (
                     <img
-                      src={orgData.image_url}
-                      alt={`${orgData.name} logo`}
-                      className="max-h-40 max-w-full object-contain"
+                    src={orgData.image_url}
+                    alt={`${orgData.name} logo`}
+                    className="max-h-40 max-w-full object-contain"
                     />
                   )}
                   <Button
@@ -217,7 +221,7 @@ export default function OrgDetailsRedesign({
                     variant="secondary"
                     onClick={() => setShowModal(true)}
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
+                    >
                     <Edit2 className="h-3 w-3" />
                   </Button>
                 </div>
@@ -229,7 +233,7 @@ export default function OrgDetailsRedesign({
                   <Badge
                     variant="secondary"
                     className="flex items-center gap-1"
-                  >
+                    >
                     <Shield className="h-3 w-3" />
                     {orgData.type}
                   </Badge>
@@ -286,7 +290,7 @@ export default function OrgDetailsRedesign({
                     setFieldEdit={setNameEdit}
                     type="text"
                     disabled={false}
-                  />
+                    />
 
                   <EditableField
                     label="Description"
@@ -298,7 +302,7 @@ export default function OrgDetailsRedesign({
                     setFieldEdit={setDescriptionEdit}
                     type="textarea"
                     disabled={false}
-                  />
+                    />
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">
                   <div className="flex flex-col gap-4">
@@ -307,14 +311,14 @@ export default function OrgDetailsRedesign({
                         <Checkbox
                           checked={showLogo}
                           onCheckedChange={() => setShowLogo(!showLogo)}
-                        />
+                          />
                         <label className="text-sm">Show logo on card?</label>
                       </div>
                       <div className="flex items-center gap-4">
                         <Checkbox
                           checked={showType}
                           onCheckedChange={() => setShowType(!showType)}
-                        />
+                          />
                         <label className="text-sm">
                           Show organization type?
                         </label>
@@ -331,13 +335,13 @@ export default function OrgDetailsRedesign({
                         borderColor: secondaryColor,
                         borderWidth: "3px",
                       }}
-                    >
+                      >
                       <div className="flex flex-col items-center justify-center h-full gap-2">
                         {showLogo && orgData.image_url && (
                           <img
-                            src={orgData.image_url}
-                            alt="Logo"
-                            className="h-20 w-20 object-contain"
+                          src={orgData.image_url}
+                          alt="Logo"
+                          className="h-20 w-20 object-contain"
                           />
                         )}
                         <p className="text-center text-xl font-bold">{name}</p>
@@ -370,12 +374,12 @@ export default function OrgDetailsRedesign({
                       <div className="space-x-2">
                         {categories.map((item, index) => (
                           <Badge
-                            key={index}
-                            variant="outline"
-                            onClick={() => setSelectedBadge(item.type)}
-                            className={`py-2 px-3 shadow-md border cursor-pointer ${
-                              selectedBadge === item.type ? item.color : ""
-                            } hover:-translate-y-1 hover:shadow-lg transition-all`}
+                          key={index}
+                          variant="outline"
+                          onClick={() => setSelectedBadge(item.type)}
+                          className={`py-2 px-3 shadow-md border cursor-pointer ${
+                            selectedBadge === item.type ? item.color : ""
+                          } hover:-translate-y-1 hover:shadow-lg transition-all`}
                           >
                             {item.type}
                           </Badge>
@@ -387,12 +391,12 @@ export default function OrgDetailsRedesign({
                             type="hidden"
                             name="type"
                             value={selectedBadge}
-                          />
+                            />
                           <button
                             name="submit"
                             type="submit"
                             value="type-submit"
-                          >
+                            >
                             <SaveIcon size={18} />
                           </button>
                         </Form>
@@ -415,9 +419,9 @@ export default function OrgDetailsRedesign({
                           variant="outline"
                           className={`py-2 px-4 shadow-md border ${
                             categories.find((c) => c.type === selectedBadge)
-                              ?.color
+                            ?.color
                           }`}
-                        >
+                          >
                           {selectedBadge}
                         </Badge>
                       </div>
@@ -446,8 +450,8 @@ export default function OrgDetailsRedesign({
                     fieldEdit={pocEdit}
                     setFieldEdit={setPocEdit}
                     type="text"
-                    userId={userId}
-                  />
+                    disabled={false}
+                    />
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">
                   <div className="w-full h-[120px] bg-white rounded-xl shadow-md border flex items-center px-6">
@@ -492,37 +496,37 @@ export default function OrgDetailsRedesign({
                     <div className="flex gap-4 justify-around">
                       {colorOptions.map((option, index) => (
                         <button
-                          key={index}
-                          onClick={() => {
-                            setPrimaryColor(option.primary);
-                            setSecondaryColor(option.secondary);
-                          }}
-                          className={`p-4 rounded-full border-2 hover:scale-130 hover:shadow-xl shadow-md transition-transform ${primaryColor === option.primary ? `scale-120 shadow-lg` : ""}`}
-                          style={{
-                            backgroundColor: option.primary,
-                            borderColor: option.secondary,
-                          }}
-                          title={option.name}
+                        key={index}
+                        onClick={() => {
+                          setPrimaryColor(option.primary);
+                          setSecondaryColor(option.secondary);
+                        }}
+                        className={`p-4 rounded-full border-2 hover:scale-130 hover:shadow-xl shadow-md transition-transform ${primaryColor === option.primary ? `scale-120 shadow-lg` : ""}`}
+                        style={{
+                          backgroundColor: option.primary,
+                          borderColor: option.secondary,
+                        }}
+                        title={option.name}
                         />
                       ))}
                     </div>
                     {/* <div className="flex justify-between gap-2">
                       {colorOptions.slice(4).map((option, index) => (
                         <button
-                          key={index}
-                          onClick={() => {
-                            setPrimaryColor(option.primary);
-                            setSecondaryColor(option.secondary);
+                        key={index}
+                        onClick={() => {
+                          setPrimaryColor(option.primary);
+                          setSecondaryColor(option.secondary);
                           }}
                           className="p-4 rounded-full border-2 hover:scale-110 transition-transform"
                           style={{
                             backgroundColor: option.primary,
                             borderColor: option.secondary,
-                          }}
-                          title={option.name}
-                        />
-                      ))}
-                    </div> */}
+                            }}
+                            title={option.name}
+                            />
+                            ))}
+                            </div> */}
                   </div>
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">
@@ -537,7 +541,7 @@ export default function OrgDetailsRedesign({
                         borderColor: secondaryColor,
                         borderWidth: "3px",
                       }}
-                    >
+                      >
                       <Building className="h-12 w-12" />
                       <p className="text-xl font-bold text-center">{name}</p>
                       <Badge variant="secondary">{selectedBadge}</Badge>
@@ -547,12 +551,19 @@ export default function OrgDetailsRedesign({
               </Tabs>
             </CardHeader>
           </Card>
+          <Card>
+            <CardContent>
+              <Button>Submit Update Request</Button>
+            </CardContent>
+          </Card>
         </div>
+        <input type="hidden" name="userId" value={userId} />
+      </Form>
       </div>
       {showModal && (
         <UploadModal
-          isOpen={showModal}
-          onClose={setShowModal}
+        isOpen={showModal}
+        onClose={setShowModal}
           setCoverImage={setCoverImage}
         ></UploadModal>
       )}

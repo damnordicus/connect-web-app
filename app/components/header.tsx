@@ -31,7 +31,7 @@ export const loader = async ({request}: ActionFunctionArgs) => {
     const {data} = await supabase.from('organization').select().eq('user_id', cookies.user_id);
     const {data: user} = await supabase.from("user").select().eq("id", cookies.user_id)
     const {data: bases} = await supabase.from("baseDetails").select(`base(*)`).eq("user_id", cookies.user_id)
-    console.log('bases: ', bases)
+    // console.log('bases: ', bases)
     
     return { orgs: data || [], userId: cookies.user_id, isAuthenticated: true, user, bases };
 }
@@ -43,19 +43,19 @@ export default function Header({loaderData}: Route.ComponentProps){
     const currentOrg = searchParams.get('org');
 
     const handleOrgChange = (selectedEnt: string) => {
-        console.log('selectedEnt: ', selectedEnt),
-        console.log('org:', orgs)
-        console.log('bases:', bases)
+        // console.log('selectedEnt: ', selectedEnt),
+        // console.log('org:', orgs)
+        // console.log('bases:', bases)
         if(orgs.find(ent => ent.id === selectedEnt)){
-            console.log(orgs.includes(selectedEnt))
+            // console.log(orgs.includes(selectedEnt))
             navigate(`/admin/org?org=${selectedEnt}`, {replace: true});
         }
         if(bases.find(ent => ent.base.id === selectedEnt)){
-            console.log('bases.includes(selectedEnt)')
+            // console.log('bases.includes(selectedEnt)')
             navigate(`/admin/base?id=${selectedEnt}`, {replace: true});
         }
     }
-    console.log('pi', bases)
+    // console.log('pi', bases)
     return (
         <>
         <Card className="w-full flex-shrink-0 h-[50px] rounded-none justify-center bg-blue-400">

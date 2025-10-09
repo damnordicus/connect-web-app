@@ -32,7 +32,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const baseId = user[0].current_base;
     const userId = user[0].id;
     if(user && user[0].role === "ORG"){
-        console.log(baseId, userId)
+        // console.log(baseId, userId)
         const { data: orgs } = await supabase.from("organization").select("*").eq("base_id", baseId).is("user_id", null)
         return {orgs, userId}
     } else if(user && user[0].role === "BASE"){
@@ -73,7 +73,7 @@ export default function RequestOrg({loaderData}: Route.ComponentProps){
     const handleBaseSelect = (e) => {
         setSelectedBaseId(e);
     }
-    console.log(loaderData)
+    // console.log(loaderData)
     return(
         <div className="w-full h-full p-4 bg-linear-to-br from-blue-400 to-teal-300">
             {orgs && 

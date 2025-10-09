@@ -37,7 +37,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { data } = await supabase
       .from("request")
       .select(`*, user(email), organization!org_id(name), base!base_id(name)`);
-    console.log("test: ", data);
+    // console.log("test: ", data);
     return { data };
   } catch (error) {
     console.error("Error: ", error);
@@ -46,11 +46,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const { data: requests } = loaderData;
-  // console.log(requests)
+  console.log(requests)
   const [requestList, setRequestList] = useState(requests);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedRequestData, setSelectedRequestData] = useState();
   const orgFetcher = useFetcher();
+  const navigate = useNavigate();
+
   const approve = async (
     userId: string,
     entId: { id: string; ent: string },
@@ -104,8 +106,8 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         prev.filter((request) => request.id !== requestId)
       );
 
-      console.log("Update data:", updateData);
-      console.log("Delete result:", result);
+      // console.log("Update data:", updateData);
+      // console.log("Delete result:", result);
 
       return redirect("/");
     } catch (error) {
@@ -142,6 +144,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     setSelectedRequestData(
       requestList.filter((request) => request.id === id)[0]
     );
+    navigate(`org/request?id=${id}`);
   }
 
   return (
@@ -168,9 +171,10 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                     <td>
                       <button
                         type="button"
+                        className="p-1 m-1 border rounded-lg shadow-md"
                         onClick={() => handleModal(request.id)}
                       >
-                        asfd
+                        {Object.entries(request.data).length - 2 + " item"}
                       </button>
                     </td>
                     <td>{new Date(request.created_at).toLocaleDateString()}</td>
@@ -206,9 +210,10 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           </table>
         </CardContent>
       </Card>
-      {showRequestModal && (
+      {/* {showRequestModal && (
         <DataRequestModal requestData={selectedRequestData} existingData={[]}></DataRequestModal>
-      )}
+      )} */}
+      <Outlet />
     </div>
   );
 }

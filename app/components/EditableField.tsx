@@ -1,6 +1,7 @@
 import { Form } from "react-router";
 import { Label } from "./ui/label";
 import { Edit2, Save, X } from "lucide-react";
+import { useState } from "react";
 
 export const EditableField = ({
   label,
@@ -23,9 +24,12 @@ export const EditableField = ({
   type?: string;
   disabled: boolean;
 }) => {
+
+  const [temp, setTemp] = useState(field);
+
   return (
     <div>
-      <Form method="POST">
+      {/* <Form method="POST"> */}
         <div className="flex justify-between">
           <div className="flex gap-2 mb-2">
             <Icon className="h-4 w-4" />
@@ -34,7 +38,7 @@ export const EditableField = ({
           <div>
             {fieldEdit && (
               <div className="flex gap-2">
-                <button type="submit" value={`${name}-submit`} name="submit">
+                <button type="button" value={`${name}-submit`} name="submit" onClick={() => setField(temp)}>
                   <Save className="w-4 h-4 hover:bg-gray-200 hover:rounded" />
                 </button>
                 <X
@@ -59,8 +63,8 @@ export const EditableField = ({
             type="text"
             name={name}
             className="w-full p-2 font-medium text-sm border rounded-lg"
-            value={field}
-            onChange={(e) => setField(e.currentTarget.value)}
+            value={temp}
+            onChange={(e) => setTemp(e.currentTarget.value)}
             disabled={disabled}
           />
         )}
@@ -68,12 +72,13 @@ export const EditableField = ({
           <textarea
             name={name}
             className="w-full p-2 font-medium text-sm border rounded-lg"
-            value={field}
-            onChange={(e) => setField(e.currentTarget.value)}
+            value={temp}
+            onChange={(e) => setTemp(e.currentTarget.value)}
             disabled={disabled}
           />
         )}
-      </Form>
+        <input type="hidden" name={name} value={temp} />
+      {/* </Form> */}
     </div>
   );
 };

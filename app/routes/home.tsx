@@ -29,7 +29,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   if(selectedOrg){
     const {data} = await supabase.from('organization').select().eq('id', selectedOrg).eq('user_id', cookies.user_id);
-    console.log(data[0])
+    // console.log(data[0])
     return {orgData: data[0]}
   }
   return {}
@@ -53,7 +53,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
         const { error } = await supabase.from("organization").update({name: name, description: description, contact: poc, type: badge, primary_color: primary, secondary_color: secondary, text_color: text}).eq('id', id);
         let imageUrl = null;
         if(image && image.size > 0 ){
-          console.log('test: ', image)
+          // console.log('test: ', image)
           const fileExt = image.name.split('.').pop();
           const filename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
           const {data: uploadData,error: uploadError} = await supabase.storage
@@ -63,7 +63,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
               upsert: false
             });
 
-          console.log("ud: ", uploadData)
+          // console.log("ud: ", uploadData)
           if(uploadError) {
             console.error("upload error: ", uploadError);
             return {success: false, error: uploadError.message};
@@ -87,7 +87,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
         console.error(error);
       }
     }
-    console.log(formData)
+    // console.log(formData)
 }
 
 export default function Home({ loaderData}: Route.ComponentProps) {

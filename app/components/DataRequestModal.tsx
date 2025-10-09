@@ -6,16 +6,16 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 
 export default function DataRequestModal({ requestData, existingData }) {
-  console.log(requestData, existingData);
+  // console.log(requestData, existingData);
   const [name, setName] = useState(requestData.organization.name);
   const [nameEdit, setNameEdit] = useState(false);
   const [description, setDescription] = useState(requestData.description);
   const [descriptionEdit, setDescriptionEdit] = useState(false);
-  console.log(Object.entries(requestData.data));
+  // console.log(Object.entries(requestData.data));
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
-      <Card className="w-1/4">
+      <Card className="w-1/4 md:w-3/4 ">
         <CardHeader>
           <p className="text-2xl">{requestData.organization.name}</p>
         </CardHeader>
