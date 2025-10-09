@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { EditableField } from "~/components/EditableField";
 import { Button } from "~/components/ui/button";
 import { useState } from "react";
-import { Building, Key } from "lucide-react";
+import { Building, Key, Shield } from "lucide-react";
+import { categories } from "~/lib/constants";
+import { Badge } from "~/components/ui/badge";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -68,6 +70,7 @@ export default function RequestOrgUpdate({loaderData}: Route.ComponentProps){
 
       const [name, setName] = useState(orgData[0].name);
       const [nameEdit, setNameEdit] = useState(false);
+      const [selectedBadge, setSelectedBadge] = useState(requestData[0].data.type)
       const navigate = useNavigate();
 
       return (
@@ -90,16 +93,49 @@ export default function RequestOrgUpdate({loaderData}: Route.ComponentProps){
                               <p>{orgData[0].description}</p>
                         </div>
                         <div className="flex flex-col">
+                              <p className="font-semibold">Type:</p>
+                              <div className="space-x-2">
+                                                <Badge
+                                                key={1}
+                                                variant="outline"
+                                                onClick={() => {}}
+                                                className={`py-2 px-3 shadow-md border cursor-pointer`}
+                                                >
+                                                {orgData[0].type}
+                                                </Badge>
+                              </div>
+                        </div>
+                        <div className="flex flex-col">
                               <p className="font-semibold">DSN:</p>
                               <p>{orgData[0].contact}</p>
                         </div>
                   </div>
                   <div className=" flex flex-col w-1/2">
                         <p>Incoming:</p>
+                        <p className="flex items-center gap-2 my-2 font-semibold"><Shield size={18}/>Category:</p>
                         {Object.entries(requestData[0].data).map(([key, value]: [string, any]) =>{
-                              if(key !== 'submit' && key !== 'userId')
+                              if(key === 'type'){
                                     return(
-                                    <EditableField label={key.toUpperCase().slice(0,1) + key.slice(1) + ":"} name={key} field={value} setField={setName} Icon={Building} fieldEdit={nameEdit} setFieldEdit={setNameEdit} disabled={false} />)})}
+                                          <div className="space-x-2">
+                                                {categories.map((item, index) => (
+                                                <Badge
+                                                key={index}
+                                                variant="outline"
+                                                onClick={() => setSelectedBadge(item.type)}
+                                                className={`py-2 px-3 shadow-md border cursor-pointer ${
+                                                selectedBadge === item.type ? item.color : ""
+                                                } hover:-translate-y-1 hover:shadow-lg transition-all`}
+                                                >
+                                                {item.type}
+                                                </Badge>
+                                                ))}
+                                                <input type="hidden" />
+                                          </div>
+                                    )
+                              }
+                              if(key !== 'submit' && key !== 'userId' && key !== 'orgId')
+                                    return(
+                                    <EditableField label={key.toUpperCase().slice(0,1) + key.slice(1) + ":"} name={key} field={value} setField={setName} originalValue="" Icon={Building} fieldEdit={nameEdit} setFieldEdit={setNameEdit} disabled={false} />)})}
                   </div>
             </div>
             <input type="hidden" name="orgId" value={orgData[0].id} />

@@ -27,6 +27,7 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import UploadModal from "~/components/UploadModal";
 import { EditableField } from "~/components/EditableField";
+import { categories } from "~/lib/constants";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -62,18 +63,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const searchParams = new URL(request.url).searchParams;
   const orgId = searchParams.get("org");
   console.log(formData);
-  const coverImage = formData.get("coverImage") as File;
-  const name = formData.get("name");
-  const description = formData.get("description");
-  const type = formData.get("type");
-  const poc = formData.get("poc");
-  const email = formData.get("email");
-  const showName = formData.get("showName") === "on";
-  const _action = formData.get("submit");
-  const showCommand = formData.get("showCommand") === "on";
-  const showMotto = formData.get("showMotto") === "on";
-  const showContactEmail = formData.get("showEmail") === "on";
-  const showContactPhone = formData.get("showPhone") === "on";
+  // const coverImage = formData.get("coverImage") as File;
+  // const name = formData.get("name");
+  // const description = formData.get("description");
+  // const type = formData.get("type");
+  // const poc = formData.get("poc");
+  // const email = formData.get("email");
+  // const showName = formData.get("showName") === "on";
+  // const _action = formData.get("submit");
+  // const showCommand = formData.get("showCommand") === "on";
+  // const showMotto = formData.get("showMotto") === "on";
+  // const showContactEmail = formData.get("showEmail") === "on";
+  // const showContactPhone = formData.get("showPhone") === "on";
   const userId = formData.get("userId");
   
   const {data: requestData, error: requestError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "org_id": orgId, "data": Object.fromEntries(formData.entries()), "user_id": userId})
@@ -83,61 +84,61 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // console.log(formData.get("submit"), toggle)
 
-  switch (_action) {
-    case "name-submit":
-      await supabase
-        .from("organization")
-        .update({ name: name })
-        .eq("id", orgId);
-      break;
-    case "description-submit":
-      await supabase
-        .from("organization")
-        .update({ description: description })
-        .eq("id", orgId);
-      break;
-    case "type-submit":
-      await supabase
-        .from("organization")
-        .update({ type: type })
-        .eq("id", orgId);
-      break;
-    case "poc-submit":
-      await supabase
-        .from("organization")
-        .update({ contact: poc })
-        .eq("id", orgId);
-      break;
-    case "coverImage-submit":
-      if (coverImage && coverImage.size > 0) {
-        console.log("here");
-        const fileExt = coverImage.name.split(".").pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("images")
-          .upload(fileName, coverImage, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-        if (uploadError) {
-          return { success: false, error: uploadError.message };
-        }
-        const { data: urlData } = supabase.storage
-          .from("images")
-          .getPublicUrl(fileName);
-        imageUrl = urlData.publicUrl;
-        console.log(imageUrl);
+  // switch (_action) {
+  //   case "name-submit":
+  //     await supabase
+  //       .from("organization")
+  //       .update({ name: name })
+  //       .eq("id", orgId);
+  //     break;
+  //   case "description-submit":
+  //     await supabase
+  //       .from("organization")
+  //       .update({ description: description })
+  //       .eq("id", orgId);
+  //     break;
+  //   case "type-submit":
+  //     await supabase
+  //       .from("organization")
+  //       .update({ type: type })
+  //       .eq("id", orgId);
+  //     break;
+  //   case "poc-submit":
+  //     await supabase
+  //       .from("organization")
+  //       .update({ contact: poc })
+  //       .eq("id", orgId);
+  //     break;
+  //   case "coverImage-submit":
+  //     if (coverImage && coverImage.size > 0) {
+  //       console.log("here");
+  //       const fileExt = coverImage.name.split(".").pop();
+  //       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  //       const { data: uploadData, error: uploadError } = await supabase.storage
+  //         .from("images")
+  //         .upload(fileName, coverImage, {
+  //           cacheControl: "3600",
+  //           upsert: false,
+  //         });
+  //       if (uploadError) {
+  //         return { success: false, error: uploadError.message };
+  //       }
+  //       const { data: urlData } = supabase.storage
+  //         .from("images")
+  //         .getPublicUrl(fileName);
+  //       imageUrl = urlData.publicUrl;
+  //       console.log(imageUrl);
 
-        const { error: updateError } = await supabase
-          .from("baseDetails")
-          .update({ image_url: imageUrl })
-          .eq("base_id", baseId);
-        if (updateError) {
-          return { success: false, error: updateError.message };
-        }
-      }
-      break;
-  }
+  //       const { error: updateError } = await supabase
+  //         .from("baseDetails")
+  //         .update({ image_url: imageUrl })
+  //         .eq("base_id", baseId);
+  //       if (updateError) {
+  //         return { success: false, error: updateError.message };
+  //       }
+  //     }
+  //     break;
+  // }
 };
 
 export default function OrgDetailsRedesign({
@@ -159,34 +160,7 @@ export default function OrgDetailsRedesign({
   const [secondaryColor, setSecondaryColor] = useState(orgData.secondary_color);
   const [showLogo, setShowLogo] = useState(true);
   const [showType, setShowType] = useState(true);
-
-  const categories = [
-    {
-      type: "WING",
-      color:
-        "border-[#fa6257] bg-[#fa6257]/15 text-[#fa6257] hover:shadow-[#fa6257]/35",
-    },
-    {
-      type: "GROUP",
-      color:
-        "border-[#fab657] bg-[#fab657]/15 text-[#fab657] hover:shadow-[#fab657]/35",
-    },
-    {
-      type: "SQUADRON",
-      color:
-        "border-[#57fa5a] bg-[#57fa5a]/15 text-[#57fa5a] hover:shadow-[#57fa5a]/35",
-    },
-    {
-      type: "AGENCY",
-      color:
-        "border-[#579efa] bg-[#579efa]/15 text-[#579efa] hover:shadow-[#579efa]/35",
-    },
-    {
-      type: "SUPPORT",
-      color:
-        "border-[#e257fa] bg-[#e257fa]/15 text-[#e257fa] hover:shadow-[#e257fa]/35",
-    },
-  ];
+  const [addBadgeToForm, setAddBadgeToForm] = useState(false);
 
   const colorOptions = [
     { primary: "#93c5fd", secondary: "#60a5fa", name: "Blue" },
@@ -201,7 +175,7 @@ export default function OrgDetailsRedesign({
   return (
     <div className="w-full flex-1 overflow-auto p-4 bg-gradient-to-br from-blue-400 to-teal-300">
       <div className="grid gap-4">
-        <Form method="POST">
+        <Form method="POST" className="space-y-4">
 
         {/* Organization Header Card */}
         <Card>
@@ -285,6 +259,7 @@ export default function OrgDetailsRedesign({
                     name="name"
                     field={name}
                     setField={setName}
+                    originalValue={orgData.name}
                     Icon={Building}
                     fieldEdit={nameEdit}
                     setFieldEdit={setNameEdit}
@@ -297,6 +272,7 @@ export default function OrgDetailsRedesign({
                     name="description"
                     field={description}
                     setField={setDescription}
+                    originalValue={orgData.description}
                     Icon={Building}
                     fieldEdit={descriptionEdit}
                     setFieldEdit={setDescriptionEdit}
@@ -386,21 +362,20 @@ export default function OrgDetailsRedesign({
                         ))}
                       </div>
                       {orgData.type !== selectedBadge && (
-                        <Form method="POST" className="flex items-center">
-                          <input
-                            type="hidden"
-                            name="type"
-                            value={selectedBadge}
-                            />
+                        <div className="flex items-center">
+                        
+                          
                           <button
                             name="submit"
-                            type="submit"
-                            value="type-submit"
+                            type="button"
+                            onClick={() => setAddBadgeToForm(true)}
                             >
                             <SaveIcon size={18} />
                           </button>
-                        </Form>
+                        
+                        </div>
                       )}
+                      {addBadgeToForm && <input type="hidden" name="type" value={selectedBadge} />}
                     </div>
                   </div>
                 </TabsContent>
@@ -446,6 +421,7 @@ export default function OrgDetailsRedesign({
                     name="poc"
                     field={poc}
                     setField={setPOC}
+                    originalValue={orgData.contact}
                     Icon={Users}
                     fieldEdit={pocEdit}
                     setFieldEdit={setPocEdit}
@@ -551,13 +527,14 @@ export default function OrgDetailsRedesign({
               </Tabs>
             </CardHeader>
           </Card>
-          <Card>
+          <Card className="col-span-2 items-center">
             <CardContent>
               <Button>Submit Update Request</Button>
             </CardContent>
           </Card>
         </div>
         <input type="hidden" name="userId" value={userId} />
+        <input type="hidden" name="orgId" value={orgData.id} />
       </Form>
       </div>
       {showModal && (
