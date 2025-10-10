@@ -342,12 +342,12 @@ export default function OrgDetailsRedesign({
                 </TabsList>
                 <TabsContent value="category" className="mt-4">
                   <div className="space-y-4">
-                    <div className="flex gap-2 mb-2">
+                    <div className="flex gap-2 mb-3">
                       <Shield className="h-4 w-4" />
                       <Label>Organization Type</Label>
                     </div>
                     <div className="flex flex-wrap justify-between gap-2">
-                      <div className="space-x-2">
+                      <div className="space-x-2 space-y-2">
                         {categories.map((item, index) => (
                           <Badge
                           key={index}
@@ -459,7 +459,7 @@ export default function OrgDetailsRedesign({
                 <TabsContent value="colors" className="mt-4">
                   <div className="space-y-4">
                     <div className="flex justify-between mb-2">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 mb-2">
                         <Palette className="h-4 w-4" />
                         <Label>Select Card Color Scheme</Label>
                       </div>

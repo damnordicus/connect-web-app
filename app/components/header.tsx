@@ -65,7 +65,7 @@ export default function Header({loaderData}: Route.ComponentProps){
                 {user[0].role !== "SUPERADMIN" && 
                 <>
                 <Select name="current-org" value={currentOrg || ""} onValueChange={(e) => handleOrgChange(e)}>
-                    <SelectTrigger className="w-[200px]">
+                    <SelectTrigger className="w-[200px] bg-white/30">
                         <SelectValue placeholder="Select an option"/>
                     </SelectTrigger>
                     <SelectContent>
@@ -79,9 +79,9 @@ export default function Header({loaderData}: Route.ComponentProps){
                         </SelectGroup>
                     </SelectContent>
                 </Select>
-                <Button onClick={() => navigate("requestOrg")}>Request Org Admin</Button></>}
+                <Button className="bg-white/30 border hover:bg-white hover:text-black" onClick={() => navigate("requestOrg")}>Request Org Admin</Button></>}
                 </div>
-                <Button variant={'default'} onClick={() => {Cookies.remove('user_id'); navigate('/')}}>Logout</Button>
+                <Button variant={'destructive'} onClick={() => {Cookies.remove('user_id'); navigate('/')}}>Logout</Button>
             </CardContent>
         </Card>
         <Outlet/>

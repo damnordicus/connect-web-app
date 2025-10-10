@@ -205,7 +205,6 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                     </td>
                   </tr>
                 ))}
-              {!requests && <tr></tr>}
             </tbody>
           </table>
         </CardContent>
