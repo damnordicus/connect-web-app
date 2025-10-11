@@ -36,7 +36,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const { data } = await supabase
       .from("request")
-      .select(`*, user(email), organization!org_id(name), base!base_id(name)`);
+      .select(`*, user(email), organization!org_id(name), base!base_id(name)`)
+      .eq("is_denied", false);
     // console.log("test: ", data);
     return { data };
   } catch (error) {

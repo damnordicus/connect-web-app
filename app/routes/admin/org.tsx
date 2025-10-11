@@ -51,100 +51,42 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const searchParams = new URL(request.url).searchParams;
   const org = searchParams.get("org");
   console.log("org", org);
-  const { data } = await supabase
+  const { data: orgData } = await supabase
     .from("organization")
     .select("*")
     .eq("id", org);
-  return { orgData: data , userId: cookies.user_id};
+  const { data: requestData, error: requestError} = await supabase
+    .from("request")
+    .select("*")
+    .eq("org_id", org)
+    .eq("is_denied", true)
+  return { orgData , userId: cookies.user_id, requestData};
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const searchParams = new URL(request.url).searchParams;
   const orgId = searchParams.get("org");
-  console.log(formData);
-  // const coverImage = formData.get("coverImage") as File;
-  // const name = formData.get("name");
-  // const description = formData.get("description");
-  // const type = formData.get("type");
-  // const poc = formData.get("poc");
-  // const email = formData.get("email");
-  // const showName = formData.get("showName") === "on";
-  // const _action = formData.get("submit");
-  // const showCommand = formData.get("showCommand") === "on";
-  // const showMotto = formData.get("showMotto") === "on";
-  // const showContactEmail = formData.get("showEmail") === "on";
-  // const showContactPhone = formData.get("showPhone") === "on";
   const userId = formData.get("userId");
+  const requestId = formData.get("requestId");
+
+  if(requestId){
+    const {data, error} = await supabase.from("request").delete().eq("id", requestId);
+    return {data}
+  }
   
   const {data: requestData, error: requestError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "org_id": orgId, "data": Object.fromEntries(formData.entries()), "user_id": userId})
   // const toggle = showName === 'on' ? true : false
   console.log(requestError)
   let imageUrl = null;
 
-  // console.log(formData.get("submit"), toggle)
-
-  // switch (_action) {
-  //   case "name-submit":
-  //     await supabase
-  //       .from("organization")
-  //       .update({ name: name })
-  //       .eq("id", orgId);
-  //     break;
-  //   case "description-submit":
-  //     await supabase
-  //       .from("organization")
-  //       .update({ description: description })
-  //       .eq("id", orgId);
-  //     break;
-  //   case "type-submit":
-  //     await supabase
-  //       .from("organization")
-  //       .update({ type: type })
-  //       .eq("id", orgId);
-  //     break;
-  //   case "poc-submit":
-  //     await supabase
-  //       .from("organization")
-  //       .update({ contact: poc })
-  //       .eq("id", orgId);
-  //     break;
-  //   case "coverImage-submit":
-  //     if (coverImage && coverImage.size > 0) {
-  //       console.log("here");
-  //       const fileExt = coverImage.name.split(".").pop();
-  //       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  //       const { data: uploadData, error: uploadError } = await supabase.storage
-  //         .from("images")
-  //         .upload(fileName, coverImage, {
-  //           cacheControl: "3600",
-  //           upsert: false,
-  //         });
-  //       if (uploadError) {
-  //         return { success: false, error: uploadError.message };
-  //       }
-  //       const { data: urlData } = supabase.storage
-  //         .from("images")
-  //         .getPublicUrl(fileName);
-  //       imageUrl = urlData.publicUrl;
-  //       console.log(imageUrl);
-
-  //       const { error: updateError } = await supabase
-  //         .from("baseDetails")
-  //         .update({ image_url: imageUrl })
-  //         .eq("base_id", baseId);
-  //       if (updateError) {
-  //         return { success: false, error: updateError.message };
-  //       }
-  //     }
-  //     break;
-  // }
+  
 };
 
 export default function OrgDetailsRedesign({
   loaderData,
 }: Route.ComponentProps) {
-  const { orgData: orgs, userId } = loaderData;
+  const { orgData: orgs, userId, requestData } = loaderData;
   console.log('orgData', orgs);
   const orgData = orgs[0];
   const [showModal, setShowModal] = useState(false);
@@ -156,25 +98,22 @@ export default function OrgDetailsRedesign({
   const [poc, setPOC] = useState(orgData.contact);
   const [pocEdit, setPocEdit] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState(orgData.type);
-  const [primaryColor, setPrimaryColor] = useState(orgData.primary_color);
-  const [secondaryColor, setSecondaryColor] = useState(orgData.secondary_color);
   const [showLogo, setShowLogo] = useState(true);
   const [showType, setShowType] = useState(true);
   const [addBadgeToForm, setAddBadgeToForm] = useState(false);
 
-  const colorOptions = [
-    { primary: "#93c5fd", secondary: "#60a5fa", name: "Blue" },
-    { primary: "#d8b4fe", secondary: "#c084fc", name: "Purple" },
-    { primary: "#fca5a5", secondary: "#f87171", name: "Red" },
-    { primary: "#86efac", secondary: "#4ade80", name: "Green" },
-    { primary: "#fdba74", secondary: "#fb923c", name: "Orange" },
-    { primary: "#fde047", secondary: "#facc15", name: "Yellow" },
-    { primary: "#ffffff", secondary: "#f3f4f6", name: "White" },
-  ];
-
   return (
     <div className="w-full flex-1 overflow-auto p-4 bg-gradient-to-br from-blue-400 to-teal-300">
       <div className="grid gap-4">
+        {(requestData && requestData.length > 0) && 
+        <Card className="bg-red-300 border-2 border-red-400">
+          <CardContent>
+            <p>Update requests denied:</p>
+            <ul>
+            {requestData.map(request => <li className="border rounded-md pl-2 bg-white/30 flex justify-between items-center">- {request.denial_reason}<Form method="POST"><input type="hidden" name="requestId" value={request.id} /><button className="px-2 bg-white rounded-md m-1">Clear</button></Form></li>)}
+            </ul>
+          </CardContent>
+        </Card>}
         <Form method="POST" className="space-y-4">
 
         {/* Organization Header Card */}
@@ -244,7 +183,7 @@ export default function OrgDetailsRedesign({
         {/* Organization Information Cards */}
         <div className="grid lg:grid-cols-2 gap-4">
           {/* Basic Information */}
-          <Card>
+          <Card className="col-span-2">
             <CardHeader>
               <Tabs defaultValue="details">
                 <TabsList>
@@ -305,12 +244,7 @@ export default function OrgDetailsRedesign({
                       </Button>
                     </div>
                     <div
-                      className="relative w-full h-[200px] mx-auto rounded-xl shadow-lg p-6"
-                      style={{
-                        backgroundColor: primaryColor,
-                        borderColor: secondaryColor,
-                        borderWidth: "3px",
-                      }}
+                      className="relative w-full h-[200px] mx-auto rounded-xl shadow-lg p-6 border-3"
                       >
                       <div className="flex flex-col items-center justify-center h-full gap-2">
                         {showLogo && orgData.image_url && (
@@ -333,7 +267,7 @@ export default function OrgDetailsRedesign({
           </Card>
 
           {/* Category & Type */}
-          <Card>
+          <Card className="col-span-2">
             <CardHeader>
               <Tabs defaultValue="category">
                 <TabsList>
@@ -408,7 +342,7 @@ export default function OrgDetailsRedesign({
           </Card>
 
           {/* Point of Contact */}
-          <Card>
+          <Card className="col-span-2">
             <CardHeader>
               <Tabs defaultValue="contact">
                 <TabsList>
@@ -418,7 +352,7 @@ export default function OrgDetailsRedesign({
                 <TabsContent value="contact" className="mt-4">
                   <EditableField
                     label="Point of Contact"
-                    name="poc"
+                    name="contact"
                     field={poc}
                     setField={setPOC}
                     originalValue={orgData.contact}
@@ -441,86 +375,6 @@ export default function OrgDetailsRedesign({
                         </p>
                         <p className="text-lg font-semibold">{poc}</p>
                       </div>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardHeader>
-          </Card>
-
-          {/* Card Styling */}
-          <Card>
-            <CardHeader>
-              <Tabs defaultValue="colors">
-                <TabsList>
-                  <TabsTrigger value="colors">Card Colors</TabsTrigger>
-                  <TabsTrigger value="appView">App View</TabsTrigger>
-                </TabsList>
-                <TabsContent value="colors" className="mt-4">
-                  <div className="space-y-4">
-                    <div className="flex justify-between mb-2">
-                      <div className="flex gap-2 mb-2">
-                        <Palette className="h-4 w-4" />
-                        <Label>Select Card Color Scheme</Label>
-                      </div>
-                      {orgData.primary_color !== primaryColor && (
-                        <button>
-                          <SaveIcon size={18} />
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex gap-4 justify-around">
-                      {colorOptions.map((option, index) => (
-                        <button
-                        key={index}
-                        onClick={() => {
-                          setPrimaryColor(option.primary);
-                          setSecondaryColor(option.secondary);
-                        }}
-                        className={`p-4 rounded-full border-2 hover:scale-130 hover:shadow-xl shadow-md transition-transform ${primaryColor === option.primary ? `scale-120 shadow-lg` : ""}`}
-                        style={{
-                          backgroundColor: option.primary,
-                          borderColor: option.secondary,
-                        }}
-                        title={option.name}
-                        />
-                      ))}
-                    </div>
-                    {/* <div className="flex justify-between gap-2">
-                      {colorOptions.slice(4).map((option, index) => (
-                        <button
-                        key={index}
-                        onClick={() => {
-                          setPrimaryColor(option.primary);
-                          setSecondaryColor(option.secondary);
-                          }}
-                          className="p-4 rounded-full border-2 hover:scale-110 transition-transform"
-                          style={{
-                            backgroundColor: option.primary,
-                            borderColor: option.secondary,
-                            }}
-                            title={option.name}
-                            />
-                            ))}
-                            </div> */}
-                  </div>
-                </TabsContent>
-                <TabsContent value="appView" className="mt-4">
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Preview of the organization card with selected colors
-                    </p>
-                    <div
-                      className="w-full h-[180px] rounded-xl shadow-lg p-6 flex flex-col items-center justify-center gap-3"
-                      style={{
-                        backgroundColor: primaryColor,
-                        borderColor: secondaryColor,
-                        borderWidth: "3px",
-                      }}
-                      >
-                      <Building className="h-12 w-12" />
-                      <p className="text-xl font-bold text-center">{name}</p>
-                      <Badge variant="secondary">{selectedBadge}</Badge>
                     </div>
                   </div>
                 </TabsContent>
