@@ -61,7 +61,7 @@ export default function Header({loaderData}: Route.ComponentProps){
         <Card className="w-full flex-shrink-0 h-[50px] rounded-none justify-center bg-blue-400">
             <CardContent className="inline-flex gap-8 justify-between">
                 <div className="flex items-center gap-8">
-                <p className="text-xl text-white">Virtual Directory</p>
+                <p className="text-xl text-white" onClick={() => navigate('home')}>Virtual Directory</p>
                 {user[0].role !== "SUPERADMIN" && 
                 <>
                 <Select name="current-org" value={currentOrg || ""} onValueChange={(e) => handleOrgChange(e)}>
@@ -69,14 +69,15 @@ export default function Header({loaderData}: Route.ComponentProps){
                         <SelectValue placeholder="Select an option"/>
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectGroup>
+                        {orgs.length > 0 && <SelectGroup>
                             <SelectLabel>Organizations</SelectLabel>
-                            {orgs.length > 0 ? orgs.map((org, index) => <SelectItem key={index} value={org.id}>{org.name}</SelectItem>): <SelectLabel>No Orgs Found</SelectLabel>}
-                        </SelectGroup>
+                            {orgs.map((org, index) => <SelectItem key={index} value={org.id}>{org.name}</SelectItem>)}
+                        </SelectGroup>}
+                        {bases.length > 0 && 
                         <SelectGroup>
                             <SelectLabel>Bases</SelectLabel>
-                            {bases.length > 0 ? bases.map((base, index) => <SelectItem key={index} value={base.base.id}>{base.base.name}</SelectItem>) : <SelectLabel>No Bases Found</SelectLabel>}
-                        </SelectGroup>
+                             {bases.map((base, index) => <SelectItem key={index} value={base.base.id}>{base.base.name}</SelectItem>)}
+                        </SelectGroup>}
                     </SelectContent>
                 </Select>
                 <Button className="bg-white/30 border hover:bg-white hover:text-black" onClick={() => navigate("requestOrg")}>Request Org Admin</Button></>}

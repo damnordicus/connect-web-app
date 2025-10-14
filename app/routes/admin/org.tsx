@@ -16,6 +16,7 @@ import {
   SaveIcon,
   Image as ImageIcon,
   Palette,
+  Globe,
 } from "lucide-react";
 import type { Route } from "../+types/home";
 import {
@@ -220,8 +221,8 @@ export default function OrgDetailsRedesign({
                     />
                 </TabsContent>
                 <TabsContent value="appView" className="mt-4">
-                  <div className="flex flex-col gap-4">
-                    <div className="relative flex flex-col justify-center gap-4">
+                  <div className="flex gap-4">
+                    <div className="relative flex flex-col w-1/2  gap-4">
                       <div className="flex items-center gap-4">
                         <Checkbox
                           checked={showLogo}
@@ -264,6 +265,22 @@ export default function OrgDetailsRedesign({
                 </TabsContent>
               </Tabs>
             </CardHeader>
+          </Card>
+
+          <Card className="col-span-2">
+            <CardHeader>
+              <Tabs defaultValue="website">
+                <TabsList>
+                  <TabsTrigger value="website">Website</TabsTrigger>
+                  <TabsTrigger value="appView">App View</TabsTrigger>
+                </TabsList>
+                <TabsContent value="website" className="mt-4">
+                  <EditableField label={"Website"} name={"weburl"} field={orgData.web_url} setField={undefined} Icon={Globe} fieldEdit={false} setFieldEdit={undefined} disabled={false} originalValue={""} />
+                </TabsContent>
+              </Tabs>
+            </CardHeader>
+            <CardContent>
+            </CardContent>
           </Card>
 
           {/* Category & Type */}
