@@ -25,11 +25,12 @@ export default function UploadModal({ isOpen, onClose, setCoverImage }) {
     }, [isOpen]);
 
     const handleSave = () => {
+        console.log(image)
         if (image) {
             // console.log('image', image)
             setCoverImage(image);
-            // setImage(null); // Reset the image state
-            // onClose(false); // Close the modal
+            setImage(null); // Reset the image state
+            onClose(false); // Close the modal
         }
     };
 

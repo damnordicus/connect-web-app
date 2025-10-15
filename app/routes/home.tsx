@@ -95,6 +95,7 @@ export default function Home({ loaderData}: Route.ComponentProps) {
 
   const {orgs} = useRouteLoaderData('header') ;
   const navigate = useNavigate();
+  const [orgHover, setOrgHover] = useState<string | null>(null);
 
   return (
     <div className="bg-linear-to-br from-blue-400 to-teal-300 p-6 h-screen">
@@ -104,13 +105,29 @@ export default function Home({ loaderData}: Route.ComponentProps) {
         </CardContent>
       </Card>
       <div className="grid grid-cols-[auto_auto_auto_auto_auto] w-full gap-4 mt-4">
-        {orgs.map(org => 
-          <Card key={org.id} className="w-30 h-30 items-center justify-center shadow-lg border-2 border-gray-200" onClick={() => navigate(`/admin/org?org=${org.id}`, {replace: true})}>
+        {orgs.map(org => {
+          const isHovering = orgHover === org.id;
+          return(
+            <>
+          {!isHovering ? <Card key={org.id}
+            onMouseEnter={() => setOrgHover(org.id)}
+            className={` w-30 h-30 items-center justify-center shadow-lg border-2 border-gray-200`} onClick={() => navigate(`/admin/org?org=${org.id}`, {replace: true})}>
             <CardContent>
               {org.image_url ? <img src={org.image_url} width={100} height={100}/> : <Building size={50}/>}
               
             </CardContent>
           </Card>
+            :
+           <Card key={org.id}
+           onMouseLeave={() => setOrgHover(null)}
+            className={` w-30 h-30 items-center text-left text-white justify-center shadow-lg bg-black/50 border-2 border-gray-800 -translate-y-1.5`} onClick={() => navigate(`/admin/org?org=${org.id}`, {replace: true})}>
+            <CardContent>
+             {org.name}
+            </CardContent>
+          </Card>}
+              </>
+          )
+          }
         )}
       </div>
     </div>

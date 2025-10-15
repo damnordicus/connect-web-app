@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -76,6 +76,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return {data}
   }
   
+  console.log(formData)
   const {data: requestData, error: requestError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "org_id": orgId, "data": Object.fromEntries(formData.entries()), "user_id": userId})
   // const toggle = showName === 'on' ? true : false
   console.log(requestError)
@@ -103,6 +104,9 @@ export default function OrgDetailsRedesign({
   const [showType, setShowType] = useState(true);
   const [addBadgeToForm, setAddBadgeToForm] = useState(false);
 
+
+  console.log('cI', coverImage.name)
+
   return (
     <div className="w-full flex-1 overflow-auto p-4 bg-gradient-to-br from-blue-400 to-teal-300">
       <div className="grid gap-4">
@@ -115,7 +119,7 @@ export default function OrgDetailsRedesign({
             </ul>
           </CardContent>
         </Card>}
-        <Form method="POST" className="space-y-4">
+        <Form method="POST" className="space-y-4" >
 
         {/* Organization Header Card */}
         <Card>
@@ -405,8 +409,7 @@ export default function OrgDetailsRedesign({
           </Card>
         </div>
         <input type="hidden" name="userId" value={userId} />
-        <input type="hidden" name="orgId" value={orgData.id} />
-      </Form>
+        <input type="hidden" name="orgId" value={orgData.id} /></Form>
       </div>
       {showModal && (
         <UploadModal
