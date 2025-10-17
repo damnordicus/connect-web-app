@@ -22,6 +22,7 @@ import type { Route } from "../+types/home";
 import {
   Form,
   redirect,
+  useActionData,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
 } from "react-router";
@@ -70,10 +71,28 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const orgId = searchParams.get("org");
   const userId = formData.get("userId");
   const requestId = formData.get("requestId");
+  const coverImage = formData.get("coverImage") as File;
+  const image = formData.get("image");
+  let file = null;
+
+  console.log(formData)
 
   if(requestId){
     const {data, error} = await supabase.from("request").delete().eq("id", requestId);
     return {data}
+  }
+
+  if(coverImage){
+    const fileExt = coverImage.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    file = fileName;
+    const {data: imageData, error: imageError} = await supabase.storage.from("images").upload(fileName, coverImage, {
+        cacheControl: '3600', upsert: false
+      })
+    if(imageError)
+      return {imageError}
+
+    return {fileName}
   }
   
   console.log(formData)
@@ -87,12 +106,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function OrgDetailsRedesign({
   loaderData,
+  actionData
 }: Route.ComponentProps) {
   const { orgData: orgs, userId, requestData } = loaderData;
-  console.log('orgData', orgs);
   const orgData = orgs[0];
+  console.log('orgData', orgData);
   const [showModal, setShowModal] = useState(false);
-  const [coverImage, setCoverImage] = useState(orgData.image_url);
+  const [coverImage, setCoverImage] = useState<string>(orgData.image_url);
   const [name, setName] = useState(orgData.name);
   const [nameEdit, setNameEdit] = useState(false);
   const [description, setDescription] = useState(orgData.description);
@@ -103,9 +123,10 @@ export default function OrgDetailsRedesign({
   const [showLogo, setShowLogo] = useState(true);
   const [showType, setShowType] = useState(true);
   const [addBadgeToForm, setAddBadgeToForm] = useState(false);
-
-
-  console.log('cI', coverImage.name)
+  const [webUrl, setWebUrl] = useState(orgData.web_url);
+  const [webEdit, setWebEdit] = useState(false);
+  console.log('ad: ', actionData)
+  // console.log('cI', coverImage.name)
 
   return (
     <div className="w-full flex-1 overflow-auto p-4 bg-gradient-to-br from-blue-400 to-teal-300">
@@ -135,6 +156,7 @@ export default function OrgDetailsRedesign({
                     />
                   )}
                   <Button
+                    type="button"
                     size="sm"
                     variant="secondary"
                     onClick={() => setShowModal(true)}
@@ -279,7 +301,16 @@ export default function OrgDetailsRedesign({
                   <TabsTrigger value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="website" className="mt-4">
-                  <EditableField label={"Website"} name={"weburl"} field={orgData.web_url} setField={undefined} Icon={Globe} fieldEdit={false} setFieldEdit={undefined} disabled={false} originalValue={""} />
+                  <EditableField
+                   label={"Website"}
+                   name={"weburl"} 
+                   field={webUrl} 
+                   setField={setWebUrl} 
+                   Icon={Globe} 
+                   fieldEdit={webEdit} 
+                   setFieldEdit={setWebEdit} 
+                   disabled={false} 
+                   originalValue={orgData.web_url} />
                 </TabsContent>
               </Tabs>
             </CardHeader>
@@ -376,7 +407,7 @@ export default function OrgDetailsRedesign({
                     name="contact"
                     field={poc}
                     setField={setPOC}
-                    originalValue={orgData.contact}
+                    originalValue={orgData.contact ?? ""}
                     Icon={Users}
                     fieldEdit={pocEdit}
                     setFieldEdit={setPocEdit}
@@ -409,7 +440,9 @@ export default function OrgDetailsRedesign({
           </Card>
         </div>
         <input type="hidden" name="userId" value={userId} />
-        <input type="hidden" name="orgId" value={orgData.id} /></Form>
+        <input type="hidden" name="orgId" value={orgData.id} />
+        {actionData && <input type="hidden" name="image" value={actionData.fileName}/>}
+        </Form>
       </div>
       {showModal && (
         <UploadModal

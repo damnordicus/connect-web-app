@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "~/componen
 import { EditableField } from "~/components/EditableField";
 import { Button } from "~/components/ui/button";
 import { useState } from "react";
-import { Building, CircleXIcon, Key, Shield, Globe, Mail, FileText, User, Palette, Phone } from "lucide-react";
+import { Building, CircleXIcon, Key, Shield, Globe, Mail, FileText, User, Palette, Phone, ImageIcon } from "lucide-react";
 import { categories } from "~/lib/constants";
 import { Badge } from "~/components/ui/badge";
 
@@ -51,14 +51,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const orgId = formData.get("orgId")
   const requestId = formData.get("requestId")
   const _action = formData.get("submit")
-  console.log(formData)
+  console.log('fD: ', formData)
   
   // Build update object from all form fields except system fields
   if(_action === "change-submit"){
 
     const updateData: Record<string, any> = {}
     for (const [key, value] of formData.entries()) {
-      if (!['orgId', 'requestId'].includes(key)) {
+      if (!['orgId', 'requestId', 'submit'].includes(key)) {
         updateData[key] = value
       }
     }
@@ -79,6 +79,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           return redirect("..")
         }
       }
+      console.log(error)
     } catch(e) {
       console.error(e)
     }
@@ -87,6 +88,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     console.log('test')
     const requestId = formData.get("requestId");
     const reason = formData.get("denial-reason");
+    const image = formData.get('image_url') as string
 
     try{
       const {data, error} = await supabase
@@ -98,6 +100,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         console.log(error)
         return redirect("..")
       }
+
+      if(image){
+        const { data: imgData, error: imgError } = await supabase
+        .storage
+        .from("images")
+        .remove([image])
+
+        if(imgError){
+          console.log(imgError)
+        }
+        if(imgData){
+          return redirect("..")
+        }
+      }
+      
     } catch (e){
       console.error(e)
     }
@@ -110,6 +127,7 @@ export default function RequestOrgUpdate({loaderData}: Route.ComponentProps){
   const [selectedBadge, setSelectedBadge] = useState(requestData[0].data.type)
   const navigate = useNavigate();
   const [showDenialBox, setShowDenialBox] = useState(false);
+  console.log(requestData)
 
   // Filter out system fields and get only the changed fields
   const changedFields = Object.entries(requestData[0].data).filter(
@@ -146,6 +164,42 @@ export default function RequestOrgUpdate({loaderData}: Route.ComponentProps){
                 const FieldIcon = config.Icon;
 
                 // Special handling for type (category) field
+                if( key === 'image'){
+                  return (
+                    <div key={key} className="flex w-full text-sm">
+                      {/* Current Column */}
+                      <div className="flex flex-col w-1/2">
+                        <p className="pb-4">Current</p> 
+                        <div className="w-1/2 pr-4">
+                          <div className="flex items-center gap-2 font-medium mb-2">
+                            <ImageIcon size={16}/>
+                            Logo
+                          </div>
+                          {orgData.image_url ? <img width={200} height={200} src={orgData.image_url}/> : <div className="w-[200px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg text-center items-center justify-center flex text-2xl ">No Image</div>}
+                        </div>
+                      </div>
+
+                      {/* Vertical Separator */}
+                      <div className="w-px bg-black/30"></div>
+
+                      {/* Incoming Column */}
+                      <div className="w-1/2 pl-4">
+                        <div className="flex flex-col">
+                          <p className="pb-4">Incoming</p>
+                          <div className="flex items-center gap-2 font-medium mb-2">
+                            <ImageIcon size={16}/>
+                            Logo
+                          </div>
+                          <div className="space-x-2 space-y-2">
+                            <img width={200} height={200} src={`https://mbipidprgvippwpmljas.supabase.co/storage/v1/object/public/images/${requestData[0].data.image}`}/>
+                            <input type="hidden" name="image_url" value={`https://mbipidprgvippwpmljas.supabase.co/storage/v1/object/public/images/${requestData[0].data.image}`} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+
                 if (key === 'type') {
                   return (
                     <div key={key} className="flex w-full text-sm">
@@ -250,7 +304,7 @@ export default function RequestOrgUpdate({loaderData}: Route.ComponentProps){
           </Form>
         </CardContent>
         <CardFooter className="justify-center flex flex-col space-y-4">
-        <Form method="POST" className="w-full">
+        <Form method="POST" className="w-full" >
 
           {showDenialBox && <><div className=" w-full">
           <p className="pb-2">Reason for denial: </p>
@@ -260,6 +314,7 @@ export default function RequestOrgUpdate({loaderData}: Route.ComponentProps){
             />
           </div>
           <input type="hidden" name="requestId" value={requestData[0].id} />
+          {requestData[0].data.image && <input type="hidden" name="image_url" value={requestData[0].data.image}/>}
           <Button className="bg-blue-500" name="submit" type="submit" value="deny-submit">Submit</Button></>}
         </Form>
         </CardFooter>

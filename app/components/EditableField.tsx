@@ -62,7 +62,7 @@ export const EditableField = ({
         </div>
       </div>
       {!fieldEdit && (
-        <p className="bg-gray-50 p-2 rounded text-sm font-medium">{field}</p>
+        <p className={`bg-gray-50 p-2 rounded text-sm font-medium ${!field ? 'text-gray-400 italic' : 'text-black'}`}>{!field ? 'N/A' : field}</p>
       )}
       {fieldEdit && (!type || type === "text") && (
         <input
