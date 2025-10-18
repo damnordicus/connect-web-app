@@ -1,9 +1,11 @@
 import {
+  Form,
   Outlet,
   redirect,
   useFetcher,
   useNavigate,
   useSearchParams,
+  type ActionFunctionArgs,
   type LoaderFunctionArgs,
 } from "react-router";
 import type { Route } from "../../+types/root";
@@ -12,6 +14,7 @@ import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { useEffect, useState } from "react";
 import DataRequestModal from "~/components/DataRequestModal";
+import { CheckIcon } from "lucide-react";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -45,14 +48,37 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const formData = await request.formData();
+  const _action = formData.get("submit");
+  const base_id = formData.get("base_id") as string;
+  const user_id = formData.get("user_id") as string;
+
+  console.log(formData)
+
+  if(_action === "neworg-submit"){
+    const { data: newOrgData, error: newOrgError} = await supabase.from("organization").insert({"name": formData.get("name"), "base_id": base_id, "user_id": user_id, "type": "SUPPORT"}).select("id")
+    console.log(newOrgError)
+    if(!newOrgError){
+      const { data: deleteRequestData, error: deleteRequestError} = await supabase.from("request").delete().eq("id", formData.get("request_id"))
+      console.log(deleteRequestError)
+      return {deleteRequestData}
+    }
+    return {newOrgData}
+  }
+}
+
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const { data: requests } = loaderData;
-  console.log(requests)
-  const [requestList, setRequestList] = useState(requests);
+  const [requestList, setRequestList] = useState(requests.filter((request) => 
+    request.organization && Object.keys(request.organization).length > 0
+  ));
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedRequestData, setSelectedRequestData] = useState();
   const orgFetcher = useFetcher();
   const navigate = useNavigate();
+  const newOrgs = requests.filter((request: {organization: {}}) => request.organization === null)
+  console.log(newOrgs)
 
   const approve = async (
     userId: string,
@@ -135,9 +161,13 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     }
   };
 
-  useEffect(() => {
-    setRequestList(requests);
-  }, [requests]);
+ useEffect(() => {
+  setRequestList(
+    requests.filter((request) => 
+      request.organization && Object.keys(request.organization).length > 0
+    )
+  );
+}, [requests]);
 
   function handleModal(id: string) {
     // orgFetcher.load()
@@ -148,10 +178,14 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     navigate(`org/request?id=${id}`);
   }
 
+  function handleOrgApprove(data: any){
+
+  }
+
   return (
     <div className="w-full h-screen p-6 bg-linear-to-br from-blue-400 to-teal-300">
       <Card className="">
-        <CardHeader>Admin Requests</CardHeader>
+        <CardHeader>Requests to update Org/Base Data</CardHeader>
         <CardContent>
           <table className="w-full  bg-gray-200 rounded-t-lg">
             <thead className="text-left">
@@ -175,7 +209,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                         className="p-1 m-1 border rounded-lg shadow-md"
                         onClick={() => handleModal(request.id)}
                       >
-                        {Object.entries(request.data).length - 2 + " item"}
+                        {/* {Object.entries(request.data).length - 2 + " item"} */}
                       </button>
                     </td>
                     <td>{new Date(request.created_at).toLocaleDateString()}</td>
@@ -208,6 +242,49 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 ))}
             </tbody>
           </table>
+        </CardContent>
+      </Card>
+      <Card className="mt-4">
+        <CardHeader>
+          Request to create new org
+        </CardHeader>
+        <CardContent>
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left">
+                      <th>Email</th>
+                      <th>Base</th>
+                      <th>Organization</th>
+                      <th>Date</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {newOrgs.map(item => 
+                    <tr>
+                      <td>{item.user.email}</td>
+                      <td>{item.base.name}</td>
+                      <td>{item.data.newOrg}</td>
+                      <td>{new Date(item.created_at).toLocaleDateString()}</td>
+                      <td>
+                        <div>
+                          <Form method="POST">
+
+                          <input type='hidden' name="name" value={item.data.newOrg}/>
+                          <input type='hidden' name="base_id" value={item.base_id}/>
+                          <input type="hidden" name="user_id" value={item.user_id} />
+                          <input type="hidden" name="request_id" value={item.id}/>
+                          <Button variant={"default"} 
+                            type="submit"
+                            name="submit"
+                            value="neworg-submit"
+                            className="bg-white text-green-600 border-green-400 border h-6 w-6 hover:bg-green-200 "><CheckIcon style={{width: "14", height: "14"}}/></Button>
+                          </Form>
+                        </div>
+                        </td>
+                    </tr>)}
+                  </tbody>
+                </table>
         </CardContent>
       </Card>
       {/* {showRequestModal && (

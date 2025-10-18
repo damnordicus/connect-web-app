@@ -84,7 +84,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if(coverImage){
     const fileExt = coverImage.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileName = `organization/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     file = fileName;
     const {data: imageData, error: imageError} = await supabase.storage.from("images").upload(fileName, coverImage, {
         cacheControl: '3600', upsert: false

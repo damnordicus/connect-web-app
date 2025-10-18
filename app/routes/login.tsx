@@ -56,6 +56,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     if(_action === "register"){
+        const newOrg = formData.get("newOrg") as string;
         try{
             const {data, error} = await supabase.from("user").select().eq("email", email)
             console.log("data: ", data, " error: ", error)
@@ -64,15 +65,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             }
             else{
                 const {data: userData, error: userError} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base, "role": type?.toString().toUpperCase()}).select("id");
-                if(type === "org"){
+                if(type === "org" && org !== "..."){
                     const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "org_id": org})
                     // return {requestResponse, insertError}
                 }
                 if(type === "base"){
-                    const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "base_id": base})
-                    console.log(insertError)
+                    if(org === "" && newOrg.length > 0){
+                        const {data: newOrgData, error: newOrgError} = await supabase.from('request').insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "data": Object.fromEntries(formData.entries()), "base_id": base })
+                    }else{
+                        const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "base_id": base})
+                    }
+                    // console.log(insertError)
                     // return {requestResponse, insertError}
                 }
+                
                 const response = redirect("home");
                 response.headers.set('Set-Cookie', `user_id=${userData[0].id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
                 return response;
@@ -160,7 +166,7 @@ export default function Login({loaderData}: Route.ComponentProps){
                                         {baseList.sort((a, b) => a.name.localeCompare(b.name)).map((base, index) => <SelectItem value={base.id} key={index}>{base.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                                {filteredOrgList.length > 0 && <>
+                                {selectedBase && <>
                                 <p>Select an organization:</p>
                                 <Select onValueChange={(e) => handleOrgChange(e)}>
                                     <SelectTrigger className="w-full">
@@ -170,6 +176,11 @@ export default function Login({loaderData}: Route.ComponentProps){
                                         {filteredOrgList.sort((a, b) => a.name.localeCompare(b.name)).map((org, index) => <SelectItem value={org.id} key={index}>{org.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
+                                <div>
+                                    <p className="italic text-gray-600">Don't see your organization?</p>
+                                    <p>Enter the name of your organization:</p>
+                                    <input type="text" className="w-full mt-4 border rounded-lg py-1 pl-2" name="newOrg"/>
+                                </div>
                                 </>}
                             </TabsContent>
                             <TabsContent value="base" className="space-y-4 mt-3">
