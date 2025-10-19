@@ -34,7 +34,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 return { success: false, error: error.message };
             }
             
-            if (data && data.length > 0) {
+            if (data ) {
                 const user = data[0];
                 console.log(user.id)
                 if(user.role === "SUPERADMIN"){
@@ -71,7 +71,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 }
                 if(type === "base"){
                     if(org === "" && newOrg.length > 0){
-                        const {data: newOrgData, error: newOrgError} = await supabase.from('request').insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "data": Object.fromEntries(formData.entries()), "base_id": base })
+                        const {data: newOrgData, error: newOrgError} = await supabase.from('request').insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "data": Object.fromEntries(formData.entries()), "base_id": base, "request_type": "create-org" })
                     }else{
                         const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "base_id": base})
                     }

@@ -12,5 +12,6 @@ export default [
         route("home","routes/home.tsx"),
         route("requestOrg", "routes/requestOrg.tsx"),
     ]),
-    route("gallery", "./api/gallery.tsx")
+    route("gallery", "./api/gallery.tsx"),
+    // route("test", "routes/RequestCard.tsx"),
 ] satisfies RouteConfig;

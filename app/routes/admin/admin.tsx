@@ -15,6 +15,7 @@ import { Button } from "~/components/ui/button";
 import { useEffect, useState } from "react";
 import DataRequestModal from "~/components/DataRequestModal";
 import { CheckIcon } from "lucide-react";
+import RequestCard from "../../components/RequestCard";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -70,15 +71,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const { data: requests } = loaderData;
-  const [requestList, setRequestList] = useState(requests.filter((request) => 
-    request.organization && Object.keys(request.organization).length > 0
-  ));
+  const [requestList, setRequestList] = useState(requests);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedRequestData, setSelectedRequestData] = useState();
   const orgFetcher = useFetcher();
   const navigate = useNavigate();
-  const newOrgs = requests.filter((request: {organization: {}}) => request.organization === null)
-  console.log(newOrgs)
+  // const newOrgs = requests.filter((request: {organization: {}}) => request.organization === null)
+  console.log(requests)
 
   const approve = async (
     userId: string,
@@ -163,9 +162,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
  useEffect(() => {
   setRequestList(
-    requests.filter((request) => 
-      request.organization && Object.keys(request.organization).length > 0
-    )
+    requests
   );
 }, [requests]);
 
@@ -183,11 +180,11 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <div className="w-full h-screen p-6 bg-linear-to-br from-blue-400 to-teal-300">
+    <div className="w-full h-screen p-6 bg-linear-to-br from-slate-100 to-zinc-200">
       <Card className="">
         <CardHeader>Requests to update Org/Base Data</CardHeader>
         <CardContent>
-          <table className="w-full  bg-gray-200 rounded-t-lg">
+          {requestList.length > 0 ? <table className="w-full  bg-gray-200 rounded-t-lg">
             <thead className="text-left">
               <tr>
                 <th className="pl-2">Email</th>
@@ -242,17 +239,22 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 ))}
             </tbody>
           </table>
+          :
+          <p className="italic text-gray-400 text-center">No requests</p>}
         </CardContent>
       </Card>
-      <Card className="mt-4">
+      <div className="flex flex-col gap-4 items-center mt-4">
+      {requestList.map(request => <RequestCard request={request} />)}
+      </div>
+      {/* <Card className="mt-4">
         <CardHeader>
           Request to create new org
         </CardHeader>
         <CardContent>
-                <table className="w-full">
+                {newOrgs.length > 0 ? <table className="w-full bg-gray-200 rounded-t-lg">
                   <thead>
                     <tr className="text-left">
-                      <th>Email</th>
+                      <th className="pl-2">Email</th>
                       <th>Base</th>
                       <th>Organization</th>
                       <th>Date</th>
@@ -285,8 +287,10 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                     </tr>)}
                   </tbody>
                 </table>
+                :
+                <p className="italic text-center text-gray-400">No requests</p>}
         </CardContent>
-      </Card>
+      </Card> */}
       {/* {showRequestModal && (
         <DataRequestModal requestData={selectedRequestData} existingData={[]}></DataRequestModal>
       )} */}

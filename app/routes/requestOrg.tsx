@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card"
 import { createClient } from "@supabase/supabase-js";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
-import { Tabs, TabsList,  TabsContent, TabsTrigger } from "~/components/ui/tabs";
+// import { Tabs, TabsList,  TabsContent, TabsTrigger } from "~/components/ui/tabs";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
@@ -36,7 +36,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         const { data: orgs } = await supabase.from("organization").select("*").eq("base_id", baseId).is("user_id", null)
         return {orgs, userId}
     } else if(user && user[0].role === "BASE"){
-        const { data: bases } = await supabase.from("base").select("*").is("user_id", null)
+        const { data: bases } = await supabase.from("base").select(`*, baseDetails!left(base_id)`).is('baseDetails.base_id', null);
         return {bases, userId}
     }
     // return {orgs, userId: cookies.user_id, bases}
@@ -48,13 +48,14 @@ export const action = async ({request}: ActionFunctionArgs) => {
     const orgId = formData.get("orgId");
     const baseId = formData.get("baseId");
     const _action = formData.get("_action");
+    console.log(formData)
 
     if(_action === "orgSubmit"){
-        const {data} = await supabase.from("request").insert({"user_id": userId, "org_id": orgId, "created_at": new Date().toISOString()})
+        const {data} = await supabase.from("request").insert({"user_id": userId, "org_id": orgId, "created_at": new Date().toISOString(), "request_type": "org-admin"})
         return redirect("/home");
     }
     if(_action === "baseSubmit"){
-        const {data, error} = await supabase.from("request").insert({"user_id": userId, "base_id": baseId, "created_at": new Date().toISOString()})
+        const {data, error} = await supabase.from("request").insert({"user_id": userId, "base_id": baseId, "created_at": new Date().toISOString(), "request_type": "base-admin"})
         console.log(error)
         return redirect("/home");
     }
@@ -62,7 +63,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
 
 export default function RequestOrg({loaderData}: Route.ComponentProps){
     const {orgs, userId, bases} = loaderData;
-
+    console.log(bases)
     const [selectedOrgId, setSelectedOrgId] = useState("");
     const [selectedBaseId, setSelectedBaseId] = useState("");
 

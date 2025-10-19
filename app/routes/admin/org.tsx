@@ -96,7 +96,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
   
   console.log(formData)
-  const {data: requestData, error: requestError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "org_id": orgId, "data": Object.fromEntries(formData.entries()), "user_id": userId})
+  const {data: requestData, error: requestError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "org_id": orgId, "data": Object.fromEntries(formData.entries()), "user_id": userId, "request_type": "org-update"})
   // const toggle = showName === 'on' ? true : false
   console.log(requestError)
   let imageUrl = null;
