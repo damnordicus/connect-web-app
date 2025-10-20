@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { useEffect, useState } from "react";
 import DataRequestModal from "~/components/DataRequestModal";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, HashIcon, PoundSterlingIcon } from "lucide-react";
 import RequestCard from "../../components/RequestCard";
 
 const supabase = createClient(
@@ -43,7 +43,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       .select(`*, user(email), organization!org_id(name), base!base_id(name)`)
       .eq("is_denied", false);
     // console.log("test: ", data);
-    return { data };
+    const { data: allUsersData, error: allUsersError } = await supabase.from("user").select();
+    const { data: allOrgsData, error: allOrgsError } = await supabase.from("organization").select();
+    return { data, allUsersData,  allOrgsData };
   } catch (error) {
     console.error("Error: ", error);
   }
@@ -70,7 +72,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { data: requests } = loaderData;
+  const { data: requests, allUsersData, allOrgsData } = loaderData;
   const [requestList, setRequestList] = useState(requests);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedRequestData, setSelectedRequestData] = useState();
@@ -181,7 +183,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="w-full h-screen p-6 bg-linear-to-br from-slate-100 to-zinc-200">
-      <Card className="">
+      {/* <Card className="">
         <CardHeader>Requests to update Org/Base Data</CardHeader>
         <CardContent>
           {requestList.length > 0 ? <table className="w-full  bg-gray-200 rounded-t-lg">
@@ -207,7 +209,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                         onClick={() => handleModal(request.id)}
                       >
                         {/* {Object.entries(request.data).length - 2 + " item"} */}
-                      </button>
+                      {/* </button>
                     </td>
                     <td>{new Date(request.created_at).toLocaleDateString()}</td>
                     <td>
@@ -241,10 +243,23 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           </table>
           :
           <p className="italic text-gray-400 text-center">No requests</p>}
-        </CardContent>
-      </Card>
+        </CardContent> *
+      </Card> */}
+      <div className="flex w-full">
+        <Card className="border-2 border-gray-400 shadow-md">
+          <CardContent>
+            <div className="inline-flex items-center gap-3">
+              <div className="rounded-full p-2 text-gray-500 bg-gray-300">
+                <HashIcon />
+              </div>
+              Total Requests
+            </div>
+            <p className="text-center text-xl">{requests.length}</p>
+          </CardContent>
+        </Card>
+      </div>
       <div className="flex flex-col gap-4 items-center mt-4">
-      {requestList.map(request => <RequestCard request={request} />)}
+      {requestList.map(request => <RequestCard request={request} allUsers={allUsersData} allOrgs={allOrgsData}/>)}
       </div>
       {/* <Card className="mt-4">
         <CardHeader>
