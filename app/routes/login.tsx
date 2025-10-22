@@ -33,6 +33,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             if (error) {
                 return { success: false, error: error.message };
             }
+
+            console.log(data)
             
             if (data ) {
                 const user = data[0];
@@ -42,7 +44,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                     response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
                     return response;
                 }else{
-                    const response = redirect("/home");
+                    const response = redirect(`/home?id=${user.admin_id}`);
                     response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
                     return response;
                 }

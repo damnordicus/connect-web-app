@@ -30,8 +30,6 @@ import {
 import { Label } from "~/components/ui/label";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
-import { Textarea } from "~/components/ui/textarea";
-import { Input } from "~/components/ui/input";
 import UploadModal from "~/components/UploadModal";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { TabsContent } from "@radix-ui/react-tabs";
@@ -232,7 +230,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
 
 
   return (
-    <div className="w-full flex-1 overflow-auto p-4 bg-linear-to-br from-blue-400 to-teal-300">
+    <div className="w-full flex-1 overflow-auto pt-2 bg-slate-400">
       <div className="grid gap-4">
         {/* Base Header Card */}
         <Card>

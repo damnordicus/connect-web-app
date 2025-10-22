@@ -7,11 +7,13 @@ export default [
             route("base/request", "routes/admin/base/request.tsx"),
             route("org/request", "routes/admin/org/request.tsx"),
         ]),
-        route("admin/base", "routes/admin/base.tsx"),
+        // route("admin/base", "routes/admin/base.tsx"),
         route("admin/org", "routes/admin/org.tsx"),
-        route("home","routes/home.tsx"),
+        route("home","routes/home.tsx", [
+            route("base", "routes/admin/base.tsx")
+        ]),
         route("requestOrg", "routes/requestOrg.tsx"),
     ]),
     route("gallery", "./api/gallery.tsx"),
-    // route("test", "routes/RequestCard.tsx"),
+    route("test", "components/FilterByType.tsx"),
 ] satisfies RouteConfig;

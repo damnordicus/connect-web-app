@@ -62,7 +62,7 @@ export default function Header({loaderData}: Route.ComponentProps){
             <CardContent className="inline-flex gap-8 justify-between">
                 <div className="flex items-center gap-8">
                 <p className="text-xl text-white" onClick={() => navigate('home')}>Virtual Directory</p>
-                {user[0].role !== "SUPERADMIN" && 
+                {/* {user[0].role !== "SUPERADMIN" && 
                 <>
                 <Select name="current-org" value={currentOrg || ""} onValueChange={(e) => handleOrgChange(e)}>
                     <SelectTrigger className="w-[200px] bg-white/30">
@@ -80,7 +80,7 @@ export default function Header({loaderData}: Route.ComponentProps){
                         </SelectGroup>}
                     </SelectContent>
                 </Select>
-                <Button className="bg-white/30 border hover:bg-white hover:text-black" onClick={() => navigate("requestOrg")}>Request Org Admin</Button></>}
+                <Button className="bg-white/30 border hover:bg-white hover:text-black" onClick={() => navigate("requestOrg")}>Request Org Admin</Button></>} */}
                 </div>
                 <Button variant={'destructive'} onClick={() => {Cookies.remove('user_id'); navigate('/')}}>Logout</Button>
             </CardContent>

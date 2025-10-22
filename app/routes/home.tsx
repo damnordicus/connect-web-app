@@ -3,12 +3,15 @@ import { Card, CardContent, CardFooter } from "~/components/ui/card";
 import InputWithLabel from "~/components/ui/input-with-label";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Form, redirect, useNavigate, useRouteLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { Form, Outlet, redirect, useNavigate, useRouteLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import {  useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import FileInput, { type FileInputProps } from "~/components/FileUpload";
 import { OrgCard } from "~/components/OrgCard";
 import { Building } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import FilterByType from "~/components/FilterByType";
+import RequestCard from "~/components/RequestCard";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -27,11 +30,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const url = new URL(request.url);
   const selectedOrg = url.searchParams.get('org');
+  const baseId = url.searchParams.get('id')
 
   if(selectedOrg){
     const {data} = await supabase.from('organization').select().eq('id', selectedOrg).eq('user_id', cookies.user_id);
-    // console.log(data[0])
     return {orgData: data[0]}
+  }
+  if(baseId){
+    const {data: orgList, error: orgError} = await supabase.from('organization').select('id').eq('base_id', baseId);
+    const orgIds = orgList?.map(org => org.id);
+    const {data: orgRequests, error: requestError} = await supabase.from('request').select('*').in('org_id', orgIds);
+    const {data: orgsPerBase, error: orgBaseError} = await supabase.from('organization').select().eq("base_id", baseId);
+    console.log("orgList: ", orgRequests)
+    const {data: allUsers, error: usersError } = await supabase.from('user').select().eq("current_base", baseId)
+    return {orgRequests, allUsers, orgsPerBase}
   }
   return {}
 }
@@ -93,17 +105,36 @@ export const action = async ({request}: ActionFunctionArgs) => {
 
 export default function Home({ loaderData}: Route.ComponentProps) {
 
-  const {orgs} = useRouteLoaderData('header') ;
+  const {orgs, bases} = useRouteLoaderData('header') ;
+  const {orgRequests, allUsers, orgsPerBase } = loaderData;
+  console.log('bD: ',orgRequests)
   const navigate = useNavigate();
   const [orgHover, setOrgHover] = useState<string | null>(null);
+  const details = bases[0].base;
 
   return (
-    <div className="bg-linear-to-br from-blue-400 to-teal-300 p-6 h-screen">
-      <Card className=" shadow-lg">
-        <CardContent className="">
-          <h1>You are the editor of {orgs.length} organization(s)</h1>
-        </CardContent>
-      </Card>
+    <div className="bg-slate-400 px-6 py-3 flex-1">
+      {bases && 
+      <Tabs>
+        <TabsList defaultValue={"requests"}>
+          <TabsTrigger value="requests">Requests</TabsTrigger>
+          <TabsTrigger value="baseInfo" onClick={() => navigate(`base?id=${details.id}`)}>{details.name}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="requests" className="mt-2">
+            <div className="flex flex-col gap-4">
+              <FilterByType />
+              {(orgRequests && orgRequests.length > 0) && 
+                orgRequests.map(request => 
+                <div className="lg:grid grid-cols-3 md:flex md:flex-col">
+                  <RequestCard request={orgRequests[0]} allUsers={allUsers} allOrgs={orgsPerBase}/>
+                </div>)}
+            </div>
+        </TabsContent>
+        <TabsContent value="baseInfo">
+          <Outlet />
+        </TabsContent>
+      </Tabs>}
+      
       <div className="grid grid-cols-[auto_auto_auto_auto_auto] w-full gap-4 mt-4">
         {orgs.map(org => {
           const isHovering = orgHover === org.id;

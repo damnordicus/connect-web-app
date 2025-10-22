@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card"
 
 export default function RequestCard ({request, allUsers, allOrgs}: any) {
     const { request_type } = request;
-    console.log('requst: ', request_type)
+    console.log('requst: ', request)
     let theme = {
         border: "border-gray-400/20",
         fill: 'bg-gray-400/20',
@@ -14,10 +14,12 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
     let content;
 
     function orgNameForId(id: string){
+        console.log('test: ', allOrgs)
         return allOrgs.filter(org => org.id === id)[0].name
     }
 
     function emailForId(id: string){
+        console.log('users: ', allUsers)
         return allUsers.filter(user => user.id === id)[0].email
     }
 
