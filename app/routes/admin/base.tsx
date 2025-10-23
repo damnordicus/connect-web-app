@@ -66,6 +66,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       .select("*", { count: "exact", head: true })
       .eq("base_id", baseId);
     const { data: appFieldData } = await supabase.from("appFields").select("*").eq("base_id", baseId)
+    console.log(appFieldData)
     return { data, orgCount: count, appFieldData };
   } catch (error) {
     console.error("Error: ", error);
@@ -207,7 +208,7 @@ const EditableField = ({
 };
 
 export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
-  const { data, orgCount, appFieldData } = loaderData;
+  const { data , orgCount, appFieldData } = loaderData;
   const selectedBase = data[0];
   const [showModal, setShowModal] = useState(false);
 

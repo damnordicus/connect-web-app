@@ -51,8 +51,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   console.log(cookies.user_id)
 
   const searchParams = new URL(request.url).searchParams;
-  const org = searchParams.get("org");
-  console.log("org", org);
+  const org = searchParams.get("id");
   const { data: orgData } = await supabase
     .from("organization")
     .select("*")
@@ -129,7 +128,7 @@ export default function OrgDetailsRedesign({
   // console.log('cI', coverImage.name)
 
   return (
-    <div className="w-full flex-1 overflow-auto p-4 bg-gradient-to-br from-blue-400 to-teal-300">
+    <div className="w-full flex-1 overflow-auto pt-2 bg-slate-400">
       <div className="grid gap-4">
         {(requestData && requestData.length > 0) && 
         <Card className="bg-red-300 border-2 border-red-400">

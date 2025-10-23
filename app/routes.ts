@@ -8,9 +8,10 @@ export default [
             route("org/request", "routes/admin/org/request.tsx"),
         ]),
         // route("admin/base", "routes/admin/base.tsx"),
-        route("admin/org", "routes/admin/org.tsx"),
+        // route("admin/org", "routes/admin/org.tsx"),
         route("home","routes/home.tsx", [
-            route("base", "routes/admin/base.tsx")
+            route("base", "routes/admin/base.tsx"),
+            route("org", "routes/admin/org.tsx")
         ]),
         route("requestOrg", "routes/requestOrg.tsx"),
     ]),

@@ -32,20 +32,32 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const selectedOrg = url.searchParams.get('org');
   const baseId = url.searchParams.get('id')
 
-  if(selectedOrg){
-    const {data} = await supabase.from('organization').select().eq('id', selectedOrg).eq('user_id', cookies.user_id);
-    return {orgData: data[0]}
+  const {data: orgData, error: orgError} = await supabase.from('organization').select().eq("user_id", cookies.user_id)
+
+  console.log('test', orgData)
+  if(!orgData?.length){
+    const { data: baseData, error: baseError } = await supabase.from('baseDetails').select(`*, base (*)`).eq('user_id', cookies.user_id)
+    const { data: orgsByBase, error: orgBaseError } = await supabase.from('organization').select().eq('base_id', baseData[0].base_id);
+    const orgList = orgsByBase?.map(org => org.id);
+    const { data: orgRequests, error: orgRequestError } = await supabase.from('request').select().in('org_id', orgList);
+    const { data: allUsers, error: usersError} = await supabase.from('user').select().eq("current_base", baseId)
+    return {baseData, orgsByBase, orgRequests, allUsers}
   }
-  if(baseId){
-    const {data: orgList, error: orgError} = await supabase.from('organization').select('id').eq('base_id', baseId);
-    const orgIds = orgList?.map(org => org.id);
-    const {data: orgRequests, error: requestError} = await supabase.from('request').select('*').in('org_id', orgIds);
-    const {data: orgsPerBase, error: orgBaseError} = await supabase.from('organization').select().eq("base_id", baseId);
-    console.log("orgList: ", orgRequests)
-    const {data: allUsers, error: usersError } = await supabase.from('user').select().eq("current_base", baseId)
-    return {orgRequests, allUsers, orgsPerBase}
-  }
-  return {}
+
+  // if(selectedOrg){
+  //   const {data} = await supabase.from('organization').select().eq('id', selectedOrg).eq('user_id', cookies.user_id);
+  //   return {orgData: data[0]}
+  // }
+  // if(baseId){
+  //   const {data: orgList, error: orgError} = await supabase.from('organization').select('id').eq('base_id', baseId);
+  //   const orgIds = orgList?.map(org => org.id);
+  //   const {data: orgRequests, error: requestError} = await supabase.from('request').select('*').in('org_id', orgIds);
+  //   const {data: orgsPerBase, error: orgBaseError} = await supabase.from('organization').select().eq("base_id", baseId);
+  //   console.log("orgList: ", orgRequests)
+  //   const {data: allUsers, error: usersError } = await supabase.from('user').select().eq("current_base", baseId)
+  //   return {orgRequests, allUsers, orgsPerBase}
+  // }
+  return {orgData}
 }
 
 export const action = async ({request}: ActionFunctionArgs) => {
@@ -105,20 +117,25 @@ export const action = async ({request}: ActionFunctionArgs) => {
 
 export default function Home({ loaderData}: Route.ComponentProps) {
 
-  const {orgs, bases} = useRouteLoaderData('header') ;
-  const {orgRequests, allUsers, orgsPerBase } = loaderData;
-  console.log('bD: ',orgRequests)
+  // const {orgs, bases} = useRouteLoaderData('header') ;
+  const {orgRequests, allUsers, orgsByBase, baseData, orgData } = loaderData;
+  console.log('bD: ',orgData)
   const navigate = useNavigate();
   const [orgHover, setOrgHover] = useState<string | null>(null);
-  const details = bases[0].base;
+  // const details = bases[0].base;
+  useEffect(() => {
+    if(orgData && orgData.length){
+      navigate(`org?id=${orgData[0].id}`)
+    }
+  }, [])
 
   return (
     <div className="bg-slate-400 px-6 py-3 flex-1">
-      {bases && 
-      <Tabs>
-        <TabsList defaultValue={"requests"}>
-          <TabsTrigger value="requests">Requests</TabsTrigger>
-          <TabsTrigger value="baseInfo" onClick={() => navigate(`base?id=${details.id}`)}>{details.name}</TabsTrigger>
+      {baseData && 
+      <Tabs defaultValue={"requests"}>
+        <TabsList>
+          <TabsTrigger value="requests" onClick={() => navigate(`.?id=${baseData[0].base.id}`)}>Requests</TabsTrigger>
+          <TabsTrigger value="baseInfo" onClick={() => navigate(`base?id=${baseData[0].base.id}`)}>{baseData[0].base.name}</TabsTrigger>
         </TabsList>
         <TabsContent value="requests" className="mt-2">
             <div className="flex flex-col gap-4">
@@ -126,7 +143,7 @@ export default function Home({ loaderData}: Route.ComponentProps) {
               {(orgRequests && orgRequests.length > 0) && 
                 orgRequests.map(request => 
                 <div className="lg:grid grid-cols-3 md:flex md:flex-col">
-                  <RequestCard request={orgRequests[0]} allUsers={allUsers} allOrgs={orgsPerBase}/>
+                  <RequestCard request={orgRequests[0]} allUsers={allUsers} allOrgs={orgsByBase}/>
                 </div>)}
             </div>
         </TabsContent>
@@ -134,33 +151,7 @@ export default function Home({ loaderData}: Route.ComponentProps) {
           <Outlet />
         </TabsContent>
       </Tabs>}
-      
-      <div className="grid grid-cols-[auto_auto_auto_auto_auto] w-full gap-4 mt-4">
-        {orgs.map(org => {
-          const isHovering = orgHover === org.id;
-          return(
-            <>
-          {!isHovering ? <Card key={org.id}
-            onMouseEnter={() => setOrgHover(org.id)}
-            className={` w-30 h-30 items-center justify-center shadow-lg border-2 border-gray-200`} onClick={() => navigate(`/admin/org?org=${org.id}`, {replace: true})}>
-            <CardContent>
-              {org.image_url ? <img src={org.image_url} width={100} height={100}/> : <Building size={50}/>}
-              
-            </CardContent>
-          </Card>
-            :
-           <Card key={org.id}
-           onMouseLeave={() => setOrgHover(null)}
-            className={` w-30 h-30 items-center text-left text-white justify-center shadow-lg bg-black/50 border-2 border-gray-800 -translate-y-1.5`} onClick={() => navigate(`/admin/org?org=${org.id}`, {replace: true})}>
-            <CardContent>
-             {org.name}
-            </CardContent>
-          </Card>}
-              </>
-          )
-          }
-        )}
-      </div>
+      <Outlet />
     </div>
   )
 }
