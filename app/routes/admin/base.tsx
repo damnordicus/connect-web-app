@@ -231,7 +231,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
 
 
   return (
-    <div className="w-full  pt-2">
+    <div className="w-full  pt-2 pb-6">
       <div className="grid gap-4">
         {/* Base Header Card */}
         <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">

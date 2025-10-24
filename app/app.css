@@ -96,7 +96,7 @@ body {
   --foreground: oklch(0.92 0.005 265);
   
   /* Dark card background (#1e2430) */
-  --card: oklch(0.26 0.02 264.04);
+  --card: oklch(25.983% 0.02026 264.15);
   --card-foreground: oklch(0.92 0.005 265);
   
   /* Popover matches card */
