@@ -26,14 +26,14 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" class="dark">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body className="h-screen flex flex-col">
+      <body className="min-h-screen flex flex-col bg-linear-to-br from-[#1a1d29] to-[#0f1419]">
         {children}
         <ScrollRestoration />
         <Scripts />

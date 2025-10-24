@@ -5,8 +5,8 @@ export default function InputWithLabel ({label, name, type, value, setter}: {lab
     return (
         <div className="text-left space-y-2 my-4">
           <p>{`${label}: `}</p>
-          {type === "textarea" && <textarea className="border rounded-md p-1 w-full" name="description" onChange={(e) => {setter(e.currentTarget.value)}} value={value}></textarea> }
-          {type !== "textarea" && <input type={type} name={name} onChange={(e) => {setter(e.currentTarget.value)}} className="border rounded-md p-1 w-full" value={value} />}
+          {type === "textarea" && <textarea className="border border-border rounded-md p-1 w-full" name="description" onChange={(e) => {setter(e.currentTarget.value)}} value={value}></textarea> }
+          {type !== "textarea" && <input type={type} name={name} onChange={(e) => {setter(e.currentTarget.value)}} className="border border-border inset-shadow-[0_4px_12px_rgba(0,0,0,0.4)] rounded-md p-1 w-full" value={value} />}
         </div>
     );
 }

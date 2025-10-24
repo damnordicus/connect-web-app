@@ -157,7 +157,7 @@ const EditableField = ({
   type?: string;
 }) => {
   return (
-    <div>
+    <div className="">
       <Form method="POST">
         <div className="flex justify-between">
           <div className="flex gap-2 mb-2">
@@ -183,7 +183,7 @@ const EditableField = ({
           </div>
         </div>
         {!fieldEdit && (
-          <p className="bg-gray-50 p-2 rounded text-sm font-medium">{field}</p>
+          <p className="bg-secondary/50 p-2 rounded-lg mb-2 text-sm font-medium">{field}</p>
         )}
         {fieldEdit && !type && (
           <input
@@ -231,10 +231,10 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
 
 
   return (
-    <div className="w-full flex-1 overflow-auto pt-2 bg-slate-400">
+    <div className="w-full  pt-2">
       <div className="grid gap-4">
         {/* Base Header Card */}
-        <Card>
+        <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
           <CardContent className="">
             <div className="grid md:grid-cols-3 gap-6">
               <div className="space-y-4">
@@ -274,7 +274,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
 
                 <div className="grid sm:grid-cols-[auto_auto_auto]">
                   <div className="flex items-center gap-2 text-sm text-center">
-                    <Card className="shadow-md">
+                    <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
                       <CardContent className="flex flex-col justify-center text-center space-y-1">
                         <div className="flex gap-2 items-center">
                           <Users className="h-4 w-4 text-muted-foreground" />
@@ -287,7 +287,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                     </Card>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-center">
-                    <Card className="shadow-md">
+                    <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
                       <CardContent className="flex flex-col justify-center text-center space-y-1">
                         <div className="flex gap-2 items-center">
                           <Building className="h-4 w-4 text-muted-foreground" />
@@ -298,7 +298,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                     </Card>
                   </div>
                   <div className="flex items-center text-center gap-2 text-sm">
-                    <Card className="shadow-md">
+                    <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
                       <CardContent className="flex flex-col justify-center text-center gap-1">
                         <div className="flex gap-2 items-center">
                           <Shield className="h-4 w-4 text-muted-foreground" />
@@ -316,12 +316,12 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
 
         {/* Base Information Cards */}
         <div className="grid lg:grid-cols-2 gap-4">
-          <Card>
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
             <CardHeader>
               <Tabs defaultValue="baseDetails">
-                <TabsList>
-                  <TabsTrigger value={"baseDetails"}>Base Details</TabsTrigger>
-                  <TabsTrigger value={"appView"}>App View</TabsTrigger>
+                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value={"baseDetails"}>Base Details</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value={"appView"}>App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value={"baseDetails"} className="mt-4">
                   {/* <Card>
@@ -379,14 +379,14 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
             </CardHeader>
           </Card>
           {/* Basic Information */}
-          <Card>
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
             <CardHeader>
               <Tabs defaultValue="details">
-                <TabsList>
-                  <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="appView">App View</TabsTrigger>
+                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="details">Details</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
-                <TabsContent value="details">
+                <TabsContent value="details" className="mt-4">
                   <EditableField label="Motto" name="motto" field={motto} setField={setMotto} Icon={SpeakerIcon} fieldEdit={mottoEdit} setFieldEdit={setMottoEdit} />
                 </TabsContent>
                 <TabsContent value="appView">
@@ -413,12 +413,12 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
           </Card>
           
           {/* Command & Personnel */}
-          <Card>
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
             <CardHeader>
               <Tabs defaultValue="command">
-                <TabsList>
-                  <TabsTrigger value="command">Command</TabsTrigger>
-                  <TabsTrigger value="appView">App View</TabsTrigger>
+                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="command">Command</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="command" className="mt-4">
                   <EditableField
@@ -465,12 +465,12 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
           </Card>
 
           {/* Contact Information */}
-          <Card className="">
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
             <CardHeader>
               <Tabs defaultValue="contact">
-                <TabsList>
-                  <TabsTrigger value="contact">Contact Information</TabsTrigger>
-                  <TabsTrigger value="appView">App View</TabsTrigger>
+                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="contact">Contact Information</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="contact" className="mt-4">
                   <div className="space-y-6">

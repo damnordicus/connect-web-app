@@ -182,7 +182,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <div className="w-full h-screen p-6 bg-linear-to-br from-slate-100 to-zinc-200">
+    <div className="w-full h-screen p-6">
       {/* <Card className="">
         <CardHeader>Requests to update Org/Base Data</CardHeader>
         <CardContent>
@@ -246,7 +246,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         </CardContent> *
       </Card> */}
       <div className="flex w-full">
-        <Card className="border-2 border-gray-400 shadow-md">
+        <Card className="border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
           <CardContent>
             <div className="inline-flex items-center gap-3">
               <div className="rounded-full p-2 text-gray-500 bg-gray-300">

@@ -58,10 +58,10 @@ export default function Header({loaderData}: Route.ComponentProps){
     // console.log('pi', bases)
     return (
         <>
-        <Card className="w-full flex-shrink-0 h-[50px] rounded-none justify-center bg-blue-400">
+        <Card className="mx-6 mt-6 mb-4 shadow-[0_4px_16px_rgba(0,0,0,0.4)] flex-shrink-0 rounded-none justify-center bg-card border border-border rounded-lg">
             <CardContent className="inline-flex gap-8 justify-between">
                 <div className="flex items-center gap-8">
-                <p className="text-xl text-white" onClick={() => navigate('home')}>Virtual Directory</p>
+                <p className="text-2xl text-white" onClick={() => navigate('home')}>Virtual Directory</p>
                 {/* {user[0].role !== "SUPERADMIN" && 
                 <>
                 <Select name="current-org" value={currentOrg || ""} onValueChange={(e) => handleOrgChange(e)}>

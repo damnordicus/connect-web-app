@@ -44,10 +44,10 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
             break;
         case "org-update":
             cardTitle = "Organization Update Request";
-            theme.border = "border-sky-200";
+            theme.border = "border border-border";
             theme.fill = "bg-sky-400/20";
             theme.iconText = "text-sky-600";
-            content = <div className="grid grid-cols-[auto_1fr] gap-x-4">
+            content = <div className=" grid grid-cols-[auto_1fr] gap-x-4">
                 {Object.entries(request.data).map(([key, value]) => 
                 <>
                     <p className="text-muted-foreground">{key === "orgId" ? "Organization:" : key === "userId" ? "User:" : key.toUpperCase().slice(0,1) + key.slice(1) + ":"}</p>
@@ -71,7 +71,7 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
     }
 
     return (
-        <Card className={`w-full border-2 ${theme.border} shadow-md`}>
+        <Card className={`bg-card text-foreground w-full border-2 ${theme.border} shadow-[0_4px_16px_rgba(0,0,0,0.4)]`}>
             <CardHeader>
                 <div className="inline-flex gap-3 items-center">
                     <div className={`${theme.fill} p-3 rounded-full ${theme.iconText}`}>

@@ -130,12 +130,12 @@ export default function Home({ loaderData}: Route.ComponentProps) {
   }, [])
 
   return (
-    <div className="bg-slate-400 px-6 py-3 flex-1">
+    <div className=" px-6  flex-1">
       {baseData && 
       <Tabs defaultValue={"requests"}>
-        <TabsList>
-          <TabsTrigger value="requests" onClick={() => navigate(`.?id=${baseData[0].base.id}`)}>Requests</TabsTrigger>
-          <TabsTrigger value="baseInfo" onClick={() => navigate(`base?id=${baseData[0].base.id}`)}>{baseData[0].base.name}</TabsTrigger>
+        <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+          <TabsTrigger value="requests" className="data-[state=active]:!bg-primary " onClick={() => navigate(`.?id=${baseData[0].base.id}`)}>Requests</TabsTrigger>
+          <TabsTrigger value="baseInfo" className="data-[state=active]:!bg-primary" onClick={() => navigate(`base?id=${baseData[0].base.id}`)}>{baseData[0].base.name}</TabsTrigger>
         </TabsList>
         <TabsContent value="requests" className="mt-2">
             <div className="flex flex-col gap-4">
@@ -151,7 +151,9 @@ export default function Home({ loaderData}: Route.ComponentProps) {
           <Outlet />
         </TabsContent>
       </Tabs>}
+      {!baseData && 
       <Outlet />
+      }
     </div>
   )
 }

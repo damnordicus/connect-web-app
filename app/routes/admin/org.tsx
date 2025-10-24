@@ -128,7 +128,7 @@ export default function OrgDetailsRedesign({
   // console.log('cI', coverImage.name)
 
   return (
-    <div className="w-full flex-1 overflow-auto pt-2 bg-slate-400">
+    <div className="w-full flex-1 overflow-auto">
       <div className="grid gap-4">
         {(requestData && requestData.length > 0) && 
         <Card className="bg-red-300 border-2 border-red-400">
@@ -142,11 +142,11 @@ export default function OrgDetailsRedesign({
         <Form method="POST" className="space-y-4" >
 
         {/* Organization Header Card */}
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="bg-card border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+          <CardContent className="">
             <div className="grid md:grid-cols-3 gap-6">
               <div className="space-y-4">
-                <div className="relative group">
+                <div className="relative group p-4 rounded-lg place-self-center">
                   {orgData.image_url && (
                     <img
                     src={orgData.image_url}
@@ -171,7 +171,9 @@ export default function OrgDetailsRedesign({
                   <h2 className="text-2xl font-bold">{orgData.name}</h2>
                   <Badge
                     variant="secondary"
-                    className="flex items-center gap-1"
+                    className={`py-2 px-3 shadow-md border cursor-pointer ${
+                            categories.find(item => item.type === orgData.type).color
+                          }`}
                     >
                     <Shield className="h-3 w-3" />
                     {orgData.type}
@@ -179,7 +181,7 @@ export default function OrgDetailsRedesign({
                 </div>
 
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Card className="shadow-md">
+                  <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
                     <CardContent className="flex flex-col justify-center text-center space-y-1 py-4">
                       <div className="flex gap-2 items-center justify-center">
                         <Mail className="h-4 w-4 text-muted-foreground" />
@@ -191,7 +193,7 @@ export default function OrgDetailsRedesign({
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-md">
+                  <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
                     <CardContent className="flex flex-col justify-center text-center space-y-1 py-4">
                       <div className="flex gap-2 items-center justify-center">
                         <Shield className="h-4 w-4 text-muted-foreground" />
@@ -209,14 +211,14 @@ export default function OrgDetailsRedesign({
         {/* Organization Information Cards */}
         <div className="grid lg:grid-cols-2 gap-4">
           {/* Basic Information */}
-          <Card className="col-span-2">
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2">
             <CardHeader>
               <Tabs defaultValue="details">
-                <TabsList>
-                  <TabsTrigger value="details">
+                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="details">
                     Organization Details
                   </TabsTrigger>
-                  <TabsTrigger value="appView">App View</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details" className="mt-4 space-y-6">
                   <EditableField
@@ -292,12 +294,12 @@ export default function OrgDetailsRedesign({
             </CardHeader>
           </Card>
 
-          <Card className="col-span-2">
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2">
             <CardHeader>
               <Tabs defaultValue="website">
-                <TabsList>
-                  <TabsTrigger value="website">Website</TabsTrigger>
-                  <TabsTrigger value="appView">App View</TabsTrigger>
+                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="website">Website</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="website" className="mt-4">
                   <EditableField
@@ -318,12 +320,12 @@ export default function OrgDetailsRedesign({
           </Card>
 
           {/* Category & Type */}
-          <Card className="col-span-2">
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2">
             <CardHeader>
               <Tabs defaultValue="category">
-                <TabsList>
-                  <TabsTrigger value="category">Category</TabsTrigger>
-                  <TabsTrigger value="appView">App View</TabsTrigger>
+                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="category">Category</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="category" className="mt-4">
                   <div className="space-y-4">
@@ -393,12 +395,12 @@ export default function OrgDetailsRedesign({
           </Card>
 
           {/* Point of Contact */}
-          <Card className="col-span-2">
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2">
             <CardHeader>
               <Tabs defaultValue="contact">
-                <TabsList>
-                  <TabsTrigger value="contact">Point of Contact</TabsTrigger>
-                  <TabsTrigger value="appView">App View</TabsTrigger>
+                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="contact">Point of Contact</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="contact" className="mt-4">
                   <EditableField
@@ -432,7 +434,7 @@ export default function OrgDetailsRedesign({
               </Tabs>
             </CardHeader>
           </Card>
-          <Card className="col-span-2 items-center">
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2 items-center">
             <CardContent>
               <Button>Submit Update Request</Button>
             </CardContent>

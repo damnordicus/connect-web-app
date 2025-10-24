@@ -124,13 +124,13 @@ export default function Login({loaderData}: Route.ComponentProps){
     }
 
     return (
-        <div className="w-full h-screen flex justify-center items-center bg-linear-to-br from-blue-400 to-teal-300">
+        <div className="w-full h-screen flex justify-center items-center">
             {showLogin && 
-            <Card className="w-1/3 shadow-xl flex flex-col items-center">
+            <Card className="w-1/3 shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border-border flex flex-col items-center">
                 <Form method="POST" className="w-full">
                     
                 <CardHeader className="w-full text-center">
-                    <p className="text-3xl font-semibold">Virtual Directory</p>
+                    <p className="text-3xl font-semibold text-foreground">Virtual Directory</p>
                 </CardHeader>
                 <CardContent className="w-full space-y-2">
                     <InputWithLabel label="Email" type="email" value={email} setter={setEmail} name="email"/>
@@ -138,8 +138,8 @@ export default function Login({loaderData}: Route.ComponentProps){
                     
                 </CardContent>
                 <CardFooter className="w-full flex flex-col items-center justify-center space-y-2">
-                    <Button variant={'default'} className="w-full bg-blue-400" name="_action" type="submit" value="login">Login</Button>
-                    <Button variant={'outline'} className="w-full" onClick={() => setShowLogin(false)}>Register</Button>
+                    <Button variant={'default'} className="w-full bg-primary" name="_action" type="submit" value="login">Login</Button>
+                    <Button variant={'outline'} className="w-full bg-foreground" onClick={() => setShowLogin(false)}>Register</Button>
                 </CardFooter>
                 </Form>
             </Card>}
