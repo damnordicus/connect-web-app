@@ -1,14 +1,7 @@
 import type { Route } from "./+types/home";
-import { Card, CardContent, CardFooter } from "~/components/ui/card";
-import InputWithLabel from "~/components/ui/input-with-label";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Form, Outlet, redirect, useNavigate, useRouteLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { Form, Outlet, redirect, useNavigate, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import {  useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import FileInput, { type FileInputProps } from "~/components/FileUpload";
-import { OrgCard } from "~/components/OrgCard";
-import { Building } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import FilterByType from "~/components/FilterByType";
 import RequestCard from "~/components/RequestCard";
@@ -31,19 +24,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const selectedOrg = url.searchParams.get('org');
   const baseId = url.searchParams.get('id')
-
-  const {data: orgData, error: orgError} = await supabase.from('organization').select().eq("user_id", cookies.user_id)
-
-  console.log('test', orgData)
-  if(!orgData?.length){
-    const { data: baseData, error: baseError } = await supabase.from('baseDetails').select(`*, base (*)`).eq('user_id', cookies.user_id)
-    const { data: orgsByBase, error: orgBaseError } = await supabase.from('organization').select().eq('base_id', baseData[0].base_id);
-    const orgList = orgsByBase?.map(org => org.id);
-    const { data: orgRequests, error: orgRequestError } = await supabase.from('request').select().in('org_id', orgList);
-    const { data: allUsers, error: usersError} = await supabase.from('user').select().eq("current_base", baseId)
-    return {baseData, orgsByBase, orgRequests, allUsers}
+  if(url.searchParams.size > 0){
+    const {data: orgData, error: orgError} = await supabase.from('organization').select().eq("user_id", cookies.user_id)
+    
+    console.log('test', orgData)
+    if(!orgData?.length){
+      const { data: baseData, error: baseError } = await supabase.from('baseDetails').select(`*, base (*)`).eq('user_id', cookies.user_id)
+      console.log('bdata: ', baseData)
+      const { data: orgsByBase, error: orgBaseError } = await supabase.from('organization').select().eq('base_id', baseData[0].base_id);
+      const orgList = orgsByBase?.map(org => org.id);
+      console.log(orgList)
+      const { data: orgRequests, error: orgRequestError } = await supabase.from('request').select().in('org_id', orgList)//or(`base_id.eq.baseId, org_id.in.(${orgList})`);
+      console.log('orgRequests', orgRequests)
+      const { data: allUsers, error: usersError} = await supabase.from('user').select().eq("current_base", baseId)
+      return {baseData, orgsByBase, orgRequests, allUsers}
+    }
+    return {orgData}
   }
-
+  return redirect("login")
   // if(selectedOrg){
   //   const {data} = await supabase.from('organization').select().eq('id', selectedOrg).eq('user_id', cookies.user_id);
   //   return {orgData: data[0]}
@@ -57,7 +55,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   //   const {data: allUsers, error: usersError } = await supabase.from('user').select().eq("current_base", baseId)
   //   return {orgRequests, allUsers, orgsPerBase}
   // }
-  return {orgData}
+  
 }
 
 export const action = async ({request}: ActionFunctionArgs) => {
@@ -72,6 +70,8 @@ export const action = async ({request}: ActionFunctionArgs) => {
     const primary = formData.get("primary");
     const secondary = formData.get("secondary");
     const text = formData.get("text");
+    const orgId = formData.get("orgId");
+    const requestId = formData.get("request_id");
 
     if(_action === "submit"){
       try{
@@ -112,6 +112,32 @@ export const action = async ({request}: ActionFunctionArgs) => {
         console.error(error);
       }
     }
+    if(_action === 'approve'){
+      console.log(formData)
+      const { org_id, request_id, _action, user_id, base_id, ...updateObj } = Object.fromEntries(formData)
+      console.log('uO: ',user_id)
+      try{
+        if(updateObj.newOrg){
+          const { data: existingOrgData, error: existingOrgError } = await supabase.from('organization').select().eq("name", updateObj.newOrg)
+          if(existingOrgData?.length !== 0) return {existingOrgError}
+          const { data: createOrgData, error: createOrgError } = await supabase.from('organization').insert({"name": updateObj.newOrg, "base_id": base_id, "type": "SUPPORT", "user_id": user_id}).select("id")
+          console.log('cod', createOrgData)
+          const {data: removeRequestData, error: removeRequestError} = await supabase.from('request').delete().eq('id', request_id)
+          const {data: user, error: userError} = await supabase.from('user').update({'admin_id': createOrgData[0].id, 'verified': new Date(Date.now())}).eq('id', user_id)
+          console.log(user, userError)
+        }else{
+          const { data: updateInfo, error: updateError } = await supabase.from('organization').update(updateObj).eq("id", org_id)
+          console.log('info: ', updateInfo, 'error: ', updateError)
+          const { data: removeRequestData, error: removeRequestError } = await supabase.from('request').delete().eq('id', request_id);
+        }
+
+      }catch (error){
+        console.error(error);
+      }
+    }
+    if(_action === 'deny'){
+
+    }
     // console.log(formData)
 }
 
@@ -119,7 +145,7 @@ export default function Home({ loaderData}: Route.ComponentProps) {
 
   // const {orgs, bases} = useRouteLoaderData('header') ;
   const {orgRequests, allUsers, orgsByBase, baseData, orgData } = loaderData;
-  console.log('bD: ',orgData)
+  console.log('bD: ',orgRequests)
   const navigate = useNavigate();
   const [orgHover, setOrgHover] = useState<string | null>(null);
   // const details = bases[0].base;
@@ -143,7 +169,7 @@ export default function Home({ loaderData}: Route.ComponentProps) {
               {(orgRequests && orgRequests.length > 0) && 
                 orgRequests.map(request => 
                 <div className="lg:grid grid-cols-3 md:flex md:flex-col">
-                  <RequestCard request={orgRequests[0]} allUsers={allUsers} allOrgs={orgsByBase}/>
+                  <RequestCard request={request} allUsers={allUsers} allOrgs={orgsByBase}/>
                 </div>)}
             </div>
         </TabsContent>

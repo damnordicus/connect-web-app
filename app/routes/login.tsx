@@ -8,7 +8,7 @@ import InputWithLabel from "~/components/ui/input-with-label";
 import type { Route } from "../+types/root";
 import { Tabs, TabsList, TabsContent, TabsTrigger } from "~/components/ui/tabs";
 import { Select, SelectItem, SelectTrigger, SelectValue, SelectContent} from "~/components/ui/select";
-import { Separator } from "~/components/ui/separator";
+
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 export const loader = async ({}: LoaderFunctionArgs) => {
@@ -25,10 +25,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const base = formData.get("base");
     const org = formData.get("org");
     const type = formData.get("type");
+    const test = formData.get("test");
+    const newOrg = formData.get("newOrg");
 
     if(_action === "login"){
        try{
-            const {data, error} = await supabase.from("user").select().eq("email", email).eq("password", password);
+            const {data, error} = await supabase.from("user").select().eq("email", email).eq("password", password).not('verified', 'is', null);
             
             if (error) {
                 return { success: false, error: error.message };
@@ -66,24 +68,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 return {success: false, message:"email address already exists"}
             }
             else{
-                const {data: userData, error: userError} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base, "role": type?.toString().toUpperCase()}).select("id");
-                if(type === "org" && org !== "..."){
+                const {data: userData, error: userError} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base, "role": test === 'base' ? 'BASE' : 'ORG'}).select();
+                console.log(userData)
+                if(newOrg && newOrg.length > 0){
+                    const { data: newOrgData, error: newOrgError } = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "base_id": base, "data": {newOrg: newOrg, baseId: base}, "request_type": "create-org"});
+                }
+                if(test === "organization"){
                     const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "org_id": org})
                     // return {requestResponse, insertError}
                 }
-                if(type === "base"){
-                    if(org === "" && newOrg.length > 0){
-                        const {data: newOrgData, error: newOrgError} = await supabase.from('request').insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "data": Object.fromEntries(formData.entries()), "base_id": base, "request_type": "create-org" })
-                    }else{
-                        const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "base_id": base})
-                    }
+                if(test === "base"){
+                    const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "base_id": base})
                     // console.log(insertError)
                     // return {requestResponse, insertError}
                 }
-                
-                const response = redirect("home");
-                response.headers.set('Set-Cookie', `user_id=${userData[0].id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
-                return response;
+                console.log('base: ', base, ' org: ', org)
+                if(userData[0].admin_id){
+                    return redirect(`home?id=${userData[0].admin_id}`)
+                }else{
+                    return redirect('/');
+                }
+                // response.headers.set('Set-Cookie', `user_id=${userData[0].id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
+                // return response;
+                // const response = redirect(`..`);
             } 
         }catch(error){
             console.error(error)
@@ -104,6 +111,7 @@ export default function Login({loaderData}: Route.ComponentProps){
     const [showEmailError, setShowEmailError] = useState(false);
     const [filteredOrgList, setFilteredOrgList] = useState([]);
     const [baseOrg, setBaseOrg] = useState<"base" | "org" >("org")
+    const [register, setRegister] = useState('');
 
     useEffect(() => {
         if(actionData && !actionData.success){
@@ -139,7 +147,7 @@ export default function Login({loaderData}: Route.ComponentProps){
                 </CardContent>
                 <CardFooter className="w-full flex flex-col items-center justify-center space-y-2">
                     <Button variant={'default'} className="w-full bg-primary" name="_action" type="submit" value="login">Login</Button>
-                    <Button variant={'outline'} className="w-full bg-foreground" onClick={() => setShowLogin(false)}>Register</Button>
+                    <Button variant={'outline'} className="w-full bg-foreground" type="button" onClick={() => setShowLogin(false)}>Register</Button>
                 </CardFooter>
                 </Form>
             </Card>}
@@ -153,7 +161,7 @@ export default function Login({loaderData}: Route.ComponentProps){
                     {showEmailError && <p className="text-red-500 text-xs -mt-3 ml-0.5">Email already in use.</p>}
                     <InputWithLabel label="Password" type="password" value={password} setter={setPassword} name="password"/>
                     <div className="pt-2">
-                        <Tabs defaultValue="organization">
+                        <Tabs defaultValue="organization" onValueChange={setRegister}>
                             <TabsList>
                                 <TabsTrigger value="organization">Organization Admin</TabsTrigger>
                                 <TabsTrigger value="base">Base Admin</TabsTrigger>
@@ -201,7 +209,7 @@ export default function Login({loaderData}: Route.ComponentProps){
                     </div>
                     <input type="hidden" name="base" value={selectedBase} />
                     <input type="hidden" name="org" value={selectedOrg} />
-                    <input type="hidden" name="type" value={baseOrg} />
+                    <input type="hidden" name="test" value={register} />
                 </CardContent>
                 <hr className="my-4"/>
                 <CardFooter className="flex flex-col gap-y-2">

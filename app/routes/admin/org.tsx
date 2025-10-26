@@ -17,6 +17,10 @@ import {
   Image as ImageIcon,
   Palette,
   Globe,
+  Pin,
+  MapIcon,
+  MapPin,
+  Map,
 } from "lucide-react";
 import type { Route } from "../+types/home";
 import {
@@ -67,7 +71,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const searchParams = new URL(request.url).searchParams;
-  const orgId = searchParams.get("org");
+  const orgId = searchParams.get("id");
   const userId = formData.get("userId");
   const requestId = formData.get("requestId");
   const coverImage = formData.get("coverImage") as File;
@@ -124,7 +128,11 @@ export default function OrgDetailsRedesign({
   const [addBadgeToForm, setAddBadgeToForm] = useState(false);
   const [webUrl, setWebUrl] = useState(orgData.web_url);
   const [webEdit, setWebEdit] = useState(false);
-  console.log('ad: ', actionData)
+  const [building, setBuilding] = useState(orgData.building_number);
+  const [buildingEdit, setBuildingEdit] = useState(false);
+  const [address, setAddress] = useState(orgData.address);
+  const [addressEdit, setAddressEdit] = useState(false);
+  // console.log('ad: ', actionData)
   // console.log('cI', coverImage.name)
 
   return (
@@ -289,6 +297,24 @@ export default function OrgDetailsRedesign({
                       </div>
                     </div>
                   </div>
+                </TabsContent>
+              </Tabs>
+            </CardHeader>
+          </Card>
+
+          <Card className="bg-card border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2">
+            <CardHeader>
+              <Tabs defaultValue="address">
+                <TabsList className="bg-card border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="address">Address</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
+                </TabsList>
+                <TabsContent value="address" className="mt-4 space-y-4">
+                  <EditableField label={"Building Number"} name={"building_number"} field={building} setField={setBuilding} Icon={MapPin} fieldEdit={buildingEdit} setFieldEdit={setBuildingEdit} disabled={false} originalValue={orgData.building_number} />
+                  <EditableField label={"Address"} name={"address"} field={address} setField={setAddress} Icon={Map} fieldEdit={addressEdit} setFieldEdit={setAddressEdit} disabled={false} originalValue={orgData.address} />
+                </TabsContent>
+                <TabsContent value="appView">
+
                 </TabsContent>
               </Tabs>
             </CardHeader>

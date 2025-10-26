@@ -1,10 +1,11 @@
-import { Check, Edit2, StampIcon, Trash2Icon } from "lucide-react";
+import { Check, Edit2, StampIcon, Trash2Icon, User } from "lucide-react";
+import { Form } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
 
 export default function RequestCard ({request, allUsers, allOrgs}: any) {
     const { request_type } = request;
-    console.log('requst: ', request)
+    console.log('requst: ', allUsers)
     let theme = {
         border: "border-gray-400/20",
         fill: 'bg-gray-400/20',
@@ -29,6 +30,19 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
             theme.border = "border-green-400/20";
             theme.fill = "bg-green-400/20";
             theme.iconText = "text-green-600";
+            content = <div className=" grid grid-cols-[auto_1fr] gap-x-4">
+                {Object.entries(request.data).map(([key, value]) => {
+                    if (key !== "orgId" && key !== "userId" && key !== "baseId")
+                        return (
+                            <>
+                                <p className="text-muted-foreground">{key.toUpperCase().slice(0, 1) + key.slice(1) + ":"}</p>
+                                <p>{value}</p>
+                                <input type="hidden" name={key} value={value}/>
+                            </>
+                        )
+                }
+                )}
+            </div>
             break;
         case "org-admin":
             cardTitle = "Organization Admin Request";
@@ -43,16 +57,22 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
             theme.iconText = "text-purple-600";
             break;
         case "org-update":
-            cardTitle = "Organization Update Request";
+            cardTitle = `Organization Update Request - ${orgNameForId(request.data.orgId)}`;
             theme.border = "border border-border";
             theme.fill = "bg-sky-400/20";
             theme.iconText = "text-sky-600";
             content = <div className=" grid grid-cols-[auto_1fr] gap-x-4">
-                {Object.entries(request.data).map(([key, value]) => 
-                <>
-                    <p className="text-muted-foreground">{key === "orgId" ? "Organization:" : key === "userId" ? "User:" : key.toUpperCase().slice(0,1) + key.slice(1) + ":"}</p>
-                    <p>{key === "orgId" ? orgNameForId(value) : key === "userId" ? emailForId(value): value}</p>
-                </>)}
+                {Object.entries(request.data).map(([key, value]) => {
+                    if (key !== "orgId" && key !== "userId")
+                        return (
+                            <>
+                                <p className="text-muted-foreground">{key.toUpperCase().slice(0, 1) + key.slice(1) + ":"}</p>
+                                <p>{value}</p>
+                                <input type="hidden" name={key} value={value}/>
+                            </>
+                        )
+                }
+                )}
             </div>
             break;
         case "base-update":
@@ -72,24 +92,37 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
 
     return (
         <Card className={`bg-card text-foreground w-full border-2 ${theme.border} shadow-[0_4px_16px_rgba(0,0,0,0.4)]`}>
+            <Form method="POST">
+                
             <CardHeader>
                 <div className="inline-flex gap-3 items-center">
                     <div className={`${theme.fill} p-3 rounded-full ${theme.iconText}`}>
                     <StampIcon size={18}/>
                     </div>
-                    <p className="text-lg">{cardTitle}</p>
+                    <div>
+                        <p className="text-lg">{cardTitle}</p>
+                        <div className="inline-flex items-center gap-2 text-foreground/50">
+                            <User size={18}/>
+                            <p className="text-sm ">{emailForId(request.user_id)}</p>
+                        </div>
+                    </div>
                 </div>
             </CardHeader>
-            <CardContent className="mx-auto">
+            <CardContent className="">
                 {content}
+                <input type="hidden" name="org_id" value={request.org_id} />
+                <input type="hidden" name="request_id" value={request.id} />
+                <input type="hidden" name="user_id" value={request.user_id} />
+                <input type="hidden" name="base_id" value={request.base_id} />
             </CardContent>
             <CardFooter>
-                <div className="w-full flex justify-center gap-1.5">
-                    <Button className="border-yellow-500 border-1 text-yellow-600 bg-yellow-400/30 shadow"><Edit2 style={{width: "14", height: "14"}}/>Edit</Button>
-                    <Button className="border-green-500 border-1 text-green-600 bg-green-400/30 shadow"><Check style={{width: "14", height: "14"}}/>Approve</Button>
-                    <Button className="border-red-500 border-1 text-red-600 bg-red-400/30 shadow"><Trash2Icon style={{width: "14", height: "14"}}/>Deny</Button>
+                <div className="w-full flex justify-center gap-1.5 mt-2">
+                    <Button className="border-yellow-500 border-1 text-yellow-600 bg-yellow-400/30 shadow" type="button" name="edit"><Edit2 style={{width: "14", height: "14"}}/>Edit</Button>
+                    <Button className="border-green-500 border-1 text-green-600 bg-green-400/30 shadow" type="submit" name="_action" value="approve"><Check style={{width: "14", height: "14"}}/>Approve</Button>
+                    <Button className="border-red-500 border-1 text-red-600 bg-red-400/30 shadow" type="submit" name="_action" value="deny"><Trash2Icon style={{width: "14", height: "14"}}/>Deny</Button>
                 </div>
             </CardFooter>
+            </Form>
         </Card>
     )
 }
