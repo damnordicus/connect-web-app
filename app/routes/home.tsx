@@ -34,7 +34,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const { data: orgsByBase, error: orgBaseError } = await supabase.from('organization').select().eq('base_id', baseData[0].base_id);
       const orgList = orgsByBase?.map(org => org.id);
       console.log(orgList)
-      const { data: orgRequests, error: orgRequestError } = await supabase.from('request').select().in('org_id', orgList)//or(`base_id.eq.baseId, org_id.in.(${orgList})`);
+      const { data: orgRequests, error: orgRequestError } = await supabase.from('request').select().or(`base_id.eq.${baseId}, org_id.in.(${orgList})`);
       console.log('orgRequests', orgRequests)
       const { data: allUsers, error: usersError} = await supabase.from('user').select().eq("current_base", baseId)
       return {baseData, orgsByBase, orgRequests, allUsers}

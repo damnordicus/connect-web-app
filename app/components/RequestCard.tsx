@@ -68,7 +68,7 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
                             <>
                                 <p className="text-muted-foreground">{key.toUpperCase().slice(0, 1) + key.slice(1) + ":"}</p>
                                 <p>{value}</p>
-                                <input type="hidden" name={key} value={value}/>
+                                <input type="hidden" name={key === 'weburl' ? 'web_url' : key} value={value}/>
                             </>
                         )
                 }
