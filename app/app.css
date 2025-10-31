@@ -104,7 +104,7 @@ body {
   --popover-foreground: oklch(0.92 0.005 265);
   
   /* Primary blue accent (#3b82f6) */
-  --primary: oklch(0.6 0.22 255);
+  --primary: oklch(48.175% 0.05799 258.659);
   --primary-foreground: oklch(0.98 0 0);
   
   /* Secondary dark elements (#2a3142) */

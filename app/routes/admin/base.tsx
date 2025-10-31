@@ -111,7 +111,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     case "coverImage-submit": if(coverImage && coverImage.size > 0){
       console.log('here')
       const fileExt = coverImage.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `bases/${baseId}/covers/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const {data: uploadData, error: uploadError} = await supabase.storage.from('images')
       .upload(fileName, coverImage, {
         cacheControl: '3600', upsert: false

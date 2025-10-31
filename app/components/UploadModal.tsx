@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Form, useFetcher } from "react-router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
-export default function UploadModal({ isOpen, onClose, setCoverImage }: {isOpen: boolean, onClose: React.Dispatch<React.SetStateAction<boolean>>, setCoverImage: React.Dispatch<React.SetStateAction<string>>}) {
+export default function UploadModal({ isOpen, onClose, setCoverImage, baseId }: {isOpen: boolean, onClose: React.Dispatch<React.SetStateAction<boolean>>, setCoverImage: React.Dispatch<React.SetStateAction<string>>, baseId: string}) {
     const [image, setImage] = useState<File | null>(null);
     const galleryFetcher = useFetcher();
     const [gallery, setGallery] = useState<[]>([]);
@@ -44,7 +44,7 @@ export default function UploadModal({ isOpen, onClose, setCoverImage }: {isOpen:
     if (!isOpen) return null;
 
     function getGalleryData(){
-        galleryFetcher.load("/gallery")
+        galleryFetcher.load(`/gallery?baseId=${baseId}`)
     }
 
     useEffect(() => {

@@ -86,8 +86,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   if(coverImage){
+    const baseId = await supabase.from('organization').select('base_id').eq('id', orgId).single();
     const fileExt = coverImage.name.split('.').pop();
-    const fileName = `organization/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileName = `bases/${baseId}/organizations/${orgId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     file = fileName;
     const {data: imageData, error: imageError} = await supabase.storage.from("images").upload(fileName, coverImage, {
         cacheControl: '3600', upsert: false
@@ -476,6 +477,7 @@ export default function OrgDetailsRedesign({
         isOpen={showModal}
         onClose={setShowModal}
           setCoverImage={setCoverImage}
+          baseId={orgData.base_id}
         ></UploadModal>
       )}
     </div>
