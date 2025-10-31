@@ -31,9 +31,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if(_action === "login"){
        try{
             const {data, error} = await supabase.from("user").select().eq("email", email).eq("password", password).not('verified', 'is', null);
-            
-            if (error) {
-                return { success: false, error: error.message };
+            console.log(data, error)
+            if (data?.length === 0 && error === null) {
+                return  {success: false, error: "Invalid email or password"} ;
             }
 
             console.log(data)
@@ -113,11 +113,13 @@ export default function Login({loaderData}: Route.ComponentProps){
     const [baseOrg, setBaseOrg] = useState<"base" | "org" >("org")
     const [register, setRegister] = useState('');
 
-    useEffect(() => {
-        if(actionData && !actionData.success){
-            setShowEmailError(true);
-        }
-    }, [actionData])
+    // useEffect(() => {
+    //     if(actionData ){
+    //         console.log(actionData)
+    //         setShowEmailError(true);
+    //     }
+    // }, [actionData])
+    console.log(actionData)
 
     function handleBaseChange(e){
         const newList = orgList.filter((org: { base_id: string; }) => org.base_id === e)
@@ -134,7 +136,7 @@ export default function Login({loaderData}: Route.ComponentProps){
     return (
         <div className="w-full h-screen flex justify-center items-center">
             {showLogin && 
-            <Card className="w-1/3 shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border-border flex flex-col items-center">
+            <Card className="w-1/3 shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border flex flex-col items-center">
                 <Form method="POST" className="w-full">
                     
                 <CardHeader className="w-full text-center">
@@ -143,11 +145,11 @@ export default function Login({loaderData}: Route.ComponentProps){
                 <CardContent className="w-full space-y-2">
                     <InputWithLabel label="Email" type="email" value={email} setter={setEmail} name="email"/>
                     <InputWithLabel label="Password" type="password" value={password} setter={setPassword} name="password" />
-                    
+                    {actionData?.error && <p className="text-red-500 text-sm mb-3 text-center">{actionData.error}</p>}
                 </CardContent>
                 <CardFooter className="w-full flex flex-col items-center justify-center space-y-2">
-                    <Button variant={'default'} className="w-full bg-primary" name="_action" type="submit" value="login">Login</Button>
-                    <Button variant={'outline'} className="w-full bg-foreground" type="button" onClick={() => setShowLogin(false)}>Register</Button>
+                    <Button variant={'default'} className="w-full bg-primary hover:bg-blue-600" name="_action" type="submit" value="login">Login</Button>
+                    <Button variant={'default'} className="w-full bg-secondary hover:bg-green-600" type="button" onClick={() => setShowLogin(false)}>Register</Button>
                 </CardFooter>
                 </Form>
             </Card>}
@@ -162,9 +164,9 @@ export default function Login({loaderData}: Route.ComponentProps){
                     <InputWithLabel label="Password" type="password" value={password} setter={setPassword} name="password"/>
                     <div className="pt-2">
                         <Tabs defaultValue="organization" onValueChange={setRegister}>
-                            <TabsList>
-                                <TabsTrigger value="organization">Organization Admin</TabsTrigger>
-                                <TabsTrigger value="base">Base Admin</TabsTrigger>
+                            <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                                <TabsTrigger value="organization" className="data-[state=active]:!bg-primary">Organization Admin</TabsTrigger>
+                                <TabsTrigger value="base" className="data-[state=active]:!bg-primary">Base Admin</TabsTrigger>
                             </TabsList>
                             <TabsContent value="organization" className="space-y-4 mt-3">
                                 <p>Select your base:</p>
@@ -213,8 +215,8 @@ export default function Login({loaderData}: Route.ComponentProps){
                 </CardContent>
                 <hr className="my-4"/>
                 <CardFooter className="flex flex-col gap-y-2">
-                    <Button variant="default" className="w-full bg-blue-400 border-2 border-blue-500 hover:bg-blue-600" name="_action" value="register" type="submit">Create Account</Button>
-                    <Button variant={'outline'} className="w-full" onClick={() => setShowLogin(true)}>Back to Login</Button>
+                    <Button variant="default" className="w-full bg-primary border-2 border hover:bg-blue-600" name="_action" value="register" type="submit">Create Account</Button>
+                    <Button variant={'default'} className="w-full bg-secondary hover:bg-red-400" onClick={() => setShowLogin(true)}>Back to Login</Button>
                 </CardFooter>
                 </Form>
             </Card>}
