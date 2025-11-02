@@ -60,7 +60,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   try {
     const { data } = await supabase
       .from("baseDetails")
-      .select(`*, base(*), user(*)`);
+      .select(`*, base(*), user(*)`).eq('base_id', baseId);
     const { count, error } = await supabase
       .from("organization")
       .select("*", { count: "exact", head: true })

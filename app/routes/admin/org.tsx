@@ -463,7 +463,7 @@ export default function OrgDetailsRedesign({
           </Card>
           <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2 items-center">
             <CardContent>
-              <Button>Submit Update Request</Button>
+              <Button className="border border-yellow-400 bg-yellow-600/20">Submit Update Request</Button>
             </CardContent>
           </Card>
         </div>

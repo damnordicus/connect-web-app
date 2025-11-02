@@ -3,9 +3,9 @@ import { Form } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
 
-export default function RequestCard ({request, allUsers, allOrgs}: any) {
+export default function RequestCard ({request, allUsers, allOrgs, allBases}: any) {
     const { request_type } = request;
-    console.log('requst: ', allUsers)
+    console.log('requst: ')
     let theme = {
         border: "border-gray-400/20",
         fill: 'bg-gray-400/20',
@@ -22,6 +22,10 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
     function emailForId(id: string){
         console.log('users: ', allUsers)
         return allUsers.filter(user => user.id === id)[0].email
+    }
+
+    function baseForId(id: string){
+        return allBases.filter(base => base.id === id)[0].name
     }
 
     switch( request_type ){
@@ -51,8 +55,8 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
             theme.iconText = "text-blue-600";
             break;
         case "base-admin":
-            cardTitle = "Base Admin Request";
-            theme.border = "border-purple-200";
+            cardTitle = `Base Admin Request - ${baseForId(request.base_id)}`;
+            theme.border = "border";
             theme.fill = "bg-purple-400/20";
             theme.iconText = "text-purple-600";
             break;
@@ -91,9 +95,9 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
     }
 
     return (
-        <Card className={`bg-card text-foreground w-full border-2 ${theme.border} shadow-[0_4px_16px_rgba(0,0,0,0.4)]`}>
+        <Card className={`relative overflow-clip bg-card text-foreground w-full border-2 ${theme.border} shadow-[0_4px_16px_rgba(0,0,0,0.4)]`}>
+             <div className={`absolute inset-y-0 left-0 w-[8px] ${theme.fill} `}></div>   
             <Form method="POST">
-                
             <CardHeader>
                 <div className="inline-flex gap-3 items-center">
                     <div className={`${theme.fill} p-3 rounded-full ${theme.iconText}`}>
@@ -107,6 +111,7 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
                         </div>
                     </div>
                 </div>
+                {/* <div className="w-[10px] h-[200px] bg-purple-500/40 overflow-clip -ml-6 -mt-21 -mb-17 rounded-l-lg"></div> */}
             </CardHeader>
             <CardContent className="">
                 {content}
@@ -114,12 +119,13 @@ export default function RequestCard ({request, allUsers, allOrgs}: any) {
                 <input type="hidden" name="request_id" value={request.id} />
                 <input type="hidden" name="user_id" value={request.user_id} />
                 <input type="hidden" name="base_id" value={request.base_id} />
+                <input type="hidden" name="request_type" value={request.request_type} />
             </CardContent>
             <CardFooter>
                 <div className="w-full flex justify-center gap-1.5 mt-2">
-                    <Button className="border-yellow-500 border-1 text-yellow-600 bg-yellow-400/30 shadow" type="button" name="edit"><Edit2 style={{width: "14", height: "14"}}/>Edit</Button>
-                    <Button className="border-green-500 border-1 text-green-600 bg-green-400/30 shadow" type="submit" name="_action" value="approve"><Check style={{width: "14", height: "14"}}/>Approve</Button>
-                    <Button className="border-red-500 border-1 text-red-600 bg-red-400/30 shadow" type="submit" name="_action" value="deny"><Trash2Icon style={{width: "14", height: "14"}}/>Deny</Button>
+                    <Button className="border-yellow-500 border-1 text-yellow-600 bg-yellow-400/5 shadow" type="button" name="edit"><Edit2 style={{width: "14", height: "14"}}/>Edit</Button>
+                    <Button className="border-green-500 border-1 text-green-600 bg-green-400/5 shadow" type="submit" name="_action" value="approve"><Check style={{width: "14", height: "14"}}/>Approve</Button>
+                    <Button className="border-red-500 border-1 text-red-600 bg-red-400/5 shadow" type="submit" name="_action" value="deny"><Trash2Icon style={{width: "14", height: "14"}}/>Deny</Button>
                 </div>
             </CardFooter>
             </Form>

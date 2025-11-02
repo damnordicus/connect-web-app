@@ -31,7 +31,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if(_action === "login"){
        try{
             const {data, error} = await supabase.from("user").select().eq("email", email).eq("password", password).not('verified', 'is', null);
-            console.log(data, error)
+            // const {data, error} = await supabase.auth.signInWithPassword({
+            //     email: email,
+            //     password: password,
+            // })
+            // console.log(data, error)
             if (data?.length === 0 && error === null) {
                 return  {success: false, error: "Invalid email or password"} ;
             }
@@ -39,17 +43,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             console.log(data)
             
             if (data ) {
-                const user = data[0];
-                console.log(user.id)
-                if(user.role === "SUPERADMIN"){
-                    const response = redirect("/admin");
-                    response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
-                    return response;
-                }else{
+                const user = data[0] ?? data.user;
+
+                // const {data: userConnect, error: userError} = await supabase.from("user").select("id, role").eq("users_id", data.user?.id).single()
+                // console.log(userConnect.id)
+                // if(user.role === "SUPERADMIN" || userConnect.role === "SUPERADMIN"){
+                //     const response = redirect("/home?id=superadmin");
+                //     response.headers.set('Set-Cookie', `user_id=${userConnect?.id ?? user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
+                //     return response;
+                // }else{
                     const response = redirect(`/home?id=${user.admin_id}`);
                     response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
                     return response;
-                }
+                // }
                 
             } else {
                 return { success: false, error: "Invalid email or password" };
@@ -62,29 +68,34 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if(_action === "register"){
         const newOrg = formData.get("newOrg") as string;
         try{
+            const {data: signUpData, error: signUpError} = await authClient.signUp.email()
             const {data, error} = await supabase.from("user").select().eq("email", email)
             console.log("data: ", data, " error: ", error)
             if(data && data.length){
                 return {success: false, message:"email address already exists"}
             }
             else{
-                const {data: userData, error: userError} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base, "role": test === 'base' ? 'BASE' : 'ORG'}).select();
+                const {data: userData, error: userError} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base, "role": test === 'base' ? 'BASE' : 'ORG'}).select().single();
                 console.log(userData)
-                if(newOrg && newOrg.length > 0){
-                    const { data: newOrgData, error: newOrgError } = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "base_id": base, "data": {newOrg: newOrg, baseId: base}, "request_type": "create-org"});
-                }
-                if(test === "organization"){
-                    const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "org_id": org})
-                    // return {requestResponse, insertError}
-                }
-                if(test === "base"){
-                    const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData[0].id, "base_id": base})
-                    // console.log(insertError)
-                    // return {requestResponse, insertError}
+                if(userData){
+
+                    if(newOrg && newOrg.length > 0){
+                        const { data: newOrgData, error: newOrgError } = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData.id, "base_id": base, "data": {newOrg: newOrg, baseId: base}, "request_type": "create-org"});
+                    }
+                    if(test === "organization"){
+                        const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData.id, "org_id": org, "request_type": "org-admin"})
+                        // return {requestResponse, insertError}
+                    }
+                    if(test === "base"){
+                        console.log('test')
+                        const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData.id, "base_id": base, "request_type": "base-admin"})
+                        console.log(requestResponse, insertError)
+                        // return {requestResponse, insertError}
+                    }
                 }
                 console.log('base: ', base, ' org: ', org)
-                if(userData[0].admin_id){
-                    return redirect(`home?id=${userData[0].admin_id}`)
+                if(userData.admin_id){
+                    return redirect(`home?id=${userData.admin_id}`)
                 }else{
                     return redirect('/');
                 }

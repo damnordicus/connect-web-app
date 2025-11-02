@@ -26,6 +26,7 @@ export const EditableField = ({
   originalValue: string;
 }) => {
   const hasChanged = field !== originalValue;
+  console.log('field: ', field, hasChanged)
 
   const handleSave = () => {
     setFieldEdit(false);
@@ -62,12 +63,12 @@ export const EditableField = ({
         </div>
       </div>
       {!fieldEdit && (
-        <p className={`bg-background/20 p-2 border border-border rounded-lg text-sm font-medium ${!field ? 'text-gray-400 italic' : 'text-foreground'}`}>{!field ? 'N/A' : field}</p>
+        <p className={`bg-background/20 p-2 border ${hasChanged ? 'border-yellow-400' : 'border-border'} rounded-lg text-sm font-medium ${!field ? 'text-gray-400 italic' : 'text-foreground'}`}>{!field ? 'N/A' : field}</p>
       )}
       {fieldEdit && (!type || type === "text") && (
         <input
           type="text"
-          className="w-full p-2 font-medium text-sm border rounded-lg"
+          className={`w-full p-2 font-medium text-sm border rounded-lg`}
           value={field}
           onChange={(e) => setField(e.currentTarget.value)}
           disabled={disabled}
