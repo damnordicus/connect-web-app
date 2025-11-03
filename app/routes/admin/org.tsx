@@ -75,6 +75,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const userId = formData.get("userId");
   const requestId = formData.get("requestId");
   const coverImage = formData.get("coverImage") as File;
+  const coverImagePath = formData.get("coverImage-path") as string;
+
+  if(coverImagePath){
+    formData.append('image_url', coverImagePath);
+    formData.delete('coverImage-path')
+  }
   const image = formData.get("image");
   let file = null;
 
@@ -116,7 +122,8 @@ export default function OrgDetailsRedesign({
   const orgData = orgs[0];
   console.log('orgData', orgData);
   const [showModal, setShowModal] = useState(false);
-  const [coverImage, setCoverImage] = useState<string>(orgData.image_url);
+  const [coverImage, setCoverImage] = useState<string>("");
+  const [originalImage, setOriginalImage] = useState<string>(orgData.image_url)
   const [name, setName] = useState(orgData.name);
   const [nameEdit, setNameEdit] = useState(false);
   const [description, setDescription] = useState(orgData.description);
@@ -172,6 +179,7 @@ export default function OrgDetailsRedesign({
                     >
                     <Edit2 className="h-3 w-3" />
                   </Button>
+                  {originalImage !== coverImage && <input type="hidden" name="coverImage-path" value={coverImage}/>}
                 </div>
               </div>
 
@@ -463,7 +471,7 @@ export default function OrgDetailsRedesign({
           </Card>
           <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2 items-center">
             <CardContent>
-              <Button className="border border-yellow-400 bg-yellow-600/20">Submit Update Request</Button>
+              <Button className="border border-yellow-400 bg-yellow-600/20" >Submit Update Request</Button>
             </CardContent>
           </Card>
         </div>

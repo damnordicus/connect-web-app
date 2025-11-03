@@ -59,10 +59,17 @@ export default function UploadModal({ isOpen, onClose, setCoverImage, baseId }: 
 
     console.log('urls: ',gallery)
 
+    const [selected, setSelected] = useState(-1);
+
+    function handleSelected(index: number, picture: {url: string, createdAt: Date, name: string}){
+        setSelected(index);
+        setCoverImage(picture.url)
+    }
+
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
             <Form method="POST" encType="multipart/form-data" onSubmit={handleSubmit}>
-                <Card className="relative w-[300px] shadow-xl">
+                <Card className="relative w-[400px] shadow-xl">
                     <CardContent>
                         <button
                             onClick={handleClose}
@@ -90,9 +97,12 @@ export default function UploadModal({ isOpen, onClose, setCoverImage, baseId }: 
                                     Save
                                 </Button>
                             </TabsContent>
-                            <TabsContent value="gallery">
-                                <div className="grid grid-cols-3 gap-3 ">
-                                    {gallery && gallery.map((picture: {url: string, createdAt: Date, name: string}, index) => <img key={index} src={picture.url}/>)}
+                            <TabsContent value="gallery" className="p-4 rounded-lg space-y-4">
+                                <div className="grid grid-cols-3 gap-4">
+                                    {gallery && gallery.map((picture: {url: string, createdAt: Date, name: string}, index) => <img key={index} src={picture.url} onClick={() => handleSelected(index, picture)} className={`rounded-lg border-2 ${index === selected ? 'border-yellow-500': 'border-black'}`}/>)}
+                                </div>
+                                <div className="flex w-full justify-center -mb-4">
+                                    <Button type="button" onClick={() => onClose(false)}>Save</Button>
                                 </div>
                             </TabsContent>
                         </Tabs>

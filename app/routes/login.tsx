@@ -30,32 +30,31 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     if(_action === "login"){
        try{
-            const {data, error} = await supabase.from("user").select().eq("email", email).eq("password", password).not('verified', 'is', null);
-            // const {data, error} = await supabase.auth.signInWithPassword({
-            //     email: email,
-            //     password: password,
-            // })
+            // const {data, error} = await supabase.from("user").select().eq("email", email).eq("password", password).not('verified', 'is', null);
+            const {data, error} = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            })
             // console.log(data, error)
             if (data?.length === 0 && error === null) {
                 return  {success: false, error: "Invalid email or password"} ;
             }
-
-            console.log(data)
             
             if (data ) {
-                const user = data[0] ?? data.user;
-
-                // const {data: userConnect, error: userError} = await supabase.from("user").select("id, role").eq("users_id", data.user?.id).single()
-                // console.log(userConnect.id)
-                // if(user.role === "SUPERADMIN" || userConnect.role === "SUPERADMIN"){
-                //     const response = redirect("/home?id=superadmin");
-                //     response.headers.set('Set-Cookie', `user_id=${userConnect?.id ?? user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
-                //     return response;
-                // }else{
-                    const response = redirect(`/home?id=${user.admin_id}`);
-                    response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
+                // const user = data[0] ?? data.user;
+                const {data: userConnect, error: userError} = await supabase.from("user").select("id, role, admin_id").eq("users_id", data.user?.id).single()
+                // console.log(userConnect?.id)
+                if(userConnect?.role === "SUPERADMIN"){
+                    const response = redirect("/home?id=superadmin");
+                    response.headers.set('Set-Cookie', `user_id=${userConnect?.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
                     return response;
-                // }
+                }else{
+                    const isSecureContext = request.url.startsWith('https://') || 
+                        new URL(request.url).hostname === 'localhost';
+                    const response = redirect(`/home?id=${userConnect?.admin_id}`);
+                    response.headers.set('Set-Cookie', `user_id=${userConnect?.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict${isSecureContext ? '; Secure' : ''}`);
+                    return response;
+                }
                 
             } else {
                 return { success: false, error: "Invalid email or password" };
@@ -147,7 +146,7 @@ export default function Login({loaderData}: Route.ComponentProps){
     return (
         <div className="w-full h-screen flex justify-center items-center">
             {showLogin && 
-            <Card className="w-1/3 shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border flex flex-col items-center">
+            <Card className=" md:w-1/3 shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border flex flex-col items-center">
                 <Form method="POST" className="w-full">
                     
                 <CardHeader className="w-full text-center">

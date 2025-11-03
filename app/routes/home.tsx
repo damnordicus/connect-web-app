@@ -10,6 +10,7 @@ const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const cookieHeader = request.headers.get('Cookie');
+  console.log('header: ', cookieHeader)
   if(!cookieHeader){
     return redirect('login');
   }
@@ -24,7 +25,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const url = new URL(request.url);
   const baseId = url.searchParams.get('id');
-  
+  console.log('baseId: ', baseId)
   if(!baseId){
     return redirect("login");
   }
@@ -112,24 +113,24 @@ export const action = async ({request}: ActionFunctionArgs) => {
   const primary = formData.get("primary");
   const secondary = formData.get("secondary");
   const text = formData.get("text");
-  const orgId = formData.get("orgId");
+  const org_id = formData.get("org_id");
   const requestId = formData.get("request_id");
   const request_type = formData.get("request_type");
-
+  const image_url = formData.get("image_url");
+  console.log('pre if: ', formData)
   if(_action === "submit"){
     try{
-      const { error } = await supabase
+      const {data, error } = await supabase
         .from("organization")
         .update({
+          id: org_id,
           name: name, 
           description: description, 
           contact: poc, 
           type: badge, 
-          primary_color: primary, 
-          secondary_color: secondary, 
-          text_color: text
         })
         .eq('id', id);
+      console.log('post update', data, error)
       
       let imageUrl = null;
       if(image && image.size > 0){
@@ -211,10 +212,15 @@ export const action = async ({request}: ActionFunctionArgs) => {
         await supabase.from('baseDetails').insert({"base_id": base_id, "user_id": user_id});
         await supabase.from('appFields').insert({"base_id": base_id});
       } else {
-        await supabase
+        console.log('update Object: ', updateObj)
+
+        delete updateObj.request_type;
+
+        const { error } = await supabase
           .from('organization')
           .update(updateObj)
           .eq("id", org_id);
+          console.log(error)
         
         await supabase.from('request').delete().eq('id', request_id);
       }      
