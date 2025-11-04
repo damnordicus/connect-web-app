@@ -48,7 +48,7 @@ export default function FilterByType({filterBy, setFilterBy, isSuperAdmin}:{filt
             <CardContent className="flex gap-2 items-center">
 
                 <FilterIcon className="mr-2" size={20}/>
-                <div className="flex justify-around w-full">
+                <div className="flex justify-around gap-2">
                 {Object.entries(filters).map(([type, style]) =>{
                     const isActive = filterBy.includes(type);
                     if(!isSuperAdmin && (style.label === "Base Admin" || style.label === "Base Update")){

@@ -258,7 +258,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                 </div>
               </div>
 
-              <div className="md:col-span-2 space-y-4">
+              <div className="md:col-span-2 flex flex-col space-y-4">
                 <div className="flex items-center gap-4">
                   <h2 className="text-2xl font-bold text-balance">
                     {selectedBase.base.name}
@@ -272,38 +272,44 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                   </Badge>
                 </div>
 
-                <div className="grid sm:grid-cols-[auto_auto_auto]">
+                <div className="grid gap-4 sm:grid-cols-[auto_auto_auto] flex-1">
                   <div className="flex items-center gap-2 text-sm text-center">
-                    <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                      <CardContent className="flex flex-col justify-center text-center space-y-1">
+                    <Card className="bg-card w-full h-full border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                      <CardHeader>
                         <div className="flex gap-2 items-center">
                           <Users className="h-4 w-4 text-muted-foreground" />
                           <p className="text-muted-foreground">Personnel</p>
                         </div>
+                      </CardHeader>
+                      <CardContent className="flex flex-col justify-center text-center space-y-1 h-full">
                         <span className="font-medium text-xl">
                           {selectedBase.population || 0}
                         </span>
                       </CardContent>
                     </Card>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-center">
-                    <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                      <CardContent className="flex flex-col justify-center text-center space-y-1">
+                  <div className="flex gap-2 text-sm text-center">
+                    <Card className="bg-card w-full h-full border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                      <CardHeader>
                         <div className="flex gap-2 items-center">
                           <Building className="h-4 w-4 text-muted-foreground" />
                           <p className="text-muted-foreground">Organizations</p>
                         </div>
+                      </CardHeader>
+                      <CardContent className="flex flex-col justify-center text-center space-y-1 h-full">
                         <span className="font-medium text-xl">{orgCount}</span>
                       </CardContent>
                     </Card>
                   </div>
                   <div className="flex items-center text-center gap-2 text-sm">
-                    <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                      <CardContent className="flex flex-col justify-center text-center gap-1">
-                        <div className="flex gap-2 items-center">
+                    <Card className="bg-card w-full h-full border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                      <CardHeader>
+                         <div className="flex gap-2 items-center">
                           <Shield className="h-4 w-4 text-muted-foreground" />
                           <p className="text-muted-foreground">Status</p>
                         </div>
+                      </CardHeader>
+                      <CardContent className="flex flex-col justify-center text-center gap-1 h-full">
                         <span className="text-green-600 text-xl">Active</span>
                       </CardContent>
                     </Card>
