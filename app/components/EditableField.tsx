@@ -26,7 +26,7 @@ export const EditableField = ({
   originalValue: string;
 }) => {
   const hasChanged = field !== originalValue;
-  console.log('field: ', field, hasChanged)
+  // console.log('field: ', field, hasChanged)
 
   const handleSave = () => {
     setFieldEdit(false);

@@ -78,14 +78,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { data: orgsByBase, error: orgBaseError } = await supabase
     .from('organization')
     .select()
-    .eq('base_id', baseData.base_id);
+    .eq('base_id', baseData.
+      base_id);
   
   const orgList = orgsByBase?.map(org => org.id) || [];
   
   const { data: orgRequests, error: orgRequestError } = await supabase
     .from('request')
     .select()
-    .or(`base_id.eq.${baseId},org_id.in.(${orgList})`);
+    .in('org_id', orgList);
+    // .or(`base_id.eq.${baseId},org_id.in.(${orgList})`);
   
   const { data: allUsers, error: usersError} = await supabase
     .from('user')
@@ -211,7 +213,23 @@ export const action = async ({request}: ActionFunctionArgs) => {
         await supabase.from('request').delete().eq('id', request_id);
         await supabase.from('baseDetails').insert({"base_id": base_id, "user_id": user_id});
         await supabase.from('appFields').insert({"base_id": base_id});
-      } else {
+      } else if(request_type === "base-update"){
+        console.log('obj', Object.fromEntries(formData.entries()))
+        const { org_id, request_id, request_type, _action, ...obj} = Object.fromEntries(formData.entries())
+        // delete updateObj.request_type
+        console.log('test', obj)
+        const {data: updateData, error: updateError } = await supabase
+        .from('baseDetails')
+        .update(obj)
+        .eq("base_id", base_id)
+        console.log('data: ', updateData, ' error: ', updateError)
+        // const {data: deleteData, error: deleteError } = await supabase
+        // .from('request')
+        // .delete()
+        // .eq('id', request_id)
+        // console.log('data: ', deleteData, ' error: ', deleteError)
+      }
+       else {
         console.log('update Object: ', updateObj)
 
         delete updateObj.request_type;

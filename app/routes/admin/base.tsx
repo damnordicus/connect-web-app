@@ -34,6 +34,7 @@ import UploadModal from "~/components/UploadModal";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { TabsContent } from "@radix-ui/react-tabs";
 import { Checkbox } from "~/components/ui/checkbox";
+import { EditableField } from "~/components/EditableField";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -77,139 +78,75 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const searchParams = new URL(request.url).searchParams
-  const baseId = searchParams.get("id")
+  // const baseId = searchParams.get("id")
+  const baseId = formData.get("baseId");
+  const userId = formData.get("userId");
 
-  const coverImage = formData.get("coverImage") as File;
-  const baseName = formData.get("baseName");
-  const motto = formData.get("motto");
-  const commander = formData.get("commander");
-  const phone = formData.get("phone");
-  const email = formData.get("email");
-  const showName = formData.get("showName") === "on";
-  const _action = formData.get("submit");
-  const showCommand = formData.get("showCommand") === "on";
-  const showMotto = formData.get("showMotto") === "on";
-  const showContactEmail = formData.get("showEmail") === "on";
-  const showContactPhone = formData.get("showPhone") === "on";
+  // const coverImage = formData.get("coverImage") as File;
+  // const baseName = formData.get("baseName");
+  // const motto = formData.get("motto");
+  // const commander = formData.get("commander");
+  // const phone = formData.get("phone");
+  // const email = formData.get("email");
+  // const showName = formData.get("showName") === "on";
+  // const _action = formData.get("submit");
+  // const showCommand = formData.get("showCommand") === "on";
+  // const showMotto = formData.get("showMotto") === "on";
+  // const showContactEmail = formData.get("showEmail") === "on";
+  // const showContactPhone = formData.get("showPhone") === "on";
   // const toggle = showName === 'on' ? true : false
+  const request_type = formData.get("request-type");
 
   let imageUrl = null;
 
+  await supabase.from("request").insert({"created_at": new Date(Date.now()), "base_id": baseId, "data": Object.fromEntries(formData.entries()), "user_id": userId, "request_type": "base-update"})
+
   // console.log(formData.get("submit"), toggle)
 
-  switch (_action) {
-    case "motto-submit": await supabase.from("baseDetails").update({ "motto": motto }).eq('base_id', baseId);
-      break;
-    case "commander-submit": await supabase.from("baseDetails").update({ "commander": commander }).eq("base_id", baseId);
-      break;
-    case "phone-submit": await supabase.from("baseDetails").update({ "phone": phone }).eq("base_id", baseId);
-      break;
-    case "email-submit": await supabase.from("baseDetails").update({ "email": email }).eq("base_id", baseId);
-      break;
-    case "showName-submit": await supabase.from("appFields").update({ "show_name": showName }).eq("base_id", baseId);
-      break;
-    case "coverImage-submit": if(coverImage && coverImage.size > 0){
-      console.log('here')
-      const fileExt = coverImage.name.split('.').pop();
-      const fileName = `bases/${baseId}/covers/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const {data: uploadData, error: uploadError} = await supabase.storage.from('images')
-      .upload(fileName, coverImage, {
-        cacheControl: '3600', upsert: false
-      });
-      if(uploadError){
-        return {success: false, error: uploadError.message};
-      }
-      const {data: urlData} = supabase.storage.from('images').getPublicUrl(fileName);
-      imageUrl = urlData.publicUrl;
-      console.log(imageUrl)
+  // switch (_action) {
+  //   case "motto-submit": await supabase.from("baseDetails").update({ "motto": motto }).eq('base_id', baseId);
+  //     break;
+  //   case "commander-submit": await supabase.from("baseDetails").update({ "commander": commander }).eq("base_id", baseId);
+  //     break;
+  //   case "phone-submit": await supabase.from("baseDetails").update({ "phone": phone }).eq("base_id", baseId);
+  //     break;
+  //   case "email-submit": await supabase.from("baseDetails").update({ "email": email }).eq("base_id", baseId);
+  //     break;
+  //   case "showName-submit": await supabase.from("appFields").update({ "show_name": showName }).eq("base_id", baseId);
+  //     break;
+  //   case "coverImage-submit": if(coverImage && coverImage.size > 0){
+  //     console.log('here')
+  //     const fileExt = coverImage.name.split('.').pop();
+  //     const fileName = `bases/${baseId}/covers/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  //     const {data: uploadData, error: uploadError} = await supabase.storage.from('images')
+  //     .upload(fileName, coverImage, {
+  //       cacheControl: '3600', upsert: false
+  //     });
+  //     if(uploadError){
+  //       return {success: false, error: uploadError.message};
+  //     }
+  //     const {data: urlData} = supabase.storage.from('images').getPublicUrl(fileName);
+  //     imageUrl = urlData.publicUrl;
+  //     console.log(imageUrl)
 
-      const { error: updateError } = await supabase.from("baseDetails").update({"image_url": imageUrl}).eq('base_id', baseId);
-      if(updateError){
-        return {success: false, error: updateError.message};
-      }
-    }
-    break;
-    case "showCommand-submit": await supabase.from("appFields").update({ "show_commander": showCommand}).eq("base_id", baseId);
-      break;
-    case "showMotto-submit": await supabase.from("appFields").update({ "show_motto": showMotto}).eq("base_id", baseId);
-      break;
+  //     const { error: updateError } = await supabase.from("baseDetails").update({"image_url": imageUrl}).eq('base_id', baseId);
+  //     if(updateError){
+  //       return {success: false, error: updateError.message};
+  //     }
+  //   }
+  //   break;
+  //   case "showCommand-submit": await supabase.from("appFields").update({ "show_commander": showCommand}).eq("base_id", baseId);
+  //     break;
+  //   case "showMotto-submit": await supabase.from("appFields").update({ "show_motto": showMotto}).eq("base_id", baseId);
+  //     break;
     
-  }
+  // }
 }
-
-const EditableField = ({
-  label,
-  name,
-  field,
-  setField,
-  Icon,
-  fieldEdit,
-  setFieldEdit,
-  type,
-}: {
-  label: string;
-  name: string;
-  field: string;
-  setField: any;
-  Icon: any;
-  fieldEdit: boolean;
-  setFieldEdit: any;
-  type?: string;
-}) => {
-  return (
-    <div className="">
-      <Form method="POST">
-        <div className="flex justify-between">
-          <div className="flex gap-2 mb-2">
-            <Icon className="h-4 w-4" />
-            <Label>{label}</Label>
-          </div>
-          <div>
-            {fieldEdit && (
-              <div className="flex gap-2">
-                <button type="submit" value={`${name}-submit`} name="submit"><Save className="w-4 h-4 hover:bg-gray-200 hover:rounded" /></button>
-                <X
-                  onClick={() => setFieldEdit(false)}
-                  className="w-4 h-4 hover:bg-gray-200 hover:rounded"
-                />
-              </div>
-            )}
-            {!fieldEdit && (
-              <Edit2
-                onClick={() => setFieldEdit(true)}
-                className="w-4 h-4 hover:bg-gray-200 hover:rounded"
-              />
-            )}
-          </div>
-        </div>
-        {!fieldEdit && (
-          <p className="bg-secondary/50 p-2 rounded-lg mb-2 text-sm font-medium">{field}</p>
-        )}
-        {fieldEdit && !type && (
-          <input
-            type="text"
-            name={name}
-            className="w-full p-2 font-medium text-sm border rounded-lg"
-            value={field}
-            onChange={(e) => setField(e.currentTarget.value)}
-          />
-        )}
-        {fieldEdit && type === "textarea" && (
-          <textarea
-            name={name}
-            className="w-full p-2 font-medium text-sm border rounded-lg"
-            value={field}
-            onChange={(e) => setField(e.currentTarget.value)}
-          />
-        )}
-      </Form>
-    </div>
-  );
-};
 
 export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
   const { data , orgCount, appFieldData } = loaderData;
   const selectedBase = data[0];
+  // console.log(data)
   const [showModal, setShowModal] = useState(false);
 
   const [name, setName] = useState(selectedBase.base.name);
@@ -232,6 +169,8 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="w-full  pt-2 pb-6">
+      <Form method="POST">
+
       <div className="grid gap-4">
         {/* Base Header Card */}
         <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
@@ -245,7 +184,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                       src={selectedBase.image_url ?? "http://cataas.com/cat"}
                       alt={`${selectedBase.name} cover`}
                       className="w-full h-50 object-cover rounded-lg border"
-                    />
+                      />
                     <Button
                       size="sm"
                       variant="secondary"
@@ -332,25 +271,26 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                 <TabsContent value={"baseDetails"} className="mt-4">
                   {/* <Card>
                     <CardHeader>
-                      <CardTitle>Basic Information</CardTitle>
+                    <CardTitle>Basic Information</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6"> */}
                       <EditableField
-                        label={"Base Name"}
-                        name="baseName"
-                        field={name}
-                        setField={setName}
-                        Icon={Building}
-                        fieldEdit={nameEdit}
-                        setFieldEdit={setNameEdit}
-                      />
+                    label={"Base Name"}
+                    name="baseName"
+                    field={name}
+                    setField={setName}
+                    Icon={Building}
+                    fieldEdit={nameEdit}
+                    setFieldEdit={setNameEdit} 
+                    disabled={true} 
+                    originalValue={selectedBase.base.name}                      />
 
-                      <div className="space-y-2">
+                      <div className="space-y-2 mt-2">
                         <Label className="text-sm font-medium flex items-center gap-2">
                           <MapPin className="h-4 w-4" />
                           Location
                         </Label>
-                        <div className="p-2 rounded-md bg-muted/50 text-sm">
+                        <div className="p-2 rounded-md bg-muted/50 text-sm border">
                           {selectedBase.base.city}, {selectedBase.base.state}
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -393,7 +333,16 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                   <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details" className="mt-4">
-                  <EditableField label="Motto" name="motto" field={motto} setField={setMotto} Icon={SpeakerIcon} fieldEdit={mottoEdit} setFieldEdit={setMottoEdit} />
+                  <EditableField 
+                  label="Motto" 
+                  name="motto" 
+                  field={motto} 
+                  setField={setMotto} 
+                  Icon={SpeakerIcon} 
+                  fieldEdit={mottoEdit} 
+                  setFieldEdit={setMottoEdit} 
+                  disabled={false} 
+                  originalValue={selectedBase.motto} />
                 </TabsContent>
                 <TabsContent value="appView">
                 <Form method="POST">
@@ -434,8 +383,9 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                     label="Base Commander"
                     fieldEdit={commanderEdit}
                     setFieldEdit={setCommanderEdit}
-                    Icon={Shield}
-                  />
+                    Icon={Shield} 
+                    disabled={false} 
+                    originalValue={selectedBase.commander}                  />
                 </TabsContent>
                 <TabsContent value="appView">
                 <Form method="POST">
@@ -481,14 +431,15 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                 <TabsContent value="contact" className="mt-4">
                   <div className="space-y-6">
                   <EditableField
-                    field={phone}
-                    setField={setPhone}
-                    fieldEdit={phoneEdit}
-                    setFieldEdit={setPhoneEdit}
-                    name="phone"
-                    label="Phone Number"
-                    Icon={Phone}
-                  />
+                      field={phone}
+                      setField={setPhone}
+                      fieldEdit={phoneEdit}
+                      setFieldEdit={setPhoneEdit}
+                      name="phone"
+                      label="Phone Number"
+                      Icon={Phone} 
+                      disabled={false} 
+                      originalValue={selectedBase.phone}                  />
 
                   <EditableField
                     field={email}
@@ -498,7 +449,9 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                     name="email"
                     label="Email Address"
                     Icon={Mail}
-                  />
+                    disabled={false}
+                    originalValue={selectedBase.email}
+                    />
                 </div>
                 </TabsContent>
                 <TabsContent value="appView">
@@ -537,8 +490,17 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
               </Tabs>
             </CardHeader>
           </Card>
+          <input type="hidden" name="baseId" value={selectedBase.base_id}/>
+          <input type="hidden" name="request-type" value="base-update"/>
+          <input type="hidden" name="userId" value={selectedBase.user_id} />
+          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2 items-center">
+            <CardContent>
+              <Button className="border border-yellow-400 bg-yellow-600/20" >Submit Update Request</Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
+      </Form>
       {showModal && (
         <UploadModal
           isOpen={showModal}

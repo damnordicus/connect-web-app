@@ -36,7 +36,7 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases}: any
             theme.iconText = "text-green-600";
             content = <div className=" grid grid-cols-[auto_1fr] gap-x-4">
                 {Object.entries(request.data).map(([key, value]) => {
-                    if (key !== "orgId" && key !== "userId" && key !== "baseId")
+                    if (key !== "orgId" && key !== "userId" && key !== "baseId" && key !== "request-type")
                         return (
                             <>
                                 <p className="text-muted-foreground">{key.toUpperCase().slice(0, 1) + key.slice(1) + ":"}</p>
@@ -84,6 +84,19 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases}: any
             theme.border = "border-violet-400/20";
             theme.fill = "bg-violet-400/20";
             theme.iconText = "text-violet-600";
+            content = <div className=" grid grid-cols-[auto_1fr] gap-x-4">
+                {Object.entries(request.data).map(([key, value]) => {
+                    if (key !== "orgId" && key !== "userId" && key !== "baseId" && key !== "request-type")
+                        return (
+                            <>
+                                <p className="text-muted-foreground">{key.toUpperCase().slice(0, 1) + key.slice(1) + ":"}</p>
+                                <p>{value}</p>
+                                <input type="hidden" name={key} value={value}/>
+                            </>
+                        )
+                }
+                )}
+            </div>
             break;
         default: 
             cardTitle = "Request"
