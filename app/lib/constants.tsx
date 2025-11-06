@@ -78,3 +78,49 @@ export const categories = [
       "border-[#e257fa] bg-[#e257fa]/15 text-[#e257fa] hover:shadow-[#e257fa]/35",
   },
 ];
+
+type RequestType = {
+  label: string;
+  labelFull: string;
+  color: string;
+  border: string;
+  iconText: string;
+}
+
+export const requests : Record<string, RequestType> = {
+    "create-org": {
+        label: "Create Org",
+        labelFull: "Create Organization",
+        color: "bg-green-600/20",
+        border: "border-green-400/40",
+        iconText: "text-green-600",
+    },
+    "org-admin": {
+        label: "Org Admin",
+        labelFull: "Organization Administrator",
+        color: "bg-amber-600/20",
+        border: "border-amber-600/40",
+        iconText: "text-amber-600",
+    },
+    "base-admin": {
+        label: "Base Admin",
+        labelFull: "Base Administrator",
+        color: "bg-rose-600/20",
+        border: "border-rose-400/40",
+        iconText: "text-rose-600",
+    },
+    "org-update": {
+        label: "Org Update",
+        labelFull: "Organization Update",
+        color: "bg-sky-600/20",
+        border: "border-sky-600/40",
+        iconText: "text-sky-600",
+    },
+    "base-update": {
+        label: "Base Update",
+        labelFull: "Base Update",
+        color: "bg-violet-600/20",
+        border: "border-violet-400/40",
+        iconText: "text-violet-600",
+    }
+};

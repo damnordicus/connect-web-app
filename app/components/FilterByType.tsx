@@ -3,37 +3,10 @@ import { Badge } from "./ui/badge";
 import { Card, CardContent } from "./ui/card";
 import type React from "react";
 import type { SetStateAction } from "react";
+import { requests } from "~/lib/constants";
 
 export default function FilterByType({filterBy, setFilterBy, isSuperAdmin}:{filterBy: string[], setFilterBy: React.Dispatch<SetStateAction<string[]>>, isSuperAdmin?: boolean}){
-    // const types = ["Org Admin", "Org Update", "Update Admin", "Base Admin", "Org Create"]
-    const filters = {
-        "create-org": {
-            label: "Create Org",
-            color: "bg-green-600",
-            border: "border-green-400",
-        },
-        "org-admin": {
-            label: "Org Admin",
-            color: "bg-blue-600",
-            border: "border-blue-600",
-        },
-        "base-admin": {
-            label: "Base Admin",
-            color: "bg-purple-600",
-            border: "border-purple-400",
-        },
-        "org-update": {
-            label: "Org Update",
-            color: "bg-sky-600",
-            border: "border-sky-600",
-        },
-        "base-update": {
-            label: "Base Update",
-            color: "bg-violet-600",
-            border: "border-violet-400",
-        }
-    };
-    
+        
     function toggleFilter(type: string){
         setFilterBy(prev => 
             prev.includes(type)
@@ -49,7 +22,7 @@ export default function FilterByType({filterBy, setFilterBy, isSuperAdmin}:{filt
 
                 <FilterIcon className="mr-2" size={20}/>
                 <div className="flex justify-around gap-2">
-                {Object.entries(filters).map(([type, style]) =>{
+                {Object.entries(requests).map(([type, style]) =>{
                     const isActive = filterBy.includes(type);
                     if(!isSuperAdmin && (style.label === "Base Admin" || style.label === "Base Update")){
                         return
@@ -59,7 +32,7 @@ export default function FilterByType({filterBy, setFilterBy, isSuperAdmin}:{filt
                         key={type}
                         variant={"outline"}
                         onClick={() => toggleFilter(type)}
-                        className={`p-2 shadow-[0_4px_16px_rgba(0,0,0,0.4)] ${isActive ? style.border : 'border'} ${style.color}/20 text-foreground hover:${style.color}/30 cursor-pointer transition-colors`}
+                        className={`p-2 shadow-[0_4px_16px_rgba(0,0,0,0.4)] ${isActive ? style.border : 'border'} ${isActive ? style.color : '' } text-foreground hover:-translate-y-[2px] cursor-pointer transition-colors`}
                         >{style.label}</Badge>
                     )})}
                 </div>

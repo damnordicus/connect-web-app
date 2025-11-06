@@ -5,6 +5,10 @@ import { createClient } from "@supabase/supabase-js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import FilterByType from "~/components/FilterByType";
 import RequestCard from "~/components/RequestCard";
+import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
+import { requests } from "~/lib/constants";
+import { Badge } from "~/components/ui/badge";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -223,11 +227,11 @@ export const action = async ({request}: ActionFunctionArgs) => {
         .update(obj)
         .eq("base_id", base_id)
         console.log('data: ', updateData, ' error: ', updateError)
-        // const {data: deleteData, error: deleteError } = await supabase
-        // .from('request')
-        // .delete()
-        // .eq('id', request_id)
-        // console.log('data: ', deleteData, ' error: ', deleteError)
+        const {data: deleteData, error: deleteError } = await supabase
+        .from('request')
+        .delete()
+        .eq('id', request_id)
+        console.log('data: ', deleteData, ' error: ', deleteError)
       }
        else {
         console.log('update Object: ', updateObj)
@@ -268,12 +272,38 @@ export default function Home({ loaderData}: Route.ComponentProps) {
   const navigate = useNavigate();
   const [orgHover, setOrgHover] = useState<string | null>(null);
   const [filterBy, setFilterBy] = useState<string[]>(['create-org', 'org-admin', 'base-admin', 'org-update', 'base-update'])
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   useEffect(() => {
     if(orgData && orgData.length){
       navigate(`org?id=${orgData[0].id}`);
     }
   }, []);
+
+  console.log('sr; ', selectedRequest)
+
+  function orgNameForId(id: string){
+        console.log('test: ', allOrgs)
+        return allOrgs.filter(org => org.id === id)[0].name
+    }
+
+    function emailForId(id: string){
+        console.log('users: ', allUsers)
+        return allUsers.find(user => user.id === id)?.email
+    }
+
+    function baseForId(id: string){
+        return allBases.filter(base => base.id === id)[0].name
+    }
+
+  function labelForId(request: any){
+        const type = request.request_type.includes("org")
+        if(type){
+            return orgNameForId(request.org_id);
+        }else{
+            return baseForId(request.base_id);
+        }
+    }
 
   // SUPERADMIN VIEW: No tabs, just requests
   if(isSuperAdmin){
@@ -290,6 +320,7 @@ export default function Home({ loaderData}: Route.ComponentProps) {
                   allUsers={allUsers} 
                   allOrgs={allOrgs}
                   allBases={allBases}
+                  setSelectedRequest={setSelectedRequest}
                 />
               </div>
             ))
@@ -297,6 +328,25 @@ export default function Home({ loaderData}: Route.ComponentProps) {
             <p className="text-muted-foreground pl-1">No requests found.</p>
           )}
         </div>
+        {selectedRequest && 
+        <div className="absolute inset-0 w-full h-screen flex items-center justify-center bg-black/20 backdrop-blur-xs">
+          <Card className="relative flex w-1/2 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
+            <CardHeader>
+              <div className="inline-flex gap-2">
+              <p>{requests[selectedRequest.request_type].labelFull + " - "}</p>
+              <Badge variant={"outline"}>{labelForId(selectedRequest)}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p>sdf</p>
+            </CardContent>
+            <CardFooter className="flex w-full justify-center gap-2">
+              <Button>Edit</Button>
+              <Button>Approve</Button>
+              <Button variant={"destructive"} onClick={() => setSelectedRequest(null)}>Cancel</Button>
+            </CardFooter>
+          </Card>
+        </div>}
       </div>
     );
   }
