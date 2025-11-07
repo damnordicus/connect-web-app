@@ -147,11 +147,11 @@ export default function OrgDetailsRedesign({
     <div className="w-full flex-1 overflow-auto">
       <div className="grid gap-4">
         {(requestData && requestData.length > 0) && 
-        <Card className="bg-red-300 border-2 border-red-400">
+        <Card className="bg-red-600/15 border-1 border-red-500/30">
           <CardContent>
             <p>Update requests denied:</p>
             <ul>
-            {requestData.map(request => <li className="border rounded-md pl-2 bg-white/30 flex justify-between items-center">- {request.denial_reason}<Form method="POST"><input type="hidden" name="requestId" value={request.id} /><button className="px-2 bg-white rounded-md m-1">Clear</button></Form></li>)}
+            {requestData.map(request => <li className="border rounded-md pl-2 bg-primary/30 flex justify-between items-center">- {request.denial_reason}<Form method="POST"><input type="hidden" name="requestId" value={request.id} /><button className="px-2 py-1 bg-red-600/50 border rounded-md m-1">Clear</button></Form></li>)}
             </ul>
           </CardContent>
         </Card>}
@@ -179,7 +179,7 @@ export default function OrgDetailsRedesign({
                     >
                     <Edit2 className="h-3 w-3" />
                   </Button>
-                  {originalImage !== coverImage && <input type="hidden" name="coverImage-path" value={coverImage}/>}
+                  {((originalImage !== coverImage) && coverImage !== "") && <input type="hidden" name="coverImage-path" value={coverImage}/>}
                 </div>
               </div>
 
