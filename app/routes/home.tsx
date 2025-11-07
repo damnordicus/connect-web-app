@@ -101,7 +101,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return {
     isSuperAdmin: false,
     baseData, 
-    orgsByBase, 
+    allOrgs: orgsByBase, 
     orgRequests, 
     allUsers
   };
@@ -269,10 +269,11 @@ export default function Home({ loaderData}: Route.ComponentProps) {
     orgData
   } = loaderData;
   
+  console.log('loaderData: ', loaderData)
   const navigate = useNavigate();
   const [orgHover, setOrgHover] = useState<string | null>(null);
   const [filterBy, setFilterBy] = useState<string[]>(['create-org', 'org-admin', 'base-admin', 'org-update', 'base-update'])
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState<{base_id: string, created_at: string, data: any, denial_reason: string, id: string, is_denied: boolean, org_id: string, request_type: string, user_id: string} | null>(null);
 
   useEffect(() => {
     if(orgData && orgData.length){
@@ -283,22 +284,25 @@ export default function Home({ loaderData}: Route.ComponentProps) {
   console.log('sr; ', selectedRequest)
 
   function orgNameForId(id: string){
-        console.log('test: ', allOrgs)
-        return allOrgs.filter(org => org.id === id)[0].name
+        console.log('tests: ', allOrgs)
+        console.log('org: ', allOrgs?.filter(org => org.id === id))
+        return allOrgs?.filter(org => org.id === id)[0].name
     }
 
     function emailForId(id: string){
         console.log('users: ', allUsers)
-        return allUsers.find(user => user.id === id)?.email
+        return allUsers?.find(user => user.id === id)?.email
     }
 
     function baseForId(id: string){
-        return allBases.filter(base => base.id === id)[0].name
+        return allBases?.filter(base => base.id === id)[0].name
     }
 
   function labelForId(request: any){
         const type = request.request_type.includes("org")
+        console.log('type; ', type)
         if(type){
+            console.log('returned: ', orgNameForId(request.org_id))
             return orgNameForId(request.org_id);
         }else{
             return baseForId(request.base_id);
@@ -313,8 +317,8 @@ export default function Home({ loaderData}: Route.ComponentProps) {
           <h2 className="text-2xl pl-1 font-bold">All Requests</h2>
           <FilterByType filterBy={filterBy} setFilterBy={setFilterBy} isSuperAdmin/>
           {allRequests && allRequests.length > 0 ? (
-            allRequests.filter(item => filterBy.includes(item.request_type)).map(request => (
-              <div key={request.id} className="lg:grid grid-cols-3 md:flex md:flex-col">
+            <div className="lg:grid grid-cols-3 gap-4 md:flex md:flex-col">
+            {allRequests.filter(item => filterBy.includes(item.request_type)).map(request => (
                 <RequestCard 
                   request={request} 
                   allUsers={allUsers} 
@@ -322,8 +326,8 @@ export default function Home({ loaderData}: Route.ComponentProps) {
                   allBases={allBases}
                   setSelectedRequest={setSelectedRequest}
                 />
+            ))}
               </div>
-            ))
           ) : (
             <p className="text-muted-foreground pl-1">No requests found.</p>
           )}
@@ -382,7 +386,8 @@ export default function Home({ loaderData}: Route.ComponentProps) {
                     <RequestCard 
                       request={request} 
                       allUsers={allUsers} 
-                      allOrgs={orgsByBase}
+                      allOrgs={allOrgs}
+                      setSelectedRequest={setSelectedRequest}
                     />
                   </div>
                 ))
@@ -399,6 +404,25 @@ export default function Home({ loaderData}: Route.ComponentProps) {
       ) : (
         <Outlet />
       )}
+      {selectedRequest && 
+        <div className="absolute inset-0 w-full h-screen flex items-center justify-center bg-black/20 backdrop-blur-xs">
+          <Card className="relative flex w-1/2 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
+            <CardHeader>
+              <div className="inline-flex gap-2">
+              <p>{requests[selectedRequest.request_type].labelFull + " - "}</p>
+              <Badge variant={"outline"}>{labelForId(selectedRequest)}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p>sdf</p>
+            </CardContent>
+            <CardFooter className="flex w-full justify-center gap-2">
+              <Button>Edit</Button>
+              <Button>Approve</Button>
+              <Button variant={"destructive"} onClick={() => setSelectedRequest(null)}>Cancel</Button>
+            </CardFooter>
+          </Card>
+        </div>}
     </div>
   );
 }
