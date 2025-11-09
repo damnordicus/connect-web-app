@@ -7,10 +7,11 @@ import FilterByType from "~/components/FilterByType";
 import RequestCard from "~/components/RequestCard";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { categories, requests } from "~/lib/constants";
+import { categories, REASONS, requests } from "~/lib/constants";
 import { Badge } from "~/components/ui/badge";
-import { Key } from "lucide-react";
-import { Separator } from "~/components/ui/separator";
+import { Skeleton } from "~/components/ui/skeleton";
+import { Edit2, SaveIcon, X, XIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -111,7 +112,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
   const id = formData.get('id');
   const name = formData.get("name");
@@ -209,6 +210,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             'verified': new Date(Date.now())
           })
           .eq('id', user_id);
+
+        return {success: true, _action: "approve"}
       } else if (updateObj.request_type === "base-admin") {
         await supabase
           .from('user')
@@ -221,6 +224,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         await supabase.from('request').delete().eq('id', request_id);
         await supabase.from('baseDetails').insert({ "base_id": base_id, "user_id": user_id });
         await supabase.from('appFields').insert({ "base_id": base_id });
+        return {success: true, _action: "approve"}
       } else if (request_type === "base-update") {
         console.log('obj', Object.fromEntries(formData.entries()))
         const { org_id, request_id, request_type, _action, ...obj } = Object.fromEntries(formData.entries())
@@ -236,6 +240,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           .delete()
           .eq('id', request_id)
         console.log('data: ', deleteData, ' error: ', deleteError)
+        return {success: true, _action: "approve"}
       }
       else {
         console.log('update Object: ', updateObj)
@@ -247,8 +252,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           .update(updateObj)
           .eq("id", org_id);
         console.log(error)
-
-        await supabase.from('request').delete().eq('id', request_id);
+        const {data: requestData, error: requestError} = await supabase.from('request').delete().eq('id', request_id);
+        console.log(requestData, requestError)
+        return {success: true, _action: "approve"}
       }
     } catch (error) {
       console.error(error);
@@ -259,10 +265,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Handle deny action
     const { data: updateData, error: updateError } = await supabase.from('request').update({ "is_denied": true }).eq("id", requestId)
     console.log(updateData, updateError)
+    return {success: true, _action: "deny"}
   }
 }
 
-export default function Home({ loaderData }: Route.ComponentProps) {
+export default function Home({ loaderData, actionData }: Route.ComponentProps) {
   const {
     isSuperAdmin,
     allRequests,
@@ -282,6 +289,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   const [selectedRequest, setSelectedRequest] = useState<{ base_id: string, created_at: string, data: any, denial_reason: string, id: string, is_denied: boolean, org_id: string, request_type: string, user_id: string } | null>(null);
   const detailsFetcher = useFetcher();
   const [fetchedData, setFetchedData] = useState(null)
+  const [showDenyForm, setShowDenyForm] = useState(false)
+  const [denialSelect, setDenialSelect] = useState("")
 
   useEffect(() => {
     if (orgData && orgData.length) {
@@ -304,8 +313,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     console.log('dF: ', detailsFetcher)
   }, [detailsFetcher])
 
-  console.log('sr; ', selectedRequest)
-  console.log('fetched data: ', fetchedData)
+  useEffect(() => {
+    if(actionData && actionData.success){
+      setSelectedRequest(null);
+    }
+  },[actionData])
 
   function orgNameForId(id: string) {
     console.log('tests: ', allOrgs)
@@ -332,24 +344,36 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       return baseForId(request.base_id);
     }
   }
-
+  console.log('selected request: ', selectedRequest)
   // Add this component above your main component
   function FieldDisplay({
     fieldKey,
     value,
     categories,
-    incoming
+    incoming,
+    originalValue,
   }: {
     fieldKey: string;
     value: string;
     categories: Array<{ type: string; color: string }>;
     incoming?: boolean;
+    originalValue: string;
   }) {
     const label = fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1);
+    const [newValue, setNewValue] = useState<string>(value);
+    const [edit, setEdit] = useState(false);
+    const hasChanged = newValue !== originalValue;
+    function handleSave(){
+      setEdit(false)
+    }
 
     return (
       <div className="flex flex-col gap-1.5">
-        <p className="text-sm font-medium text-foreground">{label}</p>
+        <div className="inline-flex justify-between">
+          <p className="text-sm font-medium text-foreground pb-1">{label}</p>
+          {(incoming && !edit) && <div className="" onClick={() => setEdit(true)}><Edit2 width={14}/></div>}
+          {(incoming && edit) && <div className="flex gap-2"><SaveIcon onClick={handleSave} width={14}/><X onClick={() => {setNewValue(value); setEdit(false)}} width={14}/></div>}
+        </div>
         {fieldKey === "type" ? (
           <Badge
             variant="outline"
@@ -358,11 +382,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             {value}
           </Badge>
         ) : (
-          <p className="border rounded-md px-3 py-2 bg-muted/50 text-sm">
-            {value}
-          </p>
+          <>
+          {(incoming && !edit) ? <p className={`border ${hasChanged && 'border-yellow-400'} rounded-md px-3 py-2 bg-muted/50 text-sm`}>
+            {newValue}
+          </p> : <input type="text" className="border rounded-md px-3 py-2 bg-muted/50 text-sm" value={newValue} name={fieldKey} onChange={(e) => setNewValue(e.currentTarget.value)}/>}
+          </>
         )}
-        {incoming && <input type="hidden" name={fieldKey} value={value}/>}
+        {(incoming) && <input type="hidden" name={fieldKey} value={newValue || originalValue}/>}
       </div>
     );
   }
@@ -391,24 +417,79 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           )}
         </div>
         {selectedRequest &&
-          <div className="absolute inset-0 w-full h-screen flex items-center justify-center bg-black/20 backdrop-blur-xs">
-            <Card className="relative flex w-1/2 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
-              <CardHeader>
+              <Form method="POST" >
+        <div className="absolute inset-0 w-full h-screen flex items-center justify-center bg-black/20 backdrop-blur-xs">
+          <Card className="relative flex w-2/3 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
+            <CardHeader>
+              <div className="flex justify-between">
                 <div className="inline-flex gap-2">
-                  <p>{requests[selectedRequest.request_type].labelFull + " - "}</p>
-                  <Badge variant={"outline"}>{labelForId(selectedRequest)}</Badge>
+                <p>{requests[selectedRequest.request_type].labelFull + " - "}</p>
+                <Badge variant={"outline"}>{labelForId(selectedRequest)}</Badge>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p>sdf</p>
-              </CardContent>
-              <CardFooter className="flex w-full justify-center gap-2">
-                <Button>Edit</Button>
-                <Button>Approve</Button>
-                <Button variant={"destructive"} onClick={() => setSelectedRequest(null)}>Cancel</Button>
-              </CardFooter>
-            </Card>
-          </div>}
+                <div className="-mr-2 -mt-2 text-white/30">
+                  <XIcon size={20} onClick={() => {setDenialSelect(""); setShowDenyForm(false); setSelectedRequest(null);}}/>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-6">
+
+              {/* Current Data Column */}
+              <div className="flex flex-col pr-6 border-r">
+                <p className="text-sm font-semibold text-muted-foreground mb-4">Current</p>
+                <div className="flex flex-col gap-3">
+                  {fetchedData && Object.entries(fetchedData).map(([key, value]) => {
+                    if (!(key in selectedRequest.data) || key === "orgId" || key === "userId") {
+                      return null;
+                    }
+                    return <FieldDisplay key={key} fieldKey={key} value={value} categories={categories} originalValue={value}/>;
+                  })}
+                  { !fetchedData && <div className="flex flex-col pr-6 gap-2">
+                    <Skeleton className="h-5 w-24"/>
+                    <Skeleton className="h-7 w-full"/>
+                    </div>}
+                </div>
+              </div>
+
+              {/* Incoming Data Column */}
+              <div className="flex flex-col pl-2">
+                <p className="text-sm font-semibold text-muted-foreground mb-4">Incoming</p>
+                <div className="flex flex-col gap-3">
+                  {Object.entries(selectedRequest.data).map(([key, value]) => {
+                    if (key === "orgId" || key === "userId" || key === 'baseId' || key === "request-type") {
+                      return null;
+                    }
+                    return <FieldDisplay key={key} fieldKey={key} value={value} categories={categories} incoming/>;
+                  })}
+                </div>
+              </div>
+              <input type="hidden" name="org_id" value={selectedRequest.org_id}/>
+              <input type="hidden" name="request_id" value={selectedRequest.id} />
+              
+            </CardContent>
+            <CardFooter className="flex flex-col w-full justify-center gap-4">
+              <div className="flex gap-3">
+                <Button type="submit" name="_action" value="approve" className="bg-blue-600 hover:bg-blue-700 text-white">Approve</Button>
+                <Button variant={"ghost"} className="border-2 border-red-600 hover:bg-red-600/10 text-red-500 px-6 py-2" type="button" onClick={() => setShowDenyForm(!showDenyForm)}>Deny</Button>
+              </div>
+              {showDenyForm && <><div className="w-1/2">
+                <Select onValueChange={(e) => setDenialSelect(e)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a reason"/>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REASONS.map((item, index) => <SelectItem value={item} key={index}>{item}</SelectItem>)}
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-1/2">
+                {denialSelect === "Other" && <textarea className="bg-input w-full border rounded-lg" name="other-reason"/>}
+              </div></>}
+            </CardFooter>
+          </Card>
+          
+        </div>
+        </Form>}
       </div>
     );
   }
@@ -467,9 +548,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         <div className="absolute inset-0 w-full h-screen flex items-center justify-center bg-black/20 backdrop-blur-xs">
           <Card className="relative flex w-2/3 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
             <CardHeader>
-              <div className="inline-flex gap-2">
+              <div className="flex justify-between">
+                <div className="inline-flex gap-2">
                 <p>{requests[selectedRequest.request_type].labelFull + " - "}</p>
                 <Badge variant={"outline"}>{labelForId(selectedRequest)}</Badge>
+                </div>
+                <div className="-mr-2 -mt-2 text-white/30">
+                  <XIcon size={20} onClick={() => setSelectedRequest(null)}/>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-6">
@@ -500,11 +586,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                 </div>
               </div>
               <input type="hidden" name="org_id" value={selectedRequest.org_id}/>
+              <input type="hidden" name="request_id" value={selectedRequest.id} />
             </CardContent>
             <CardFooter className="flex w-full justify-center gap-2">
-              <Button type="button">Edit</Button>
-              <Button type="submit" name="_action" value="approve">Approve</Button>
-              <Button variant={"destructive"} type="button" onClick={() => setSelectedRequest(null)}>Cancel</Button>
+              <Button type="submit" name="_action" value="approve" className="bg-blue-600 hover:bg-blue-700 text-white">Approve</Button>
+              <Button variant={"ghost"} className="border-2 border-red-600 hover:bg-red-600/10 text-red-500 px-6 py-2" type="button" onClick={() => setSelectedRequest(null)}>Deny</Button>
             </CardFooter>
           </Card>
         </div>

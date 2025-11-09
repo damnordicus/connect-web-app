@@ -124,3 +124,10 @@ export const requests : Record<string, RequestType> = {
         iconText: "text-violet-600",
     }
 };
+
+export const REASONS = [
+  "Reason 1",
+  "Reason 2",
+  "Reason 3",
+  "Reason 4",
+]
