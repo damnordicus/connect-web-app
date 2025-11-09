@@ -135,7 +135,7 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
     }
 
     return (
-        <Card className={`relative overflow-clip bg-card text-foreground w-full border shadow-[0_4px_16px_rgba(0,0,0,0.4)]`}>
+        <Card className={`relative overflow-clip bg-card text-foreground w-full border shadow-[0_4px_16px_rgba(0,0,0,0.4)]`} onClick={() => setSelectedRequest(request)}>
              <div className={`absolute inset-y-0 left-0 w-[8px] ${requests[request_type].color} `}></div>   
             <Form method="POST" ref={formRef}>
             <CardHeader>
@@ -161,10 +161,11 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
                         <DropdownMenuContent align="end" className="">
                             <DropdownMenuGroup>
                                 <DropdownMenuItem onSelect={() => setSelectedRequest(request)}>
-                                    Edit
+                                    View
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={(e) => {
                                     e.preventDefault();
+                                    e.stopImmediatePropagation();
                                     formSubmit(formRef, 'approve')
                                 }}>
                                         Approve
@@ -180,7 +181,7 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
                     </DropdownMenu>
                 </div>
             </CardHeader>
-            <CardContent className="" onClick={() => setSelectedRequest(request)}>
+            <CardContent className="" >
                 {content}
                 <input type="hidden" name="org_id" value={request.org_id} />
                 <input type="hidden" name="request_id" value={request.id} />

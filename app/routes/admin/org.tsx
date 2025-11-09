@@ -140,8 +140,16 @@ export default function OrgDetailsRedesign({
   const [buildingEdit, setBuildingEdit] = useState(false);
   const [address, setAddress] = useState(orgData.address);
   const [addressEdit, setAddressEdit] = useState(false);
-  // console.log('ad: ', actionData)
-  // console.log('cI', coverImage.name)
+
+  // Reset addBadgeToForm when original badge is reselected
+  useEffect(() => {
+      setAddBadgeToForm(false);
+  }, [selectedBadge]);
+
+  // Determine badge state
+  const badgeChanged = orgData.type !== selectedBadge;
+  const shouldShowSaveButton = badgeChanged;
+  const shouldRenderHiddenInput = badgeChanged && addBadgeToForm;
 
   return (
     <div className="w-full flex-1 overflow-auto">
@@ -369,7 +377,7 @@ export default function OrgDetailsRedesign({
                       <Label>Organization Type</Label>
                     </div>
                     <div className="flex flex-wrap justify-between gap-2">
-                      <div className="space-x-2 space-y-2">
+                      <div className={`space-x-2 p-2 rounded-lg`}>
                         {categories.map((item, index) => (
                           <Badge
                           key={index}
@@ -383,21 +391,24 @@ export default function OrgDetailsRedesign({
                           </Badge>
                         ))}
                       </div>
-                      {orgData.type !== selectedBadge && (
+                      {shouldShowSaveButton && (
                         <div className="flex items-center">
-                        
-                          
                           <button
                             name="submit"
                             type="button"
                             onClick={() => setAddBadgeToForm(true)}
-                            >
+                            disabled={addBadgeToForm}
+                            className={`transition-colors ${
+                              addBadgeToForm 
+                                ? 'text-gray-600 cursor-not-allowed' 
+                                : 'text-white hover:text-gray-200'
+                            }`}
+                          >
                             <SaveIcon size={18} />
                           </button>
-                        
                         </div>
                       )}
-                      {addBadgeToForm && <input type="hidden" name="type" value={selectedBadge} />}
+                      {shouldRenderHiddenInput && <input type="hidden" name="type" value={selectedBadge} />}
                     </div>
                   </div>
                 </TabsContent>
