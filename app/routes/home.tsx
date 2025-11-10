@@ -121,13 +121,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const badge = formData.get("badge");
   const _action = formData.get("_action");
   const image = formData.get("logo") as File;
-  const primary = formData.get("primary");
-  const secondary = formData.get("secondary");
-  const text = formData.get("text");
   const org_id = formData.get("org_id");
   const requestId = formData.get("request_id");
   const request_type = formData.get("request_type");
   const image_url = formData.get("image_url");
+  const newLinksStr = formData.get('links');
+  const newLinks = newLinksStr ? JSON.parse(newLinksStr as string) : [];
   console.log('pre if: ', formData)
   if (_action === "submit") {
     try {
@@ -246,6 +245,13 @@ export const action = async ({ request }: Route.ActionArgs) => {
         console.log('update Object: ', updateObj)
 
         delete updateObj.request_type;
+        
+        // const oldLinks = JSON.parse(currentLinks?.links)
+        const newLinks = JSON.parse(updateObj.links)
+        if(newLinks){
+          const {data: currentLinks} = await supabase.from('organization').select('links').eq('id', org_id).single();
+          updateObj.links = [...newLinks, ...(currentLinks?.links || [])]
+        }
 
         const { error } = await supabase
           .from('organization')

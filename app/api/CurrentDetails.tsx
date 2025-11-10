@@ -14,9 +14,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const {data: orgData, error: orgError} = await supabase.from("organization").select().eq("id", id).single();
 
     if(orgData){
+        orgData.links = JSON.stringify(orgData.links)
         return {data: orgData}
     }
-    
+
     const {data: baseData, error: baseError} = await supabase.from("baseDetails").select().eq("base_id", id).single();
     return {data: baseData}
 }

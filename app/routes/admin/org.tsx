@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -21,12 +21,15 @@ import {
   MapIcon,
   MapPin,
   Map,
+  PlusSquareIcon,
+  EllipsisVertical,
 } from "lucide-react";
 import type { Route } from "../+types/home";
 import {
   Form,
   redirect,
   useActionData,
+  useNavigate,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
 } from "react-router";
@@ -34,6 +37,10 @@ import { createClient } from "@supabase/supabase-js";
 import UploadModal from "~/components/UploadModal";
 import { EditableField } from "~/components/EditableField";
 import { categories } from "~/lib/constants";
+import { Select, SelectValue,  SelectTrigger} from "~/components/ui/select";
+import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import { DropdownMenuContent, DropdownMenuItem } from "~/components/ui/dropdown-menu";
+
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -59,7 +66,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { data: orgData } = await supabase
     .from("organization")
     .select("*")
-    .eq("id", org);
+    .eq("id", org)
+    .single();
+  // console.log(orgData)
+ 
+  if(!orgData) return{}
+
   const { data: requestData, error: requestError} = await supabase
     .from("request")
     .select("*")
@@ -118,28 +130,32 @@ export default function OrgDetailsRedesign({
   loaderData,
   actionData
 }: Route.ComponentProps) {
-  const { orgData: orgs, userId, requestData } = loaderData;
-  const orgData = orgs[0];
+  const { orgData, userId, requestData } = loaderData;
+  // const orgData = orgs[0];
   console.log('orgData', orgData);
   const [showModal, setShowModal] = useState(false);
   const [coverImage, setCoverImage] = useState<string>("");
-  const [originalImage, setOriginalImage] = useState<string>(orgData.image_url)
-  const [name, setName] = useState(orgData.name);
+  const [originalImage, setOriginalImage] = useState<string>(orgData?.image_url)
+  const [name, setName] = useState(orgData?.name);
   const [nameEdit, setNameEdit] = useState(false);
-  const [description, setDescription] = useState(orgData.description);
+  const [description, setDescription] = useState(orgData?.description);
   const [descriptionEdit, setDescriptionEdit] = useState(false);
-  const [poc, setPOC] = useState(orgData.contact);
+  const [poc, setPOC] = useState(orgData?.contact);
   const [pocEdit, setPocEdit] = useState(false);
-  const [selectedBadge, setSelectedBadge] = useState(orgData.type);
+  const [selectedBadge, setSelectedBadge] = useState(orgData?.type);
   const [showLogo, setShowLogo] = useState(true);
   const [showType, setShowType] = useState(true);
   const [addBadgeToForm, setAddBadgeToForm] = useState(false);
-  const [webUrl, setWebUrl] = useState(orgData.web_url);
+  const [webUrl, setWebUrl] = useState(orgData?.web_url);
   const [webEdit, setWebEdit] = useState(false);
-  const [building, setBuilding] = useState(orgData.building_number);
+  const [building, setBuilding] = useState(orgData?.building_number);
   const [buildingEdit, setBuildingEdit] = useState(false);
-  const [address, setAddress] = useState(orgData.address);
+  const [address, setAddress] = useState(orgData?.address);
   const [addressEdit, setAddressEdit] = useState(false);
+  const [links, setLinks] = useState<{label: string, link: string}[]>(orgData?.links ?? [])
+  const navigate = useNavigate();
+  const [showAddLink, setShowAddLink] = useState(false);
+  const [newLink, setNewLink] = useState<{label: string, link: string}>({label: '', link: ''})
 
   // Reset addBadgeToForm when original badge is reselected
   useEffect(() => {
@@ -150,6 +166,14 @@ export default function OrgDetailsRedesign({
   const badgeChanged = orgData.type !== selectedBadge;
   const shouldShowSaveButton = badgeChanged;
   const shouldRenderHiddenInput = badgeChanged && addBadgeToForm;
+
+  const newLinks = links.filter(
+    (link) => !orgData.links?.some(
+      (orgLink) => orgLink.label === link.label && orgLink.link === link.link
+    )
+  );
+
+  console.log('links: ', links, ' newLinks: ', newLinks)
 
   return (
     <div className="w-full flex-1 overflow-auto">
@@ -480,6 +504,68 @@ export default function OrgDetailsRedesign({
               </Tabs>
             </CardHeader>
           </Card>
+
+          <Card className="col-span-2">
+            <CardHeader>
+              <Tabs defaultValue="links">
+                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="links">Links</TabsTrigger>
+                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
+                </TabsList>
+                <TabsContent value="links" className="mt-4 space-y-2">
+                  {links?.map((link, index) =>{
+                    const isNewLink = !orgData.links?.some(
+                      (orgLink) => orgLink.label === link.label && orgLink.link === link.link
+                    )
+                    return(
+                    <Card className="py-2 shadow-lg" >
+                    <CardContent className="relative flex flex-col">
+                        <p className="text-lg">{link.label}</p>
+                        <p className="italic text-gray-400 ">{link.link}</p>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="absolute top-1 right-1" asChild>
+                            <EllipsisVertical size={20} className=""/>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                            <DropdownMenuItem>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                    </CardContent>
+                  </Card>
+                )})}
+                {newLinks.length > 0 && (
+                  <input type="hidden" name="links" value={JSON.stringify(newLinks)} />
+                )}
+                  <Card className="py-2">
+                    <CardContent className="flex w-full ">
+                      {!showAddLink ? <div className="flex w-full justify-between">
+                        <p>Add New Link</p>
+                        <PlusSquareIcon className="hover:text-gray-400" size={24} onClick={() => setShowAddLink(true)}/>
+                      </div>: <div className="flex flex-col gap-4 w-full">
+                          <div className="space-y-2">
+                            <p>Label: </p>
+                            <input type="text" name="link-label" value={newLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, label: e.currentTarget.value})}/>
+                          </div>
+                          <div className="space-y-2">
+                            <p>Link Address: </p>
+                            <input type="text" name="link-address" value={newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, link: e.currentTarget.value})}/>
+                          </div>
+                          <div className="flex justify-center gap-2">
+                            <Button variant={"default"} className="bg-blue-600" onClick={() => {setLinks((prev) => [...prev, newLink]); setNewLink({label: '', link: ''}); setShowAddLink(false);}}>Add Link</Button>
+                            <Button variant={"ghost"} className="border border-red-600 text-red-600" onClick={() => setShowAddLink(false)}>Cancel</Button>
+                          </div>
+                        </div>}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="appView">
+
+                </TabsContent>
+              </Tabs>
+            </CardHeader>
+          </Card>
           <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2 items-center">
             <CardContent>
               <Button className="border border-yellow-400 bg-yellow-600/20" >Submit Update Request</Button>
@@ -487,7 +573,7 @@ export default function OrgDetailsRedesign({
           </Card>
         </div>
         <input type="hidden" name="userId" value={userId} />
-        <input type="hidden" name="orgId" value={orgData.id} />
+        <input type="hidden" name="orgId" value={orgData?.id} />
         {actionData && <input type="hidden" name="image" value={actionData.fileName}/>}
         </Form>
       </div>
