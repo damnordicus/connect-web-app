@@ -23,6 +23,7 @@ import {
   Map,
   PlusSquareIcon,
   EllipsisVertical,
+  PlusIcon,
 } from "lucide-react";
 import type { Route } from "../+types/home";
 import {
@@ -59,7 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
         return acc;
     }, {} as Record<string, string>);
-  console.log(cookies.user_id)
+  // console.log(cookies.user_id)
 
   const searchParams = new URL(request.url).searchParams;
   const org = searchParams.get("id");
@@ -132,7 +133,7 @@ export default function OrgDetailsRedesign({
 }: Route.ComponentProps) {
   const { orgData, userId, requestData } = loaderData;
   // const orgData = orgs[0];
-  console.log('orgData', orgData);
+  // console.log('orgData', orgData);
   const [showModal, setShowModal] = useState(false);
   const [coverImage, setCoverImage] = useState<string>("");
   const [originalImage, setOriginalImage] = useState<string>(orgData?.image_url)
@@ -167,13 +168,13 @@ export default function OrgDetailsRedesign({
   const shouldShowSaveButton = badgeChanged;
   const shouldRenderHiddenInput = badgeChanged && addBadgeToForm;
 
-  const newLinks = links.filter(
-    (link) => !orgData.links?.some(
-      (orgLink) => orgLink.label === link.label && orgLink.link === link.link
-    )
-  );
+  // const newLinks = links.filter(
+  //   (link) => !orgData.links?.some(
+  //     (orgLink) => orgLink.label === link.label && orgLink.link === link.link
+  //   )
+  // );
 
-  console.log('links: ', links, ' newLinks: ', newLinks)
+  // console.log('existing links: ', links, ' newLinks: ', newLinks)
 
   return (
     <div className="w-full flex-1 overflow-auto">
@@ -535,8 +536,8 @@ export default function OrgDetailsRedesign({
                     </CardContent>
                   </Card>
                 )})}
-                {newLinks.length > 0 && (
-                  <input type="hidden" name="links" value={JSON.stringify(newLinks)} />
+                {links.length > 0 && (
+                  <input type="hidden" name="links" value={JSON.stringify(links)} />
                 )}
                   <Card className="py-2">
                     <CardContent className="flex w-full ">
@@ -552,9 +553,9 @@ export default function OrgDetailsRedesign({
                             <p>Link Address: </p>
                             <input type="text" name="link-address" value={newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, link: e.currentTarget.value})}/>
                           </div>
-                          <div className="flex justify-center gap-2">
-                            <Button variant={"default"} className="bg-blue-600" onClick={() => {setLinks((prev) => [...prev, newLink]); setNewLink({label: '', link: ''}); setShowAddLink(false);}}>Add Link</Button>
-                            <Button variant={"ghost"} className="border border-red-600 text-red-600" onClick={() => setShowAddLink(false)}>Cancel</Button>
+                          <div className="flex justify-end gap-2">
+                            <Button variant={"default"} className="hover:bg-blue-600 border" onClick={() => {setLinks((prev) => [...prev, newLink]); setNewLink({label: '', link: ''}); setShowAddLink(false);}}><PlusIcon />Add Link</Button>
+                            <Button variant={"ghost"} className="border " onClick={() => setShowAddLink(false)}>Cancel</Button>
                           </div>
                         </div>}
                     </CardContent>
