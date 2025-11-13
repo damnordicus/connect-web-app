@@ -153,10 +153,14 @@ export default function OrgDetailsRedesign({
   const [buildingEdit, setBuildingEdit] = useState(false);
   const [address, setAddress] = useState(orgData?.address);
   const [addressEdit, setAddressEdit] = useState(false);
-  const [links, setLinks] = useState<{label: string, link: string}[]>(orgData?.links ?? [])
+  const [links, setLinks] = useState<{label: string, link: string}[]>([])
   const navigate = useNavigate();
   const [showAddLink, setShowAddLink] = useState(false);
   const [newLink, setNewLink] = useState<{label: string, link: string}>({label: '', link: ''})
+  const [existingLinks, setExistingLinks] = useState<{label: string, link: string}[]>(JSON.parse(orgData?.links) ?? [])
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editedLink, setEditedLink] = useState<{label: string, link: string}>({label: '', link: ''})
+  const [update, setUpdate] = useState(false);
 
   // Reset addBadgeToForm when original badge is reselected
   useEffect(() => {
@@ -168,6 +172,22 @@ export default function OrgDetailsRedesign({
   const shouldShowSaveButton = badgeChanged;
   const shouldRenderHiddenInput = badgeChanged && addBadgeToForm;
 
+  function startEditLink(index: number, link: {label: string, link: string}) {
+    setEditingIndex(index);
+    setEditedLink({...link});
+  }
+
+  function saveEditedLink(index: number){
+    setExistingLinks(prev => {
+      const updated = [...prev];
+      updated[index] = editedLink;
+      return updated;
+    });
+    setEditingIndex(null);
+    setEditedLink({label: '', link: ''});
+    setUpdate(true);
+  }
+
   // const newLinks = links.filter(
   //   (link) => !orgData.links?.some(
   //     (orgLink) => orgLink.label === link.label && orgLink.link === link.link
@@ -175,6 +195,14 @@ export default function OrgDetailsRedesign({
   // );
 
   // console.log('existing links: ', links, ' newLinks: ', newLinks)
+
+  function handleAddLink() {
+    if(newLink.label !== "" && newLink.link !== ""){
+      setLinks((prev) => [...prev, newLink]);
+      setNewLink({label: "", link: ""});
+      setShowAddLink(false);
+    }
+  }
 
   return (
     <div className="w-full flex-1 overflow-auto">
@@ -514,13 +542,13 @@ export default function OrgDetailsRedesign({
                   <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="links" className="mt-4 space-y-2">
-                  {links?.map((link, index) =>{
-                    const isNewLink = !orgData.links?.some(
-                      (orgLink) => orgLink.label === link.label && orgLink.link === link.link
-                    )
+                  {existingLinks.map((link, index) =>{
+                    const isEditing = editingIndex === index;
                     return(
                     <Card className="py-2 shadow-lg" >
                     <CardContent className="relative flex flex-col">
+                        {!isEditing ?
+                      <>
                         <p className="text-lg">{link.label}</p>
                         <p className="italic text-gray-400 ">{link.link}</p>
                         <DropdownMenu>
@@ -528,16 +556,75 @@ export default function OrgDetailsRedesign({
                             <EllipsisVertical size={20} className=""/>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => startEditLink(index, link)}>Edit</DropdownMenuItem>
                             <DropdownMenuItem>Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      </>
+                        
+                  : <>
+                     <div className="flex flex-col gap-4 w-full">
+                          <div className="space-y-2">
+                            <p>Label: </p>
+                            <input type="text" value={editedLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setEditedLink({...editedLink, label: e.currentTarget.value})}/>
+                          </div>
+                          <div className="space-y-2">
+                            <p>Link Address: </p>
+                            <input type="text" value={editedLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setEditedLink({...editedLink, link: e.currentTarget.value})}/>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant={"default"} className="hover:bg-blue-600 border" onClick={() => saveEditedLink(index)}><SaveIcon />Save Link</Button>
+                            <Button variant={"ghost"} className="border " onClick={() => setEditingIndex(null)}>Cancel</Button>
+                          </div>
+                        </div>
+                  </>
+                }
                         
                     </CardContent>
                   </Card>
                 )})}
-                {links.length > 0 && (
-                  <input type="hidden" name="links" value={JSON.stringify(links)} />
+                {links.map((link, index) =>{
+                    
+                    return(
+                      <Card className="py-2 shadow-lg border border-yellow-600" >
+                    <CardContent className="relative flex flex-col">
+                      {true ?
+                      <>
+                        <p className="text-lg">{link.label}</p>
+                        <p className="italic text-gray-400 ">{link.link}</p>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="absolute top-1 right-1" asChild>
+                            <EllipsisVertical size={20} className=""/>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => null}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </>
+                        
+                  : <>
+                    <div className="flex flex-col gap-4 w-full">
+                          <div className="space-y-2">
+                            <p>Label: </p>
+                            <input type="text" value={newLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, label: e.currentTarget.value})}/>
+                          </div>
+                          <div className="space-y-2">
+                            <p>Link Address: </p>
+                            <input type="text" value={newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, link: e.currentTarget.value})}/>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant={"default"} className="hover:bg-blue-600 border" onClick={handleAddLink}><PlusIcon />Add Link</Button>
+                            <Button variant={"ghost"} className="border " onClick={() => setShowAddLink(false)}>Cancel</Button>
+                          </div>
+                        </div>
+                  </>
+                }
+                    </CardContent>
+                </Card> 
+                )})}
+                {(links.length > 0 || update) && (
+                  <input type="hidden" name="links" value={JSON.stringify([...(existingLinks || []), ...links])} />
                 )}
                   <Card className="py-2">
                     <CardContent className="flex w-full ">
@@ -547,14 +634,14 @@ export default function OrgDetailsRedesign({
                       </div>: <div className="flex flex-col gap-4 w-full">
                           <div className="space-y-2">
                             <p>Label: </p>
-                            <input type="text" name="link-label" value={newLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, label: e.currentTarget.value})}/>
+                            <input type="text" value={newLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, label: e.currentTarget.value})}/>
                           </div>
                           <div className="space-y-2">
                             <p>Link Address: </p>
-                            <input type="text" name="link-address" value={newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, link: e.currentTarget.value})}/>
+                            <input type="text" value={newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, link: e.currentTarget.value})}/>
                           </div>
                           <div className="flex justify-end gap-2">
-                            <Button variant={"default"} className="hover:bg-blue-600 border" onClick={() => {setLinks((prev) => [...prev, newLink]); setNewLink({label: '', link: ''}); setShowAddLink(false);}}><PlusIcon />Add Link</Button>
+                            <Button variant={"default"} className="hover:bg-blue-600 border" onClick={handleAddLink}><PlusIcon />Add Link</Button>
                             <Button variant={"ghost"} className="border " onClick={() => setShowAddLink(false)}>Cancel</Button>
                           </div>
                         </div>}

@@ -247,11 +247,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
         delete updateObj.request_type;
         
         // const oldLinks = JSON.parse(currentLinks?.links)
-        const newLinks = JSON.parse(updateObj.links)
-        if(newLinks){
-          const {data: currentLinks} = await supabase.from('organization').select('links').eq('id', org_id).single();
-          updateObj.links = [...newLinks, ...(currentLinks?.links || [])]
-        }
+        //const newLinks = JSON.parse(updateObj.links)
+        // if(newLinks){
+        //   const {data: currentLinks} = await supabase.from('organization').select('links').eq('id', org_id).single();
+        //   updateObj.links = [...newLinks, ...(currentLinks?.links || [])]
+        // }
 
         const { error } = await supabase
           .from('organization')
