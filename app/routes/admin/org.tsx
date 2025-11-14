@@ -178,13 +178,37 @@ export default function OrgDetailsRedesign({
   }
 
   function saveEditedLink(index: number){
-    setExistingLinks(prev => {
+    const existingLinksLength = existingLinks.length;
+    
+    if(index < existingLinksLength){
+      setExistingLinks(prev => {
       const updated = [...prev];
       updated[index] = editedLink;
       return updated;
     });
+    }else{
+      setLinks(prev => {
+        const updated = [...prev];
+        updated[index - existingLinksLength] = editedLink;
+        return updated;
+      });
+    }
+
+    
     setEditingIndex(null);
     setEditedLink({label: '', link: ''});
+    setUpdate(true);
+  }
+
+  function deleteLink(index: number){
+    const existingLinksLength = existingLinks.length;
+
+    if(index < existingLinksLength){
+      setExistingLinks(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setLinks(prev => prev.filter((_, i) => i !== (index - existingLinksLength)));
+    }
+
     setUpdate(true);
   }
 
@@ -542,10 +566,10 @@ export default function OrgDetailsRedesign({
                   <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value="links" className="mt-4 space-y-2">
-                  {existingLinks.map((link, index) =>{
+                  {[...existingLinks, ...links].map((link, index) =>{
                     const isEditing = editingIndex === index;
                     return(
-                    <Card className="py-2 shadow-lg" >
+                    <Card className="py-2 shadow-[0_4px_16px_rgba(0,0,0,0.3)]" >
                     <CardContent className="relative flex flex-col">
                         {!isEditing ?
                       <>
@@ -557,7 +581,7 @@ export default function OrgDetailsRedesign({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => startEditLink(index, link)}>Edit</DropdownMenuItem>
-                            <DropdownMenuItem>Delete</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => deleteLink(index)}>Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </>
@@ -583,7 +607,7 @@ export default function OrgDetailsRedesign({
                     </CardContent>
                   </Card>
                 )})}
-                {links.map((link, index) =>{
+                {/* {links.map((link, index) =>{
                     
                     return(
                       <Card className="py-2 shadow-lg border border-yellow-600" >
@@ -622,11 +646,11 @@ export default function OrgDetailsRedesign({
                 }
                     </CardContent>
                 </Card> 
-                )})}
+                )})} */}
                 {(links.length > 0 || update) && (
                   <input type="hidden" name="links" value={JSON.stringify([...(existingLinks || []), ...links])} />
                 )}
-                  <Card className="py-2">
+                  <Card className="py-2 shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
                     <CardContent className="flex w-full ">
                       {!showAddLink ? <div className="flex w-full justify-between">
                         <p>Add New Link</p>
