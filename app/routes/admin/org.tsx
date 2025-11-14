@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader } from "~/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
@@ -24,6 +24,8 @@ import {
   PlusSquareIcon,
   EllipsisVertical,
   PlusIcon,
+  RectangleEllipsis,
+  XIcon,
 } from "lucide-react";
 import type { Route } from "../+types/home";
 import {
@@ -37,10 +39,11 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import UploadModal from "~/components/UploadModal";
 import { EditableField } from "~/components/EditableField";
-import { categories } from "~/lib/constants";
+import { ADDITIONAL_FIELDS, categories } from "~/lib/constants";
 import { Select, SelectValue,  SelectTrigger} from "~/components/ui/select";
 import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuContent, DropdownMenuItem } from "~/components/ui/dropdown-menu";
+import FieldTypes from "~/components/FieldTypes";
 
 
 const supabase = createClient(
@@ -161,6 +164,7 @@ export default function OrgDetailsRedesign({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editedLink, setEditedLink] = useState<{label: string, link: string}>({label: '', link: ''})
   const [update, setUpdate] = useState(false);
+  const [fieldsModal, setFieldsModal] = useState(false);
 
   // Reset addBadgeToForm when original badge is reselected
   useEffect(() => {
@@ -678,6 +682,14 @@ export default function OrgDetailsRedesign({
               </Tabs>
             </CardHeader>
           </Card>
+          <Card className="col-span-2">
+            <CardContent className="flex justify-center items-center w-full">
+                <Button type="button" onClick={() => setFieldsModal(true)} className="flex gap-2">
+                  <PlusIcon />
+                  <p>Add Field</p>
+                </Button>
+            </CardContent>
+          </Card>
           <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2 items-center">
             <CardContent>
               <Button className="border border-yellow-400 bg-yellow-600/20" >Submit Update Request</Button>
@@ -697,6 +709,8 @@ export default function OrgDetailsRedesign({
           baseId={orgData.base_id}
         ></UploadModal>
       )}
+      {fieldsModal && 
+        <FieldTypes setShowModal={setFieldsModal}/>}
     </div>
   );
 }

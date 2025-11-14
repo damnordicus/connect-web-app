@@ -1,3 +1,5 @@
+import { Database, FileUp, FolderOpen, Share2, User } from "lucide-react";
+
 export const states = [
   "Alabama",
   "Alaska",
@@ -130,4 +132,32 @@ export const REASONS = [
   "Reason 2",
   "Reason 3",
   "Reason 4",
+]
+
+export const ADDITIONAL_FIELDS = [
+  {
+    name: "Upload/Download file",
+    description: "Add ability to upload a file, that can be downloaded from app",
+    icon: <FileUp />
+  },
+  {
+    name: "Display Table",
+    description: "Add a data table to display structured information",
+    icon: <Database />
+  },
+  {
+    name: "Contact List",
+    description: "Add contact list field with contact information",
+    icon: <User />
+  },
+  {
+    name: "Social Media",
+    description: "Add social media links and profiles",
+    icon: <Share2 />
+  },
+  {
+    name: "Nested Directories",
+    description: "Add nested directory structure",
+    icon: <FolderOpen />
+  },
 ]
