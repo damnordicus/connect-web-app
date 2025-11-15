@@ -502,7 +502,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
 
   // BASE ADMIN VIEW: With tabs
   return (
-    <div className="px-6 flex-1">
+    <div className=" flex-1">
       {baseData ? (
         <Tabs defaultValue="requests">
           <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">

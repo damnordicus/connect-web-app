@@ -8,7 +8,7 @@ import type { SetStateAction } from "react";
 export default function FieldTypes ({setShowModal}: {setShowModal: React.Dispatch<SetStateAction<boolean>>}) {
     return (
         <div className="absolute inset-0 backdrop-blur-xs flex items-center justify-center w-full h-screen bg-black/30">
-        <Card className="relative flex">
+        <Card className="relative flex rounded-lg">
           <CardHeader className="flex items-center gap-4">
             {/* <div className="rounded-full p-2 bg-white/10"> */}
             <RectangleEllipsis className="text-gray-500"/>
@@ -18,7 +18,7 @@ export default function FieldTypes ({setShowModal}: {setShowModal: React.Dispatc
           </CardHeader>
           <CardContent className="space-y-3 ">
             {ADDITIONAL_FIELDS.map((field, index) => 
-            <Card className={`shadow-[0_4px_16px_rgba(0,0,0,0.4)] `}>
+            <Card className={`border-2 rounded-lg `}>
               <CardContent className="flex w-full items-center gap-4 ">
                 <div>
                   {field.icon}
