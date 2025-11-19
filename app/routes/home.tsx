@@ -252,6 +252,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         //   const {data: currentLinks} = await supabase.from('organization').select('links').eq('id', org_id).single();
         //   updateObj.links = [...newLinks, ...(currentLinks?.links || [])]
         // }
+        updateObj.table_data = JSON.parse(updateObj.table_data as string)
 
         const { error } = await supabase
           .from('organization')
@@ -505,7 +506,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
     <div className=" flex-1">
       {baseData ? (
         <Tabs defaultValue="requests">
-          <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+          <TabsList className="bg-card border mt-4 ml-4 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
             <TabsTrigger
               value="requests"
               className="data-[state=active]:!bg-primary"
@@ -523,7 +524,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
           </TabsList>
 
           <TabsContent value="requests" className="mt-2">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 mx-4">
               <FilterByType filterBy={filterBy} setFilterBy={setFilterBy} />
               {orgRequests && orgRequests.length > 0 ? (
                 orgRequests.map(request => (

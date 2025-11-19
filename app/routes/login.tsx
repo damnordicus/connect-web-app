@@ -146,7 +146,7 @@ export default function Login({loaderData}: Route.ComponentProps){
     return (
         <div className="w-full h-screen flex justify-center items-center">
             {showLogin && 
-            <Card className=" md:w-1/3 shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border flex flex-col items-center">
+            <Card className=" md:w-1/3 shadow-[0_4px_16px_rgba(0,0,0,0.4)] rounded-lg flex flex-col items-center">
                 <Form method="POST" className="w-full">
                     
                 <CardHeader className="w-full text-center">
@@ -157,13 +157,13 @@ export default function Login({loaderData}: Route.ComponentProps){
                     <InputWithLabel label="Password" type="password" value={password} setter={setPassword} name="password" />
                     {actionData?.error && <p className="text-red-500 text-sm mb-3 text-center">{actionData.error}</p>}
                 </CardContent>
-                <CardFooter className="w-full flex flex-col items-center justify-center space-y-2">
+                <CardFooter className="w-full flex flex-col items-center justify-center space-y-2 pt-4">
                     <Button variant={'default'} className="w-full bg-primary hover:bg-blue-600" name="_action" type="submit" value="login">Login</Button>
                     <Button variant={'default'} className="w-full bg-secondary hover:bg-green-600" type="button" onClick={() => setShowLogin(false)}>Register</Button>
                 </CardFooter>
                 </Form>
             </Card>}
-            {!showLogin && <Card className="lg:w-1/3 w-full mx-40 shadow-xl">
+            {!showLogin && <Card className="lg:w-1/3 w-full mx-40 shadow-[0_4px_16px_rgba(0,0,0,0.4)] rounded-lg">
                 <Form method="POST">
                 <CardHeader className="text-2xl">
                     Register

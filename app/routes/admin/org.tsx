@@ -41,10 +41,11 @@ import { createClient } from "@supabase/supabase-js";
 import UploadModal from "~/components/UploadModal";
 import { EditableField } from "~/components/EditableField";
 import { ADDITIONAL_FIELDS, categories } from "~/lib/constants";
-import { Select, SelectValue, SelectTrigger } from "~/components/ui/select";
+import { Select, SelectValue, SelectTrigger, SelectContent, SelectItem } from "~/components/ui/select";
 import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuContent, DropdownMenuItem } from "~/components/ui/dropdown-menu";
 import FieldTypes from "~/components/FieldTypes";
+import TableField from "~/components/TableField";
 
 
 const supabase = createClient(
@@ -93,6 +94,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const requestId = formData.get("requestId");
   const coverImage = formData.get("coverImage") as File;
   const coverImagePath = formData.get("coverImage-path") as string;
+
+  if(formData.get("option")){
+    const {data: optionData, error} = await supabase.from("organization").update({"use_tables": true}).eq("id", orgId);
+    return {success: true, message: "organization updated"}
+  }
 
   if (coverImagePath) {
     formData.append('image_url', coverImagePath);
@@ -166,11 +172,20 @@ export default function OrgDetailsRedesign({
   const [editedLink, setEditedLink] = useState<{ label: string, link: string }>({ label: '', link: '' })
   const [update, setUpdate] = useState(false);
   const [fieldsModal, setFieldsModal] = useState(false);
+  const [selectedType, setSelectedType] = useState(-1);
+  const [tables, setTables] = useState(orgData.table_data)
 
   // Reset addBadgeToForm when original badge is reselected
   useEffect(() => {
     setAddBadgeToForm(false);
   }, [selectedBadge]);
+
+  useEffect(() => {
+    console.log(actionData)
+    if(actionData && actionData.success){
+      setFieldsModal(false)
+    }
+  },[actionData])
 
   // Determine badge state
   const badgeChanged = orgData.type !== selectedBadge;
@@ -466,165 +481,6 @@ export default function OrgDetailsRedesign({
               </CardHeader>
             </Card>
 
-            {/* <Card className="col-span-2">
-              <CardHeader>
-                <Tabs defaultValue="address">
-                  <TabsList className="bg-card border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                    <TabsTrigger className="data-[state=active]:!bg-primary" value="address">Address</TabsTrigger>
-                    <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="address" className="mt-4 space-y-4"> */}
-                    {/* <EditableField label={"Building Number"} name={"building_number"} field={building} setField={setBuilding} Icon={MapPin} fieldEdit={buildingEdit} setFieldEdit={setBuildingEdit} disabled={false} originalValue={orgData.building_number} /> */}
-                    {/* <EditableField label={"Address"} name={"address"} field={address} setField={setAddress} Icon={Map} fieldEdit={addressEdit} setFieldEdit={setAddressEdit} disabled={false} originalValue={orgData.address} /> */}
-                  {/* </TabsContent>
-                  <TabsContent value="appView">
-
-                  </TabsContent>
-                </Tabs>
-              </CardHeader>
-            </Card> */}
-
-            {/* <Card className="col-span-2">
-              <CardHeader>
-                <Tabs defaultValue="website">
-                  <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                    <TabsTrigger className="data-[state=active]:!bg-primary" value="website">Website</TabsTrigger>
-                    <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="website" className="mt-4"> */}
-                    {/* <EditableField
-                      label={"Website"}
-                      name={"weburl"}
-                      field={webUrl}
-                      setField={setWebUrl}
-                      Icon={Globe}
-                      fieldEdit={webEdit}
-                      setFieldEdit={setWebEdit}
-                      disabled={false}
-                      originalValue={orgData.web_url} /> */}
-                  {/* </TabsContent>
-                </Tabs>
-              </CardHeader>
-              <CardContent>
-              </CardContent>
-            </Card> */}
-
-            {/* Category & Type */}
-            {/* <Card className="col-span-2">
-              <CardHeader>
-                <Tabs defaultValue="category">
-                  <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                    <TabsTrigger className="data-[state=active]:!bg-primary" value="category">Category</TabsTrigger>
-                    <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="category" className="mt-4"> */}
-                    {/* <div className="space-y-4">
-                      <div className="flex gap-2 mb-3">
-                        <Shield className="h-4 w-4" />
-                        <Label>Organization Type</Label>
-                      </div>
-                      <div className="flex flex-wrap justify-between gap-2">
-                        <div className={`space-x-2 p-2 rounded-lg`}>
-                          {categories.map((item, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              onClick={() => setSelectedBadge(item.type)}
-                              className={`py-2 px-3 shadow-md border cursor-pointer ${selectedBadge === item.type ? item.color : ""
-                                } hover:-translate-y-1 hover:shadow-lg transition-all`}
-                            >
-                              {item.type}
-                            </Badge>
-                          ))}
-                        </div>
-                        {shouldShowSaveButton && (
-                          <div className="flex items-center">
-                            <button
-                              name="submit"
-                              type="button"
-                              onClick={() => setAddBadgeToForm(true)}
-                              disabled={addBadgeToForm}
-                              className={`transition-colors ${addBadgeToForm
-                                  ? 'text-gray-600 cursor-not-allowed'
-                                  : 'text-white hover:text-gray-200'
-                                }`}
-                            >
-                              <SaveIcon size={18} />
-                            </button>
-                          </div>
-                        )}
-                        {shouldRenderHiddenInput && <input type="hidden" name="type" value={selectedBadge} />}
-                      </div>
-                    </div> */}
-                  {/* </TabsContent>
-                  <TabsContent value="appView" className="mt-4">
-                    <div className="flex flex-col gap-4">
-                      <p className="text-sm text-muted-foreground">
-                        Preview of how the organization type badge appears in the
-                        app
-                      </p>
-                      <div className="w-full h-[120px] bg-white rounded-xl shadow-md flex items-center justify-center border">
-                        <div className="flex flex-col items-center gap-3">
-                          <p className="text-sm text-muted-foreground">
-                            Organization Type
-                          </p>
-                          <Badge
-                            variant="outline"
-                            className={`py-2 px-4 shadow-md border ${categories.find((c) => c.type === selectedBadge)
-                                ?.color
-                              }`}
-                          >
-                            {selectedBadge}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardHeader>
-            </Card> */}
-
-            {/* Point of Contact */}
-            {/* <Card className="col-span-2">
-              <CardHeader>
-                <Tabs defaultValue="contact">
-                  <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                    <TabsTrigger className="data-[state=active]:!bg-primary" value="contact">Point of Contact</TabsTrigger>
-                    <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="contact" className="mt-4"> */}
-                    {/* <EditableField
-                      label="Point of Contact"
-                      name="contact"
-                      field={poc}
-                      setField={setPOC}
-                      originalValue={orgData.contact ?? ""}
-                      Icon={Users}
-                      fieldEdit={pocEdit}
-                      setFieldEdit={setPocEdit}
-                      type="text"
-                      disabled={false}
-                    /> */}
-                  {/* </TabsContent>
-                  <TabsContent value="appView" className="mt-4">
-                    <div className="w-full h-[120px] bg-white rounded-xl shadow-md border flex items-center px-6">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-blue-100 rounded-full p-3">
-                          <Users className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Point of Contact
-                          </p>
-                          <p className="text-lg font-semibold">{poc}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardHeader>
-            </Card> */}
-
             <Card className="col-span-2 rounded-lg gap-2">
               <CardHeader className="">
                 <div className="inline-flex gap-2 items-center">
@@ -633,12 +489,6 @@ export default function OrgDetailsRedesign({
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                {/* <Tabs defaultValue="links">
-                  <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                  <TabsTrigger className="data-[state=active]:!bg-primary" value="links">Links</TabsTrigger>
-                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="links" className="mt-4 space-y-2"> */}
                     {[...existingLinks, ...links].map((link, index) => {
                       const isEditing = editingIndex === index;
                       return (
@@ -681,46 +531,6 @@ export default function OrgDetailsRedesign({
                         </Card>
                       )
                     })}
-                    {/* {links.map((link, index) =>{
-                    
-                    return(
-                      <Card className="py-2 shadow-lg border border-yellow-600" >
-                      <CardContent className="relative flex flex-col">
-                      {true ?
-                      <>
-                      <p className="text-lg">{link.label}</p>
-                      <p className="italic text-gray-400 ">{link.link}</p>
-                      <DropdownMenu>
-                      <DropdownMenuTrigger className="absolute top-1 right-1" asChild>
-                      <EllipsisVertical size={20} className=""/>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => null}>Edit</DropdownMenuItem>
-                      <DropdownMenuItem>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                      </DropdownMenu>
-                      </>
-                      
-                      : <>
-                      <div className="flex flex-col gap-4 w-full">
-                      <div className="space-y-2">
-                      <p>Label: </p>
-                      <input type="text" value={newLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, label: e.currentTarget.value})}/>
-                      </div>
-                      <div className="space-y-2">
-                      <p>Link Address: </p>
-                      <input type="text" value={newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({...newLink, link: e.currentTarget.value})}/>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                      <Button variant={"default"} className="hover:bg-blue-600 border" onClick={handleAddLink}><PlusIcon />Add Link</Button>
-                      <Button variant={"ghost"} className="border " onClick={() => setShowAddLink(false)}>Cancel</Button>
-                      </div>
-                      </div>
-                      </>
-                      }
-                      </CardContent>
-                </Card> 
-                )})} */}
                     {(links.length > 0 || update) && (
                       <input type="hidden" name="links" value={JSON.stringify([...(existingLinks || []), ...links])} />
                     )}
@@ -745,13 +555,11 @@ export default function OrgDetailsRedesign({
                         </div>}
                       </CardContent>
                     </Card>
-                  {/* </TabsContent>
-                  <TabsContent value="appView">
-                  
-                  </TabsContent>
-                  </Tabs> */}
                   </CardContent>
             </Card>
+            {orgData.use_tables && 
+              <TableField tableData={tables} setTableData={setTables}/>
+            }
             <Card className=" rounded-lg">
               <CardContent className="flex justify-center items-center w-full">
                 <Button type="button" onClick={() => setFieldsModal(true)} className="flex gap-2">
@@ -780,7 +588,7 @@ export default function OrgDetailsRedesign({
         ></UploadModal>
       )}
       {fieldsModal &&
-        <FieldTypes setShowModal={setFieldsModal} />}
+        <FieldTypes setShowModal={setFieldsModal} setSelectedType={setSelectedType}/>}
     </div>
   );
 }
