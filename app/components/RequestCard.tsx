@@ -11,7 +11,7 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
     const { request_type } = request;
     const formRef = useRef<HTMLFormElement>(null);
 
-    console.log('requst: ', request)
+    // console.log('requst: ', request)
     let theme = {
         border: "border-gray-400/20",
         fill: 'bg-gray-400/20',
@@ -21,17 +21,18 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
     let content;
 
     function orgNameForId(id: string){
-        console.log('test: ', allOrgs)
+        // console.log('test: ', allOrgs)
         return allOrgs.filter(org => org.id === id)[0].name
     }
 
     function emailForId(id: string){
-        console.log('users: ', allUsers)
+        // console.log('users: ', allUsers)
         return allUsers.find(user => user.id === id)?.email
     }
 
     function baseForId(id: string){
-        return allBases.filter(base => base.id === id)[0].name
+        // console.log(allBases.filter(base => base.id === id))
+        return allBases.filter(base => base.id === id)[0]?.name
     }
 
     function labelForId(request: any){
@@ -135,7 +136,7 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
     }
 
     return (
-        <Card className={`relative overflow-clip bg-card text-foreground w-full border shadow-[0_4px_16px_rgba(0,0,0,0.4)]`} onClick={() => setSelectedRequest(request)}>
+        <Card className={`relative rounded-lg overflow-clip bg-card text-foreground w-full border shadow-[0_4px_16px_rgba(0,0,0,0.4)]`} onClick={() => setSelectedRequest(request)}>
              <div className={`absolute inset-y-0 left-0 w-[8px] ${requests[request_type].color} `}></div>   
             <Form method="POST" ref={formRef}>
             <CardHeader>

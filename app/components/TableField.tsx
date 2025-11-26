@@ -1,35 +1,95 @@
-import { CalendarRange, Table } from "lucide-react";
+import { CalendarRange, Edit, Save, Table } from "lucide-react";
 import { Card, CardContent, CardHeader } from "./ui/card";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Button } from "./ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 
 interface TableData {
     id: string;
     title: string;
     headers: string[];
-    // rows: string[];
     data: string[][];
 }
 
-export default function TableField({ tableData, setTableData }: {tableData: TableData[], setTableData: React.Dispatch<React.SetStateAction<TableData[]>>}){
+export default function TableField({ 
+    tableData, 
+    setTableData, 
+    editedTables,
+    setEditedTables
+ }: {
+    tableData: TableData[], 
+    setTableData: React.Dispatch<React.SetStateAction<TableData[]>>, 
+    editedTables: TableData[],
+    setEditedTables: React.Dispatch<React.SetStateAction<TableData[]>>,
+}){
     const [showBuilder, setShowBuilder] = useState(false);
     const [rows, setRows] = useState(0);
     const [columns, setColumns] = useState(0);
-    const data = tableData;
-    console.log(tableData)
-    // const [tables, setTables] = useState<TableData[]>(tableData);
+    const [editingTableId, setEditingTableId] = useState<string | null>(null); // Track which table is being edited
+    const data = tableData ?? [];
+    
+    // Store original state of tables to detect changes
+    const originalTablesRef = useRef<Map<string, TableData>>(new Map());
+    
+    // Initialize original tables on mount
+    useEffect(() => {
+        data.forEach(table => {
+            if (!originalTablesRef.current.has(table.id)) {
+                // Deep clone to preserve original state
+                originalTablesRef.current.set(table.id, JSON.parse(JSON.stringify(table)));
+            }
+        });
+    }, []);
+    
     const options: number[] = [1,2,3,4,5,6,7,8,9,10];
+
+    // Check if a table has been modified from its original state
+    const isTableModified = (tableId: string, currentTable: TableData): boolean => {
+        const original = originalTablesRef.current.get(tableId);
+        if (!original) return true; // New table, always considered modified
+        
+        return JSON.stringify(original) !== JSON.stringify(currentTable);
+    };
+
+    // Update editedTables array based on modification status
+    const updateEditedTables = (table: TableData) => {
+        const isModified = isTableModified(table.id, table);
+        
+        if (isModified) {
+            setEditedTables(prev => {
+                const existingIndex = prev.findIndex(t => t.id === table.id);
+                if (existingIndex >= 0) {
+                    // Update existing entry
+                    const updated = [...prev];
+                    updated[existingIndex] = table;
+                    return updated;
+                } else {
+                    // Add new entry
+                    return [...prev, table];
+                }
+            });
+        } else {
+            // Remove from editedTables if reverted to original
+            setEditedTables(prev => prev.filter(t => t.id !== table.id));
+        }
+    };
 
     const handleAddTable = () => {
         if (rows > 0 && columns > 0) {
-            setTableData([...data, { 
+            const newTable: TableData = { 
                 id: Date.now().toString(), 
                 title: "Enter a title",
-                headers: Array(columns).fill(''), // Empty column headers
-                data: Array(rows).fill(null).map(() => Array(columns).fill('')) // Empty cells
-            }]);
-            console.log('tableData', tableData)
+                headers: Array(columns).fill(''),
+                data: Array(rows).fill(null).map(() => Array(columns).fill(''))
+            };
+            
+            setTableData([...data, newTable]);
+            
+            // New tables are automatically added to editedTables and set to editing mode
+            setEditedTables(prev => [...prev, newTable]);
+            setEditingTableId(newTable.id);
+            
             setRows(0);
             setColumns(0);
             setShowBuilder(false);
@@ -38,26 +98,38 @@ export default function TableField({ tableData, setTableData }: {tableData: Tabl
 
     // Update table title
     const updateTableTitle = (tableId: string, newTitle: string) => {
-        setTableData(data.map(table => 
+        const updatedTables = data.map(table => 
             table.id === tableId ? { ...table, title: newTitle } : table
-        ));
+        );
+        setTableData(updatedTables);
+        
+        const updatedTable = updatedTables.find(t => t.id === tableId);
+        if (updatedTable) {
+            updateEditedTables(updatedTable);
+        }
     };
 
     // Update column header
     const updateHeader = (tableId: string, colIndex: number, value: string) => {
-        setTableData(data.map(table => {
+        const updatedTables = data.map(table => {
             if (table.id === tableId) {
                 const newHeaders = [...table.headers];
                 newHeaders[colIndex] = value;
                 return { ...table, headers: newHeaders };
             }
             return table;
-        }));
+        });
+        setTableData(updatedTables);
+        
+        const updatedTable = updatedTables.find(t => t.id === tableId);
+        if (updatedTable) {
+            updateEditedTables(updatedTable);
+        }
     };
 
     // Update cell data
     const updateCell = (tableId: string, rowIndex: number, colIndex: number, value: string) => {
-        setTableData(data.map(table => {
+        const updatedTables = data.map(table => {
             if (table.id === tableId) {
                 const newData = table.data.map((row, rIdx) => 
                     rIdx === rowIndex 
@@ -67,7 +139,13 @@ export default function TableField({ tableData, setTableData }: {tableData: Tabl
                 return { ...table, data: newData };
             }
             return table;
-        }));
+        });
+        setTableData(updatedTables);
+        
+        const updatedTable = updatedTables.find(t => t.id === tableId);
+        if (updatedTable) {
+            updateEditedTables(updatedTable);
+        }
     };
 
     return (
@@ -81,53 +159,95 @@ export default function TableField({ tableData, setTableData }: {tableData: Tabl
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {/* Existing Tables */}
-                    {data?.length > 0 && data.map((data) => (
-                        <div key={data.id} className="space-y-2">
-                            <input
-                                type="text"
-                                value={data.title}
-                                onChange={(e) => updateTableTitle(data.id, e.target.value)}
-                                className="text-center font-semibold w-full bg-transparent border-b focus:outline-none focus:border-blue-500"
-                            />
-                            <div className="flex w-fit mx-auto justify-center border rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
-                                <table className="border-collapse">
-                                    <thead className="rounded-xl">
-                                        <tr className="bg-primary/40 ">
-                                            {data.headers.map((header, colIndex) => (
-                                                <th key={colIndex} className="border px-4 py-2 font-medium text-sm">
-                                                    <input
-                                                        type="text"
-                                                        value={header}
-                                                        onChange={(e) => updateHeader(data.id, colIndex, e.target.value)}
-                                                        className="w-full bg-transparent focus:outline-none"
-                                                        placeholder="Column Name"
-                                                    />
-                                                </th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.data.map((row, rowIndex) => (
-                                            <tr key={rowIndex} className="hover:bg-gray-500 bg-primary/5">
-                                                {row.map((cell, colIndex) => (
-                                                    <td key={colIndex} className="border-t px-4 py-2 text-sm text-center">
-                                                        <input 
-                                                            type="text"
-                                                            value={cell}
-                                                            onChange={(e) => updateCell(data.id, rowIndex, colIndex, e.target.value)}
-                                                            className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-1"
-                                                            placeholder="Enter data"
-                                                        />
-                                                    </td>
+                    {data?.length > 0 && data.map((table) => {
+                        const isEditing = editingTableId === table.id;
+                        
+                        return (
+                            <Accordion type="single" collapsible>
+                                <AccordionItem  value={table.id}>
+                                    <AccordionTrigger className="bg-border p-4">{table.title}</AccordionTrigger>
+                                    <AccordionContent>
+                                        <div className="flex w-fit mx-auto justify-center border rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
+                                    <table className="border-collapse">
+                                        <thead className="rounded-xl">
+                                            <tr className="bg-primary/40">
+                                                {table.headers.map((header, colIndex) => (
+                                                    <th key={colIndex} className="border px-4 py-2 font-medium text-sm">
+                                                        {isEditing ? (
+                                                            <input
+                                                                type="text"
+                                                                value={header}
+                                                                onChange={(e) => updateHeader(table.id, colIndex, e.target.value)}
+                                                                className="w-full bg-transparent focus:outline-none"
+                                                                placeholder="Column Name"
+                                                            />
+                                                        ) : (
+                                                            <p className="w-full bg-transparent">{header}</p>
+                                                        )}
+                                                    </th>
                                                 ))}
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    ))}
+                                        </thead>
+                                        <tbody>
+                                            {table.data.map((row, rowIndex) => (
+                                                <tr key={rowIndex} className="hover:bg-gray-500 bg-primary/5">
+                                                    {row.map((cell, colIndex) => (
+                                                        <td key={colIndex} className="border-t px-4 py-2 text-sm text-center">
+                                                            {isEditing ? (
+                                                                <input 
+                                                                    type="text"
+                                                                    value={cell}
+                                                                    onChange={(e) => updateCell(table.id, rowIndex, colIndex, e.target.value)}
+                                                                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-1"
+                                                                    placeholder="Enter data"
+                                                                />
+                                                            ) : (
+                                                                <p className="w-full px-1">{cell}</p>
+                                                            )}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                            // <div key={table.id} className="space-y-2 relative">
+                            //     {/* Edit/Save button positioned in top-right */}
+                            //     <button
+                            //         type="button"
+                            //         onClick={() => setEditingTableId(isEditing ? null : table.id)}
+                            //         className="absolute top-0 right-0 z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            //         title={isEditing ? "Save" : "Edit"}
+                            //     >
+                            //         {isEditing ? (
+                            //             <Save size={18} className="text-green-600" />
+                            //         ) : (
+                            //             <Edit size={18} className="text-gray-600" />
+                            //         )}
+                            //     </button>
 
+                            //      Title
+                            //      {isEditing ? (
+                            //         <input
+                            //             type="text"
+                            //             value={table.title}
+                            //             onChange={(e) => updateTableTitle(table.id, e.target.value)}
+                            //             className="text-center font-semibold w-full bg-transparent border-b focus:outline-none focus:border-blue-500 pr-12"
+                            //         />
+                            //     ) : (
+                            //         <p className="text-center font-semibold w-full bg-transparent border-b pr-12">
+                            //             {table.title}
+                            //         </p>
+                            //     )} 
+
+                            //     Table
+                                
+                            //  </div> 
+                        );
+                    })}
 
                     {/* Table Builder Controls */}
                     {showBuilder && (
@@ -203,7 +323,9 @@ export default function TableField({ tableData, setTableData }: {tableData: Tabl
                     </div>
                 </CardContent>
             </Card>
-            <input type="hidden" name="table_data" value={JSON.stringify(tableData)}/>
+            {editedTables.length > 0 &&
+            <input type="hidden" name="table_data" value={JSON.stringify(editedTables)}/>
+            }
         </div>
     )
 }

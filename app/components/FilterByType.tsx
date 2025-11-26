@@ -17,7 +17,8 @@ export default function FilterByType({filterBy, setFilterBy, isSuperAdmin}:{filt
 
 
     return (
-        <Card className="bg-card rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+        <Card className="bg-card rounded-lg
+         shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
             <CardContent className="flex gap-2 items-center">
 
                 <FilterIcon className="mr-2" size={20}/>

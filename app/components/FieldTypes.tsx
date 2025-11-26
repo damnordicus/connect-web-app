@@ -8,6 +8,17 @@ import { Form } from "react-router";
 
 export default function FieldTypes ({setShowModal, setSelectedType}: {setShowModal: React.Dispatch<SetStateAction<boolean>>, setSelectedType: React.Dispatch<SetStateAction<number>>}) {
     const [selection, setSelection] = useState(-1);
+
+    function handleSelection(index: number){
+      if(selection !== index){
+        setSelection(index);
+        setSelectedType(index);
+        // setShowModal(false)
+      }else{
+        setSelection(-1)
+        setSelectedType(-1)
+      }
+    }
     return (
         <div className="absolute inset-0 backdrop-blur-xs flex items-center justify-center w-full h-screen bg-black/30">
           <Form method="POST">
@@ -22,7 +33,7 @@ export default function FieldTypes ({setShowModal, setSelectedType}: {setShowMod
           </CardHeader>
           <CardContent className="space-y-3 ">
             {ADDITIONAL_FIELDS.map((field, index) => 
-            <Card className={`border-2 ${selection === index ? 'bg-primary/40' : ''} rounded-lg hover:bg-gray-400/20 hover:cursor-pointer hover:border-gray-500`} onClick={() => setSelection(index)}>
+            <Card className={`border-2 ${selection === index ? 'bg-primary/40' : ''} rounded-lg hover:bg-gray-400/20 hover:cursor-pointer hover:border-gray-500`} onClick={() => handleSelection(index)}>
               <CardContent className="flex w-full items-center gap-4 ">
                 <div>
                   {field.icon}

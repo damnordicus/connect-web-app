@@ -226,8 +226,26 @@ export const action = async ({ request }: Route.ActionArgs) => {
         return {success: true, _action: "approve"}
       } else if (request_type === "base-update") {
         console.log('obj', Object.fromEntries(formData.entries()))
-        const { org_id, request_id, request_type, _action, ...obj } = Object.fromEntries(formData.entries())
+        const { org_id, request_id, request_type, _action, table_data, ...obj } = Object.fromEntries(formData.entries())
         // delete updateObj.request_type
+        if(table_data){
+          const {data: currentTables, error: existingError} = await supabase.from('appFields').select("table_data").eq("base_id", base_id).single();
+          if(existingError) throw existingError
+          const existingTables = currentTables?.table_data || [];
+          const incomingTables = JSON.parse(table_data as string);
+          const incomingTablesMap = new Map(incomingTables.map(table => [table.id, table]))
+          const updatedTables = existingTables.map(table => 
+            incomingTablesMap.has(table.id) 
+              ? incomingTablesMap.get(table.id) 
+              : table
+          );
+          incomingTables.forEach(table => {
+            if (!existingTables.find(t => t.id === table.id)) {
+              updatedTables.push(table);
+            }
+          });
+          const { data, error } = await supabase.from('appFields').update({"table_data": updatedTables}).eq("base_id", base_id);
+        }
         console.log('test', obj)
         const { data: updateData, error: updateError } = await supabase
           .from('baseDetails')
@@ -252,7 +270,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
         //   const {data: currentLinks} = await supabase.from('organization').select('links').eq('id', org_id).single();
         //   updateObj.links = [...newLinks, ...(currentLinks?.links || [])]
         // }
-        updateObj.table_data = JSON.parse(updateObj.table_data as string)
+        if(updateObj.table_data){
+          updateObj.table_data = JSON.parse(updateObj.table_data as string)
+        }
+        if(updateObj.links){
+          const parseLinks = JSON.parse(updateObj.links as string)
+          updateObj.links = parseLinks
+        }
+        console.log(updateObj)
 
         const { error } = await supabase
           .from('organization')
@@ -327,13 +352,13 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
   },[actionData])
 
   function orgNameForId(id: string) {
-    console.log('tests: ', allOrgs)
-    console.log('org: ', allOrgs?.filter(org => org.id === id))
+    // console.log('tests: ', allOrgs)
+    // console.log('org: ', allOrgs?.filter(org => org.id === id))
     return allOrgs?.filter(org => org.id === id)[0].name
   }
 
   function emailForId(id: string) {
-    console.log('users: ', allUsers)
+    // console.log('users: ', allUsers)
     return allUsers?.find(user => user.id === id)?.email
   }
 
@@ -351,59 +376,131 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
       return baseForId(request.base_id);
     }
   }
-  console.log('selected request: ', selectedRequest)
+  // console.log('selected request: ', selectedRequest)
   // Add this component above your main component
-  function FieldDisplay({
-    fieldKey,
-    value,
-    categories,
-    incoming,
-    originalValue,
-  }: {
-    fieldKey: string;
-    value: string;
-    categories: Array<{ type: string; color: string }>;
-    incoming?: boolean;
-    originalValue: string;
-  }) {
-    const label = fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1);
-    const [newValue, setNewValue] = useState<string>(value);
-    const [edit, setEdit] = useState(false);
-    const hasChanged = newValue !== originalValue;
-    function handleSave(){
-      setEdit(false)
-    }
+ function FieldDisplay({
+  fieldKey,
+  value,
+  categories,
+  incoming,
+  originalValue,
+}: {
+  fieldKey: string;
+  value: any;
+  categories: Array<{ type: string; color: string }>;
+  incoming?: boolean;
+  originalValue: string;
+}) {
+  const label = fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1);
 
-    return (
-      <div className="flex flex-col gap-1.5">
-        <div className="inline-flex justify-between">
-          <p className="text-sm font-medium text-foreground pb-1">{label}</p>
-          {(incoming && !edit) && <div className="" onClick={() => setEdit(true)}><Edit2 width={14}/></div>}
-          {(incoming && edit) && <div className="flex gap-2"><SaveIcon onClick={handleSave} width={14}/><X onClick={() => {setNewValue(value); setEdit(false)}} width={14}/></div>}
-        </div>
-        {fieldKey === "type" ? (
-          <Badge
-            variant="outline"
-            className={`w-fit py-1.5 px-3 shadow-sm ${categories.find((c) => c.type === value)?.color}`}
-          >
-            {value}
-          </Badge>
-        ) : (
-          <>
-          {(incoming && !edit) ? <p className={`border ${hasChanged && 'border-yellow-400'} rounded-md px-3 py-2 bg-muted/50 text-sm`}>
-            {newValue}
-          </p> : <input type="text" className="border rounded-md px-3 py-2 bg-muted/50 text-sm" value={newValue} name={fieldKey} onChange={(e) => setNewValue(e.currentTarget.value)}/>}
-          </>
-        )}
-        {(incoming) && <input type="hidden" name={fieldKey} value={newValue || originalValue}/>}
-      </div>
-    );
+  console.log('fieldKey: ', fieldKey, ' value: ', value, ' type: ', typeof value)
+  
+  // Handle null/undefined values and parse strings safely
+  const parseValue = (val: any) => {
+    if (val === null || val === undefined || val === "null") return null;
+    if (typeof val === 'string') {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return val; // Return as-is if not valid JSON
+      }
+    }
+    return val;
+  };
+
+  const [newValue, setNewValue] = useState(() => parseValue(value));
+  const [edit, setEdit] = useState(false);
+  const hasChanged = newValue !== originalValue;
+  
+  function handleSave(){
+    setEdit(false)
   }
+  
+  const table = fieldKey === "table_data" ? parseValue(value) : [];
+  const links = fieldKey === "links" ? parseValue(value) : [];
+
+  console.log('link: ', links)
+  
+  return (
+    <div className="flex flex-col gap-1.5 overflow-y-scroll max-h-[50vh]">
+      <div className="inline-flex justify-between">
+        <p className="text-sm font-medium text-foreground pb-1">{label}</p>
+        {(incoming && !edit) && <div className="" onClick={() => setEdit(true)}><Edit2 width={14}/></div>}
+        {(incoming && edit) && <div className="flex gap-2"><SaveIcon onClick={handleSave} width={14}/><X onClick={() => {setNewValue(value); setEdit(false)}} width={14}/></div>}
+      </div>
+      {fieldKey === "type" ? (
+  <Badge
+    variant="outline"
+    className={`w-fit py-1.5 px-3 shadow-sm ${categories.find((c) => c.type === value)?.color}`}
+  >
+    {value}
+  </Badge>
+) : fieldKey === "table_data" ? (
+  // Render tables for BOTH incoming and current
+  table && table.length > 0 ? table.map((table, index) => (
+    <table key={index} className="min-w-full border-collapse border rounded-lg overflow-hidden">
+      <thead className="bg-muted">
+        <tr>
+          {table.headers.map((header, i) => (
+            <th key={i} className="border px-4 py-2 text-left font-semibold text-sm">{header}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {table.data.map((row, i) => (
+          <tr key={i} className="hover:bg-muted/50 transition-colors">
+            {row.map((cell, j) => (
+              <td key={j} className="border px-4 py-2 text-sm">{cell}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )) : <p className="text-muted-foreground italic">No tables</p>
+) : fieldKey === "links" ? (
+  // Render links for BOTH incoming and current
+  links && links.length > 0 ? (
+    <div className="space-y-1">
+      {links.map((link, idx) => (
+        <p key={idx} className="border rounded-md px-3 py-2 bg-muted/50 text-sm">
+          {link.label}: {link.link}
+        </p>
+      ))}
+    </div>
+  ) : <p className="text-muted-foreground italic">No links</p>
+) : (
+  // All other fields - show edit mode for incoming, read-only for current
+  <>
+    {(incoming && edit) ? (
+      <input 
+        type="text" 
+        className="border rounded-md px-3 py-2 bg-muted/50 text-sm" 
+        value={newValue ?? ''} 
+        name={fieldKey} 
+        onChange={(e) => setNewValue(e.currentTarget.value)}
+      />
+    ) : (
+      <p className={`border ${hasChanged && 'border-yellow-400'} rounded-md px-3 py-2 bg-muted/50 text-sm`}>
+        {newValue ?? <span className="text-muted-foreground italic">No data</span>}
+      </p>
+    )}
+  </>
+)}
+      {(incoming) && (
+        <input 
+          type="hidden" 
+          name={fieldKey} 
+          value={typeof newValue === 'object' ? JSON.stringify(newValue) : (newValue ?? originalValue ?? '')}
+        />
+      )}
+    </div>
+  );
+}
 
   // SUPERADMIN VIEW: No tabs, just requests
   if (isSuperAdmin) {
     return (
-      <div className="px-6 flex-1">
+      <div className="p-4 flex-1">
         <div className="flex flex-col gap-4">
           <h2 className="text-2xl pl-1 font-bold">All Requests</h2>
           <FilterByType filterBy={filterBy} setFilterBy={setFilterBy} isSuperAdmin />
@@ -465,12 +562,15 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
                     if (key === "orgId" || key === "userId" || key === 'baseId' || key === "request-type") {
                       return null;
                     }
-                    return <FieldDisplay key={key} fieldKey={key} value={value} categories={categories} incoming/>;
+                    console.log(key, value)
+                    return <FieldDisplay key={key} fieldKey={key} value={value} categories={categories} incoming originalValue={value}/>;
                   })}
                 </div>
               </div>
               <input type="hidden" name="org_id" value={selectedRequest.org_id}/>
               <input type="hidden" name="request_id" value={selectedRequest.id} />
+              <input type="hidden" name="base_id" value={selectedRequest.base_id} />
+              <input type="hidden" name="request_type" value={selectedRequest.request_type} />
               
             </CardContent>
             <CardFooter className="flex flex-col w-full justify-center gap-4">

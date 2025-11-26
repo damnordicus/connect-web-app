@@ -38,7 +38,7 @@ export const EditableField = ({
   };
 
   return (
-    <div>
+    <div className="mb-4">
       <div className="flex justify-between">
         <div className="flex gap-2 mb-2">
           <Icon className="h-4 w-4" />

@@ -7,7 +7,7 @@ import {
 import type { Route } from "../+types/home";
 import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import React, { useState, type HTMLElementType } from "react";
+import React, { useEffect, useState, type HTMLElementType } from "react";
 import {
   Building,
   Edit,
@@ -18,6 +18,7 @@ import {
   MapPinIcon,
   Phone,
   PhoneIcon,
+  PlusIcon,
   QuoteIcon,
   Save,
   SaveIcon,
@@ -35,6 +36,8 @@ import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { TabsContent } from "@radix-ui/react-tabs";
 import { Checkbox } from "~/components/ui/checkbox";
 import { EditableField } from "~/components/EditableField";
+import FieldTypes from "~/components/FieldTypes";
+import TableField from "~/components/TableField";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -66,7 +69,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       .from("organization")
       .select("*", { count: "exact", head: true })
       .eq("base_id", baseId);
-    const { data: appFieldData } = await supabase.from("appFields").select("*").eq("base_id", baseId)
+    const { data: appFieldData } = await supabase.from("appFields").select("*").eq("base_id", baseId).single()
     console.log(appFieldData)
     return { data, orgCount: count, appFieldData };
   } catch (error) {
@@ -81,72 +84,30 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // const baseId = searchParams.get("id")
   const baseId = formData.get("baseId");
   const userId = formData.get("userId");
+  const id = searchParams.get('id')
 
-  // const coverImage = formData.get("coverImage") as File;
-  // const baseName = formData.get("baseName");
-  // const motto = formData.get("motto");
-  // const commander = formData.get("commander");
-  // const phone = formData.get("phone");
-  // const email = formData.get("email");
-  // const showName = formData.get("showName") === "on";
-  // const _action = formData.get("submit");
-  // const showCommand = formData.get("showCommand") === "on";
-  // const showMotto = formData.get("showMotto") === "on";
-  // const showContactEmail = formData.get("showEmail") === "on";
-  // const showContactPhone = formData.get("showPhone") === "on";
-  // const toggle = showName === 'on' ? true : false
   const request_type = formData.get("request-type");
 
+  const option = formData.get("option")
+  console.log(formData)
+
+  if(option === "1"){
+    const {data, error} = await supabase.from("appFields").update({"show_tables": true}).eq("base_id", id)
+    return {optionData: data}
+  }
+
   let imageUrl = null;
+  formData.delete("_action");
 
   await supabase.from("request").insert({"created_at": new Date(Date.now()), "base_id": baseId, "data": Object.fromEntries(formData.entries()), "user_id": userId, "request_type": "base-update"})
 
-  // console.log(formData.get("submit"), toggle)
 
-  // switch (_action) {
-  //   case "motto-submit": await supabase.from("baseDetails").update({ "motto": motto }).eq('base_id', baseId);
-  //     break;
-  //   case "commander-submit": await supabase.from("baseDetails").update({ "commander": commander }).eq("base_id", baseId);
-  //     break;
-  //   case "phone-submit": await supabase.from("baseDetails").update({ "phone": phone }).eq("base_id", baseId);
-  //     break;
-  //   case "email-submit": await supabase.from("baseDetails").update({ "email": email }).eq("base_id", baseId);
-  //     break;
-  //   case "showName-submit": await supabase.from("appFields").update({ "show_name": showName }).eq("base_id", baseId);
-  //     break;
-  //   case "coverImage-submit": if(coverImage && coverImage.size > 0){
-  //     console.log('here')
-  //     const fileExt = coverImage.name.split('.').pop();
-  //     const fileName = `bases/${baseId}/covers/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  //     const {data: uploadData, error: uploadError} = await supabase.storage.from('images')
-  //     .upload(fileName, coverImage, {
-  //       cacheControl: '3600', upsert: false
-  //     });
-  //     if(uploadError){
-  //       return {success: false, error: uploadError.message};
-  //     }
-  //     const {data: urlData} = supabase.storage.from('images').getPublicUrl(fileName);
-  //     imageUrl = urlData.publicUrl;
-  //     console.log(imageUrl)
-
-  //     const { error: updateError } = await supabase.from("baseDetails").update({"image_url": imageUrl}).eq('base_id', baseId);
-  //     if(updateError){
-  //       return {success: false, error: updateError.message};
-  //     }
-  //   }
-  //   break;
-  //   case "showCommand-submit": await supabase.from("appFields").update({ "show_commander": showCommand}).eq("base_id", baseId);
-  //     break;
-  //   case "showMotto-submit": await supabase.from("appFields").update({ "show_motto": showMotto}).eq("base_id", baseId);
-  //     break;
-    
-  // }
 }
 
-export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
+export default function BaseAdmin({ loaderData, actionData }: Route.ComponentProps) {
   const { data , orgCount, appFieldData } = loaderData;
   const selectedBase = data[0];
-  // console.log(data)
+  console.log(appFieldData)
   const [showModal, setShowModal] = useState(false);
 
   const [name, setName] = useState(selectedBase.base.name);
@@ -161,19 +122,31 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
   const [commander, setCommander] = useState(selectedBase.commander);
   const [commanderEdit, setCommanderEdit] = useState(false);
   const [showName, setShowName] = useState(selectedBase.show_name);
-  const [showMotto, setShowMotto] = useState(appFieldData[0].show_motto);
-  const [showCommand, setShowCommand] = useState(appFieldData[0].show_commander);
-  const [showContactPhone, setShowContactPhone] = useState(appFieldData[0].show_phone);
-  const [showContactEmail, setShowContactEmail] = useState(appFieldData[0].show_email);
+  const [showMotto, setShowMotto] = useState(appFieldData.show_motto);
+  const [showCommand, setShowCommand] = useState(appFieldData.show_commander);
+  const [showContactPhone, setShowContactPhone] = useState(appFieldData.show_phone);
+  const [showContactEmail, setShowContactEmail] = useState(appFieldData.show_email);
+  const [showFieldModal, setShowFieldModal] = useState(false)
+  const [selectedType, setSelectedType] = useState(-1)
+  const [tables, setTables] = useState(appFieldData.table_data)
+  const [showTable, setShowTable] = useState(false);
+  const [editedTables, setEditedTables] = useState<[]>([])
+
+  useEffect(() => {
+    console.log(actionData)
+    if(actionData && (actionData.optionData === null)){
+      setShowFieldModal(false);
+    }
+  },[actionData])
 
 
   return (
-    <div className="w-full  pt-2 pb-6">
+    <div className="w-full px-4 pt-2 pb-6">
       <Form method="POST">
 
       <div className="grid gap-4">
         {/* Base Header Card */}
-        <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+        <Card className="rounded-sm shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
           <CardContent className="">
             <div className="grid md:grid-cols-3 gap-6">
               <div className="space-y-4">
@@ -261,7 +234,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
 
         {/* Base Information Cards */}
         <div className="grid lg:grid-cols-2 gap-4">
-          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+          <Card className="rounded-sm col-span-2 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
             <CardHeader>
               <Tabs defaultValue="baseDetails">
                 <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
@@ -269,12 +242,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                   <TabsTrigger className="data-[state=active]:!bg-primary" value={"appView"}>App View</TabsTrigger>
                 </TabsList>
                 <TabsContent value={"baseDetails"} className="mt-4">
-                  {/* <Card>
-                    <CardHeader>
-                    <CardTitle>Basic Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6"> */}
-                      <EditableField
+                  <EditableField
                     label={"Base Name"}
                     name="baseName"
                     field={name}
@@ -285,7 +253,7 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                     disabled={true} 
                     originalValue={selectedBase.base.name}                      />
 
-                      <div className="space-y-2 mt-2">
+                      <div className="space-y-2 mt-2 mb-4">
                         <Label className="text-sm font-medium flex items-center gap-2">
                           <MapPin className="h-4 w-4" />
                           Location
@@ -297,6 +265,51 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
                           Location cannot be modified
                         </p>
                       </div>
+
+                  <EditableField 
+                    label="Motto" 
+                    name="motto" 
+                    field={motto} 
+                    setField={setMotto} 
+                    Icon={SpeakerIcon} 
+                    fieldEdit={mottoEdit} 
+                    setFieldEdit={setMottoEdit} 
+                    disabled={false} 
+                    originalValue={selectedBase.motto} />
+                  <EditableField
+                    field={commander}
+                    name="commander"
+                    setField={setCommander}
+                    label="Base Commander"
+                    fieldEdit={commanderEdit}
+                    setFieldEdit={setCommanderEdit}
+                    Icon={Shield} 
+                    disabled={false} 
+                    originalValue={selectedBase.commander} />
+                  <div className="space-y-6">
+                    <EditableField
+                        field={phone}
+                        setField={setPhone}
+                        fieldEdit={phoneEdit}
+                        setFieldEdit={setPhoneEdit}
+                        name="phone"
+                        label="Phone Number"
+                        Icon={Phone} 
+                        disabled={false} 
+                        originalValue={selectedBase.phone}/>
+
+                    <EditableField
+                      field={email}
+                      setField={setEmail}
+                      fieldEdit={emailEdit}
+                      setFieldEdit={setEmailEdit}
+                      name="email"
+                      label="Email Address"
+                      Icon={Mail}
+                      disabled={false}
+                      originalValue={selectedBase.email}/>
+                  </div>
+
                 </TabsContent>
                 <TabsContent value="appView">
                   <Form method="POST">
@@ -324,178 +337,23 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
               </Tabs>
             </CardHeader>
           </Card>
-          {/* Basic Information */}
-          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-            <CardHeader>
-              <Tabs defaultValue="details">
-                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                  <TabsTrigger className="data-[state=active]:!bg-primary" value="details">Details</TabsTrigger>
-                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
-                </TabsList>
-                <TabsContent value="details" className="mt-4">
-                  <EditableField 
-                  label="Motto" 
-                  name="motto" 
-                  field={motto} 
-                  setField={setMotto} 
-                  Icon={SpeakerIcon} 
-                  fieldEdit={mottoEdit} 
-                  setFieldEdit={setMottoEdit} 
-                  disabled={false} 
-                  originalValue={selectedBase.motto} />
-                </TabsContent>
-                <TabsContent value="appView">
-                <Form method="POST">
-                    <div className="flex flex-cols-[auto_1fr] gap-4">
-                      <div className="relative flex flex-col justify-center">
-                        <div className="flex items-center gap-4 pb-4">
-                          <Checkbox name="showMotto" checked={showMotto} onCheckedChange={() => setShowMotto(!showMotto)} />
-                          <label className="text-sm">Show motto card? </label>
-                        </div>
-                      <Button type="submit" name="submit" value="showMotto-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
-                      </div>
-                      <div className="relative w-[300px] h-[100px] mx-auto rounded-xl bg-white shadow-md">
-                        <div className="bg-blue-100 rounded-xl absolute inset-0 items-start flex flex-col justify-center text-black pl-6 gap-2">
-                          <p className="inline-flex gap-2"><QuoteIcon size={14} className="translate-y-1.5 text-blue-600 fill-blue-600" />Base Motto </p>
-                          <p className=" text-gray-500 italic text-md ">"{selectedBase.motto}"</p>
-                        </div>
-                      </div>
-                    </div>
-                  </Form>
-                </TabsContent>
-              </Tabs>
-            </CardHeader>
-          </Card>
-          
-          {/* Command & Personnel */}
-          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-            <CardHeader>
-              <Tabs defaultValue="command">
-                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                  <TabsTrigger className="data-[state=active]:!bg-primary" value="command">Command</TabsTrigger>
-                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
-                </TabsList>
-                <TabsContent value="command" className="mt-4">
-                  <EditableField
-                    field={commander}
-                    name="commander"
-                    setField={setCommander}
-                    label="Base Commander"
-                    fieldEdit={commanderEdit}
-                    setFieldEdit={setCommanderEdit}
-                    Icon={Shield} 
-                    disabled={false} 
-                    originalValue={selectedBase.commander}                  />
-                </TabsContent>
-                <TabsContent value="appView">
-                <Form method="POST">
-                    <div className="flex flex-cols-[auto_1fr] gap-4">
-                      <div className="relative flex flex-col justify-center">
-                        <div className="flex items-center gap-4 pb-4">
-                          <Checkbox name="showCommand" checked={showCommand} onCheckedChange={() => setShowCommand(!showCommand)} />
-                          <label className="text-sm">Show commander card? </label>
-                        </div>
-                      <Button type="submit" name="submit" value="showCommand-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
-                      </div>
-                      <div className="w-[300px] h-[100px] mx-auto rounded-xl bg-white shadow-md border">
-                        <div className="flex flex-cols-[auto_1fr] ">
-                          <div className="p-6 flex items-center justify-center">
-                            <div className="bg-purple-300/30 rounded-full p-3 text-purple-400">
-                            <UserRound size={24} className="fill-purple-400"/>
-                            </div>
-                          </div>
-                          <div className="flex flex-col justify-center text-left my-5">
-                            <p className="mb-1">Commander</p>
-                            <p className="text-xl font-semibold">{selectedBase.commander}</p>
-                          </div>
-
-                        </div>
-                          
-                        
-                      </div>
-                    </div>
-                  </Form>
-                </TabsContent>
-              </Tabs>
-            </CardHeader>
-          </Card>
-
-          {/* Contact Information */}
-          <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-            <CardHeader>
-              <Tabs defaultValue="contact">
-                <TabsList className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                  <TabsTrigger className="data-[state=active]:!bg-primary" value="contact">Contact Information</TabsTrigger>
-                  <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
-                </TabsList>
-                <TabsContent value="contact" className="mt-4">
-                  <div className="space-y-6">
-                  <EditableField
-                      field={phone}
-                      setField={setPhone}
-                      fieldEdit={phoneEdit}
-                      setFieldEdit={setPhoneEdit}
-                      name="phone"
-                      label="Phone Number"
-                      Icon={Phone} 
-                      disabled={false} 
-                      originalValue={selectedBase.phone}                  />
-
-                  <EditableField
-                    field={email}
-                    setField={setEmail}
-                    fieldEdit={emailEdit}
-                    setFieldEdit={setEmailEdit}
-                    name="email"
-                    label="Email Address"
-                    Icon={Mail}
-                    disabled={false}
-                    originalValue={selectedBase.email}
-                    />
-                </div>
-                </TabsContent>
-                <TabsContent value="appView">
-                  <div className="w-full flex flex-cols[auto_1fr]">
-                    <div className="flex flex-col justify-center items-start gap-2">
-                      <div className="inline-flex items-center w-full justify-start gap-4">
-                          <Checkbox name="showContactPhone" checked={showContactPhone} onCheckedChange={() => {setShowContactPhone(!showContactPhone)}}/>
-                          <p className="text-sm">Show phone field? </p>
-                      </div>
-                      <div className="inline-flex items-center w-full justify-start gap-4">
-                          <Checkbox name="showContactPhone" checked={showContactPhone} onCheckedChange={() => {setShowContactPhone(!showContactPhone)}}/>
-                          <p className="text-sm">Show email field? </p>
-                      </div>
-                      <Button variant={"outline"} className="w-full"><SaveIcon />Save</Button>
-                    </div>
-                    <div className="w-[300px] h-[200px] bg-green-100 mx-auto rounded-xl">
-                          <div className="flex flex-col justify-center items-start pl-">
-                            <p className="font-semibold pt-2">Contact Information</p>
-                            <div className="flex flex-col-[auto_1fr]">
-                              <div className=" flex items-center p">
-                              <PhoneIcon size={22}/>
-                              </div>
-                              <div>
-                                <p>Phone:</p>
-                              <p>{phone}</p>
-                              </div>
-                              
-                            </div>
-                            
-                            <p>Email: </p>
-                            <p>{email}</p>
-                          </div>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardHeader>
+          {appFieldData.show_tables && 
+            <TableField tableData={tables} setTableData={setTables} editedTables={editedTables} setEditedTables={setEditedTables}/>
+          }
+          <Card>
+            <CardContent className="text-center">
+              <Button onClick={() => setShowFieldModal(true)}>
+                <PlusIcon />
+                Add Field
+              </Button>
+            </CardContent>
           </Card>
           <input type="hidden" name="baseId" value={selectedBase.base_id}/>
           <input type="hidden" name="request-type" value="base-update"/>
           <input type="hidden" name="userId" value={selectedBase.user_id} />
           <Card className="bg-card border border-border shadow-[0_4px_16px_rgba(0,0,0,0.4)] col-span-2 items-center">
             <CardContent>
-              <Button className="border border-yellow-400 bg-yellow-600/20" >Submit Update Request</Button>
+              <Button className="border border-yellow-400 bg-yellow-600/20" type="submit" name="_action" value="submit">Submit Update Request</Button>
             </CardContent>
           </Card>
         </div>
@@ -507,6 +365,9 @@ export default function BaseAdmin({ loaderData }: Route.ComponentProps) {
           onClose={setShowModal}
           setCoverImage={setCoverImage}
         ></UploadModal>
+      )}
+      {showFieldModal && (
+        <FieldTypes setShowModal={setShowFieldModal} setSelectedType={setSelectedType} />
       )}
     </div>
   );

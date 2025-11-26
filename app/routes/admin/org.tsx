@@ -46,6 +46,7 @@ import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu
 import { DropdownMenuContent, DropdownMenuItem } from "~/components/ui/dropdown-menu";
 import FieldTypes from "~/components/FieldTypes";
 import TableField from "~/components/TableField";
+import { useLinks } from "~/hooks/useLinks";
 
 
 const supabase = createClient(
@@ -107,7 +108,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const image = formData.get("image");
   let file = null;
 
-  console.log(formData)
+  console.log('test formData: ', formData)
 
   if (requestId) {
     const { data, error } = await supabase.from("request").delete().eq("id", requestId);
@@ -142,38 +143,54 @@ export default function OrgDetailsRedesign({
   actionData
 }: Route.ComponentProps) {
   const { orgData, userId, requestData } = loaderData;
-  // const orgData = orgs[0];
-  // console.log('orgData', orgData);
+  const [fields, setFields] = useState({
+    name: {value: orgData?.name, isEditing: false},
+    description: {value: orgData?.description, isEditing: false},
+    poc: {value: orgData?.contact, isEditing: false},
+    selectedBadge: {value: orgData?.type, addBadgeToForm: false},
+    webUrl: {value: orgData?.web_url, isEditing: false},
+    building: {value: orgData?.building_number, isEditing: false},
+    address: {value: orgData?.address, isEditing: false},
+  })
+
+  const updateFieldValue = (fieldName: string) => (value: string) => {
+    setFields(prev => ({
+      ...prev,
+      [fieldName]: { ...prev[fieldName], value}
+    }))
+  }
+
+  const updateFieldEdit = (fieldName: string) => (isEditing: boolean) => {
+    setFields(prev => ({
+      ...prev,
+      [fieldName]: { ...prev[fieldName], isEditing }
+    }));
+  }
+
   const [showModal, setShowModal] = useState(false);
   const [coverImage, setCoverImage] = useState<string>("");
   const [originalImage, setOriginalImage] = useState<string>(orgData?.image_url)
-  const [name, setName] = useState(orgData?.name);
-  const [nameEdit, setNameEdit] = useState(false);
-  const [description, setDescription] = useState(orgData?.description);
-  const [descriptionEdit, setDescriptionEdit] = useState(false);
-  const [poc, setPOC] = useState(orgData?.contact);
-  const [pocEdit, setPocEdit] = useState(false);
+  // const [name, setName] = useState(orgData?.name);
+  // const [nameEdit, setNameEdit] = useState(false);
+  // const [description, setDescription] = useState(orgData?.description);
+  // const [descriptionEdit, setDescriptionEdit] = useState(false);
+  // const [poc, setPOC] = useState(orgData?.contact);
+  // const [pocEdit, setPocEdit] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState(orgData?.type);
   const [showLogo, setShowLogo] = useState(true);
   const [showType, setShowType] = useState(true);
   const [addBadgeToForm, setAddBadgeToForm] = useState(false);
-  const [webUrl, setWebUrl] = useState(orgData?.web_url);
-  const [webEdit, setWebEdit] = useState(false);
-  const [building, setBuilding] = useState(orgData?.building_number);
-  const [buildingEdit, setBuildingEdit] = useState(false);
-  const [address, setAddress] = useState(orgData?.address);
-  const [addressEdit, setAddressEdit] = useState(false);
-  const [links, setLinks] = useState<{ label: string, link: string }[]>([])
-  const navigate = useNavigate();
-  const [showAddLink, setShowAddLink] = useState(false);
-  const [newLink, setNewLink] = useState<{ label: string, link: string }>({ label: '', link: '' })
-  const [existingLinks, setExistingLinks] = useState<{ label: string, link: string }[]>(JSON.parse(orgData?.links) ?? [])
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editedLink, setEditedLink] = useState<{ label: string, link: string }>({ label: '', link: '' })
-  const [update, setUpdate] = useState(false);
+  // const [webUrl, setWebUrl] = useState(orgData?.web_url);
+  // const [webEdit, setWebEdit] = useState(false);
+  // const [building, setBuilding] = useState(orgData?.building_number);
+  // const [buildingEdit, setBuildingEdit] = useState(false);
+  // const [address, setAddress] = useState(orgData?.address);
+  // const [addressEdit, setAddressEdit] = useState(false);
   const [fieldsModal, setFieldsModal] = useState(false);
   const [selectedType, setSelectedType] = useState(-1);
   const [tables, setTables] = useState(orgData.table_data)
+
+  const linkManager = useLinks(JSON.parse(orgData?.links));
 
   // Reset addBadgeToForm when original badge is reselected
   useEffect(() => {
@@ -192,61 +209,7 @@ export default function OrgDetailsRedesign({
   const shouldShowSaveButton = badgeChanged;
   const shouldRenderHiddenInput = badgeChanged && addBadgeToForm;
 
-  function startEditLink(index: number, link: { label: string, link: string }) {
-    setEditingIndex(index);
-    setEditedLink({ ...link });
-  }
-
-  function saveEditedLink(index: number) {
-    const existingLinksLength = existingLinks.length;
-
-    if (index < existingLinksLength) {
-      setExistingLinks(prev => {
-        const updated = [...prev];
-        updated[index] = editedLink;
-        return updated;
-      });
-    } else {
-      setLinks(prev => {
-        const updated = [...prev];
-        updated[index - existingLinksLength] = editedLink;
-        return updated;
-      });
-    }
-
-
-    setEditingIndex(null);
-    setEditedLink({ label: '', link: '' });
-    setUpdate(true);
-  }
-
-  function deleteLink(index: number) {
-    const existingLinksLength = existingLinks.length;
-
-    if (index < existingLinksLength) {
-      setExistingLinks(prev => prev.filter((_, i) => i !== index));
-    } else {
-      setLinks(prev => prev.filter((_, i) => i !== (index - existingLinksLength)));
-    }
-
-    setUpdate(true);
-  }
-
-  // const newLinks = links.filter(
-  //   (link) => !orgData.links?.some(
-  //     (orgLink) => orgLink.label === link.label && orgLink.link === link.link
-  //   )
-  // );
-
-  // console.log('existing links: ', links, ' newLinks: ', newLinks)
-
-  function handleAddLink() {
-    if (newLink.label !== "" && newLink.link !== "") {
-      setLinks((prev) => [...prev, newLink]);
-      setNewLink({ label: "", link: "" });
-      setShowAddLink(false);
-    }
-  }
+ 
 
   return (
     <div className="w-full flex-1 overflow-auto">
@@ -345,12 +308,12 @@ export default function OrgDetailsRedesign({
                     <EditableField
                       label="Organization Name"
                       name="name"
-                      field={name}
-                      setField={setName}
-                      originalValue={orgData.name}
+                      field={fields.name.value}
+                      setField={updateFieldValue('name')}
+                      originalValue={orgData?.name}
                       Icon={Building}
-                      fieldEdit={nameEdit}
-                      setFieldEdit={setNameEdit}
+                      fieldEdit={fields.name.isEditing}
+                      setFieldEdit={updateFieldEdit('name')}
                       type="text"
                       disabled={false}
                     />
@@ -358,29 +321,48 @@ export default function OrgDetailsRedesign({
                     <EditableField
                       label="Description"
                       name="description"
-                      field={description}
-                      setField={setDescription}
-                      originalValue={orgData.description}
+                      field={fields.description.value}
+                      setField={updateFieldValue('description')}
+                      originalValue={orgData?.description}
                       Icon={Building}
-                      fieldEdit={descriptionEdit}
-                      setFieldEdit={setDescriptionEdit}
+                      fieldEdit={fields.description.isEditing}
+                      setFieldEdit={updateFieldEdit('description')}
                       type="textarea"
                       disabled={false}
                     />
 
-                    <EditableField label={"Building Number"} name={"building_number"} field={building} setField={setBuilding} Icon={MapPin} fieldEdit={buildingEdit} setFieldEdit={setBuildingEdit} disabled={false} originalValue={orgData.building_number} />
-                    <EditableField label={"Address"} name={"address"} field={address} setField={setAddress} Icon={Map} fieldEdit={addressEdit} setFieldEdit={setAddressEdit} disabled={false} originalValue={orgData.address} />
+                    <EditableField 
+                      label={"Building Number"} 
+                      name={"building_number"} 
+                      field={fields.building.value} 
+                      setField={updateFieldValue('building')} 
+                      Icon={MapPin} 
+                      fieldEdit={fields.building.isEditing} 
+                      setFieldEdit={updateFieldEdit('building')} 
+                      disabled={false} 
+                      originalValue={orgData?.building_number} />
+
+                    <EditableField 
+                      label={"Address"} 
+                      name={"address"} 
+                      field={fields.address.value} 
+                      setField={updateFieldValue('address')} 
+                      Icon={Map} 
+                      fieldEdit={fields.address.isEditing} 
+                      setFieldEdit={updateFieldEdit('address')} 
+                      disabled={false} 
+                      originalValue={orgData?.address} />
                     
                     <EditableField
                       label={"Website"}
                       name={"weburl"}
-                      field={webUrl}
-                      setField={setWebUrl}
+                      field={fields.webUrl.value}
+                      setField={updateFieldValue('webUrl')}
                       Icon={Globe}
-                      fieldEdit={webEdit}
-                      setFieldEdit={setWebEdit}
+                      fieldEdit={fields.webUrl.isEditing}
+                      setFieldEdit={updateFieldEdit('webUrl')}
                       disabled={false}
-                      originalValue={orgData.web_url} />
+                      originalValue={orgData?.web_url} />
 
                     <div className="space-y-4">
                       <div className="flex gap-2 mb-3">
@@ -424,12 +406,12 @@ export default function OrgDetailsRedesign({
                     <EditableField
                       label="Point of Contact"
                       name="contact"
-                      field={poc}
-                      setField={setPOC}
+                      field={fields.poc.value}
+                      setField={updateFieldValue('poc')}
                       originalValue={orgData.contact ?? ""}
                       Icon={Users}
-                      fieldEdit={pocEdit}
-                      setFieldEdit={setPocEdit}
+                      fieldEdit={fields.poc.isEditing}
+                      setFieldEdit={updateFieldEdit('poc')}
                       type="text"
                       disabled={false}
                     />
@@ -469,7 +451,7 @@ export default function OrgDetailsRedesign({
                               className="h-20 w-20 object-contain"
                             />
                           )}
-                          <p className="text-center text-xl font-bold">{name}</p>
+                          <p className="text-center text-xl font-bold">{fields.name.value}</p>
                           {showType && (
                             <Badge variant="secondary">{selectedBadge}</Badge>
                           )}
@@ -489,8 +471,8 @@ export default function OrgDetailsRedesign({
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                    {[...existingLinks, ...links].map((link, index) => {
-                      const isEditing = editingIndex === index;
+                    {[...linkManager.existingLinks, ...linkManager.links].map((link, index) => {
+                      const isEditing = linkManager.editingIndex === index;
                       return (
                         <Card className="py-2 rounded-lg bg-background/20" >
                           <CardContent className="relative flex flex-col">
@@ -503,8 +485,8 @@ export default function OrgDetailsRedesign({
                                     <EllipsisVertical size={20} className="" />
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => startEditLink(index, link)}>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => deleteLink(index)}>Delete</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => linkManager.startEditLink(index, link)}>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => linkManager.deleteLink(index)}>Delete</DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </>
@@ -513,15 +495,15 @@ export default function OrgDetailsRedesign({
                                 <div className="flex flex-col gap-4 w-full">
                                   <div className="space-y-2">
                                     <p>Label: </p>
-                                    <input type="text" value={editedLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setEditedLink({ ...editedLink, label: e.currentTarget.value })} />
+                                    <input type="text" value={linkManager.editedLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setEditedLink({ ...linkManager.editedLink, label: e.currentTarget.value })} />
                                   </div>
                                   <div className="space-y-2">
                                     <p>Link Address: </p>
-                                    <input type="text" value={editedLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setEditedLink({ ...editedLink, link: e.currentTarget.value })} />
+                                    <input type="text" value={linkManager.editedLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setEditedLink({ ...linkManager.editedLink, link: e.currentTarget.value })} />
                                   </div>
                                   <div className="flex justify-end gap-2">
-                                    <Button variant={"default"} className="hover:bg-blue-600 border" onClick={() => saveEditedLink(index)}><SaveIcon />Save Link</Button>
-                                    <Button variant={"ghost"} className="border " onClick={() => setEditingIndex(null)}>Cancel</Button>
+                                    <Button variant={"default"} className="hover:bg-blue-600 border" onClick={() => linkManager.saveEditedLink(index)}><SaveIcon />Save Link</Button>
+                                    <Button variant={"ghost"} className="border " onClick={() => linkManager.setEditingIndex(null)}>Cancel</Button>
                                   </div>
                                 </div>
                               </>
@@ -531,26 +513,26 @@ export default function OrgDetailsRedesign({
                         </Card>
                       )
                     })}
-                    {(links.length > 0 || update) && (
-                      <input type="hidden" name="links" value={JSON.stringify([...(existingLinks || []), ...links])} />
+                    {(linkManager.links.length > 0 || linkManager.update) && (
+                      <input type="hidden" name="links" value={JSON.stringify([...(linkManager.existingLinks || []), ...linkManager.links])} />
                     )}
                     <Card className="py-2 rounded-lg bg-background/20">
                       <CardContent className="flex w-full ">
-                        {!showAddLink ? <div className="flex w-full justify-between">
+                        {!linkManager.showAddLink ? <div className="flex w-full justify-between">
                           <p>Add New Link</p>
-                          <PlusSquareIcon className="hover:text-gray-400" size={24} onClick={() => setShowAddLink(true)} />
+                          <PlusSquareIcon className="hover:text-gray-400" size={24} onClick={() => linkManager.setShowAddLink(true)} />
                         </div> : <div className="flex flex-col gap-4 w-full">
                           <div className="space-y-2">
                             <p>Label: </p>
-                            <input type="text" value={newLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({ ...newLink, label: e.currentTarget.value })} />
+                            <input type="text" value={linkManager.newLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setNewLink({ ...linkManager.newLink, label: e.currentTarget.value })} />
                           </div>
                           <div className="space-y-2">
                             <p>Link Address: </p>
-                            <input type="text" value={newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => setNewLink({ ...newLink, link: e.currentTarget.value })} />
+                            <input type="text" value={linkManager.newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setNewLink({ ...linkManager.newLink, link: e.currentTarget.value })} />
                           </div>
                           <div className="flex justify-end gap-2">
-                            <Button variant={"default"} className="hover:bg-blue-600 border" onClick={handleAddLink}><PlusIcon />Add Link</Button>
-                            <Button variant={"ghost"} className="border " onClick={() => setShowAddLink(false)}>Cancel</Button>
+                            <Button variant={"default"} className="hover:bg-blue-600 border" onClick={linkManager.handleAddLink}><PlusIcon />Add Link</Button>
+                            <Button variant={"ghost"} className="border " onClick={() => linkManager.setShowAddLink(false)}>Cancel</Button>
                           </div>
                         </div>}
                       </CardContent>
