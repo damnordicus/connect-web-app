@@ -1,4 +1,4 @@
-import { CalendarRange, Edit, Save, Table } from "lucide-react";
+import { CalendarRange, Edit, Save, Table, X } from "lucide-react";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import React, { useState, useEffect, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
@@ -165,15 +165,15 @@ export default function TableField({
                         return (
                             <Accordion type="single" collapsible>
                                 <AccordionItem  value={table.id}>
-                                    <AccordionTrigger className="bg-border p-4">{table.title}</AccordionTrigger>
-                                    <AccordionContent>
-                                        <div className="flex w-fit mx-auto justify-center border rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
-                                    <table className="border-collapse">
+                                    <AccordionTrigger className="bg-primary/40 p-4 border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">{table.title}</AccordionTrigger>
+                                    <AccordionContent className=" flex justify-center bg-background/20 border-b rounded-b-lg py-4">
+                                    <div className={`relative flex w-fit justify-center border rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.3)] `}>
+                                    <table className=" border-collapse">
                                         <thead className="rounded-xl">
                                             <tr className="bg-primary/40">
                                                 {table.headers.map((header, colIndex) => (
                                                     <th key={colIndex} className="border px-4 py-2 font-medium text-sm">
-                                                        {isEditing ? (
+                                                        {editingTableId === table.id ? (
                                                             <input
                                                                 type="text"
                                                                 value={header}
@@ -193,7 +193,7 @@ export default function TableField({
                                                 <tr key={rowIndex} className="hover:bg-gray-500 bg-primary/5">
                                                     {row.map((cell, colIndex) => (
                                                         <td key={colIndex} className="border-t px-4 py-2 text-sm text-center">
-                                                            {isEditing ? (
+                                                            {editingTableId === table.id ? (
                                                                 <input 
                                                                     type="text"
                                                                     value={cell}
@@ -210,6 +210,10 @@ export default function TableField({
                                             ))}
                                         </tbody>
                                     </table>
+                                    <div className={`absolute gap-2 flex ${editingTableId === table.id ? '-right-17' : '-right-8'} `} >
+                                        {editingTableId !== table.id ? <Edit onClick={() => setEditingTableId(table.id)}/>
+                                        :<><Save /><X onClick={() => setEditingTableId(null)}/></>}
+                                    </div>
                                 </div>
                                     </AccordionContent>
                                 </AccordionItem>
