@@ -1,13 +1,13 @@
 import { CalendarRange, Edit, EllipsisVertical, Option, Save, Table, X } from "lucide-react";
 import { Card, CardContent, CardHeader } from "./ui/card";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, type SetStateAction } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Button } from "./ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Checkbox } from "./ui/checkbox";
 
-interface TableData {
+export interface TableData {
     id: string;
     title: string;
     headers: string[];
@@ -18,18 +18,24 @@ export default function TableField({
     tableData, 
     setTableData, 
     editedTables,
-    setEditedTables
+    setEditedTables,
+    deleteTables,
+    setDeleteTables,
  }: {
     tableData: TableData[], 
-    setTableData: React.Dispatch<React.SetStateAction<TableData[]>>, 
+    setTableData: React.Dispatch<SetStateAction<TableData[]>>, 
     editedTables: TableData[],
-    setEditedTables: React.Dispatch<React.SetStateAction<TableData[]>>,
+    setEditedTables: React.Dispatch<SetStateAction<TableData[]>>,
+    deleteTables: TableData[],
+    setDeleteTables: React.Dispatch<SetStateAction<TableData[]>>,
 }){
     const [showBuilder, setShowBuilder] = useState(false);
     const [rows, setRows] = useState(0);
     const [columns, setColumns] = useState(0);
     const [editingTableId, setEditingTableId] = useState<string | null>(null); // Track which table is being edited
     const data = tableData ?? [];
+    const [deleteTableId, setDeleteTableId] = useState<string[]>([]);
+    const [deleteClicked, setDeleteClicked] = useState(false);
     
     // Store original state of tables to detect changes
     const originalTablesRef = useRef<Map<string, TableData>>(new Map());
@@ -159,7 +165,7 @@ export default function TableField({
                         Table
                     </div>
                     <div className="inline-flex gap-4 items-center">
-                    {deleteSelect && <Button variant={"destructive"} disabled >Delete</Button>}
+                    {deleteSelect && <Button variant={"destructive"} disabled={deleteTableId.length === 0} onClick={() => setDeleteClicked(true)}>Delete</Button>}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <EllipsisVertical size={18}/>
@@ -179,7 +185,14 @@ export default function TableField({
                         return (
                             // <div className="flex w-full gap-4 transition-all">
                             <Accordion type="single" className={`relative w-full ${deleteSelect ? 'pl-8' : ''} transition-all`} collapsible>
-                                {deleteSelect && <Checkbox className="absolute left-0 top-4 dark:text-red-600/80 dark:data-[state=checked]:bg-input/20 dark:data-[state=checked]:border-red-700"/>}
+                                {deleteSelect && <Checkbox onCheckedChange={() => setDeleteTableId((prev) => {
+                                    if(prev.includes(table.id)){
+                                        return prev.filter(id => id !== table.id)
+                                    }else{
+                                        return [...prev, table.id]
+                                    }
+                                }
+                                )} className="absolute left-0 top-4 dark:text-red-600/80 dark:data-[state=checked]:bg-input/20 dark:data-[state=checked]:border-red-700"/>}
                                 <AccordionItem  value={table.id}>
                                     <AccordionTrigger className="bg-primary/40 p-4 border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">{table.title}</AccordionTrigger>
                                     <AccordionContent className=" flex justify-center bg-background/20 border-b rounded-b-lg py-4">
@@ -313,8 +326,11 @@ export default function TableField({
                     </div>
                 </CardContent>
             </Card>
-            {editedTables.length > 0 &&
+            {(editedTables && editedTables.length > 0) &&
             <input type="hidden" name="table_data" value={JSON.stringify(editedTables)}/>
+            }
+            {(deleteTableId.length > 0 && deleteClicked) &&
+            <input type="hidden" name="delete_tables" value={JSON.stringify(deleteTableId)} />
             }
         </div>
     )

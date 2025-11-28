@@ -37,7 +37,7 @@ import { TabsContent } from "@radix-ui/react-tabs";
 import { Checkbox } from "~/components/ui/checkbox";
 import { EditableField } from "~/components/EditableField";
 import FieldTypes from "~/components/FieldTypes";
-import TableField from "~/components/TableField";
+import TableField, { type TableData } from "~/components/TableField";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -130,7 +130,8 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
   const [selectedType, setSelectedType] = useState(-1)
   const [tables, setTables] = useState(appFieldData.table_data)
   const [showTable, setShowTable] = useState(false);
-  const [editedTables, setEditedTables] = useState<[]>([])
+  const [editedTables, setEditedTables] = useState<TableData[]>([])
+  const [deleteTables, setDeleteTables] = useState<TableData[]>([])
 
   useEffect(() => {
     console.log(actionData)
@@ -338,7 +339,7 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
             </CardHeader>
           </Card>
           {appFieldData.show_tables && 
-            <TableField tableData={tables} setTableData={setTables} editedTables={editedTables} setEditedTables={setEditedTables}/>
+            <TableField tableData={tables} setTableData={setTables} editedTables={editedTables} setEditedTables={setEditedTables} deleteTables={deleteTables} setDeleteTables={setDeleteTables}/>
           }
           <Card>
             <CardContent className="text-center">

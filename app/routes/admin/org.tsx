@@ -188,9 +188,9 @@ export default function OrgDetailsRedesign({
   // const [addressEdit, setAddressEdit] = useState(false);
   const [fieldsModal, setFieldsModal] = useState(false);
   const [selectedType, setSelectedType] = useState(-1);
-  const [tables, setTables] = useState(orgData.table_data)
+  const [tables, setTables] = useState(orgData?.table_data)
 
-  const linkManager = useLinks(JSON.parse(orgData?.links));
+  const linkManager = useLinks(orgData?.links);
 
   // Reset addBadgeToForm when original badge is reselected
   useEffect(() => {

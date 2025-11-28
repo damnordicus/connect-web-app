@@ -226,7 +226,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         return {success: true, _action: "approve"}
       } else if (request_type === "base-update") {
         console.log('obj', Object.fromEntries(formData.entries()))
-        const { org_id, request_id, request_type, _action, table_data, ...obj } = Object.fromEntries(formData.entries())
+        const { org_id, request_id, request_type, _action, table_data, delete_tables, ...obj } = Object.fromEntries(formData.entries())
         // delete updateObj.request_type
         if(table_data){
           const {data: currentTables, error: existingError} = await supabase.from('appFields').select("table_data").eq("base_id", base_id).single();
@@ -246,6 +246,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
           });
           const { data, error } = await supabase.from('appFields').update({"table_data": updatedTables}).eq("base_id", base_id);
         }
+
+        if(delete_tables){
+          const {data: currentTables, error: existingError} = await supabase.from('appFields').select("table_data").eq("base_id", base_id).single();
+          if(existingError) throw existingError
+          const existingTables = currentTables?.table_data || [];
+          const deleteTables = JSON.parse(delete_tables as string);
+          const newTables = existingTables.filter(table => !deleteTables.includes(table.id))
+          const {data, error} = await supabase.from('appFields').update({"table_data": newTables}).eq("base_id", base_id);
+        }
+
         console.log('test', obj)
         const { data: updateData, error: updateError } = await supabase
           .from('baseDetails')
