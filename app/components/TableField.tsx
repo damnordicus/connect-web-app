@@ -1,9 +1,11 @@
-import { CalendarRange, Edit, Save, Table, X } from "lucide-react";
+import { CalendarRange, Edit, EllipsisVertical, Option, Save, Table, X } from "lucide-react";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import React, { useState, useEffect, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Button } from "./ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import { Checkbox } from "./ui/checkbox";
 
 interface TableData {
     id: string;
@@ -147,14 +149,26 @@ export default function TableField({
             updateEditedTables(updatedTable);
         }
     };
-
+    const [deleteSelect, setDeleteSelect] = useState(false)
     return (
         <div className="col-span-2">
-            <Card className="rounded-lg">
-                <CardHeader className="flex items-center font-semibold">
+            <Card className="rounded-sm">
+                <CardHeader className="flex justify-between items-center font-semibold">
                     <div className="inline-flex items-center gap-2">
                         <Table size={18}/>
                         Table
+                    </div>
+                    <div className="inline-flex gap-4 items-center">
+                    {deleteSelect && <Button variant={"destructive"} disabled >Delete</Button>}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <EllipsisVertical size={18}/>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {!deleteSelect && <DropdownMenuItem onSelect={() => setDeleteSelect(true)} className="text-red-600 hover:bg-red-700/30 ">Delete Tables</DropdownMenuItem>}
+                            {deleteSelect && <DropdownMenuItem onSelect={() => setDeleteSelect(false)}>Cancel</DropdownMenuItem>}                        
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -163,7 +177,9 @@ export default function TableField({
                         const isEditing = editingTableId === table.id;
                         
                         return (
-                            <Accordion type="single" collapsible>
+                            // <div className="flex w-full gap-4 transition-all">
+                            <Accordion type="single" className={`relative w-full ${deleteSelect ? 'pl-8' : ''} transition-all`} collapsible>
+                                {deleteSelect && <Checkbox className="absolute left-0 top-4 dark:text-red-600/80 dark:data-[state=checked]:bg-input/20 dark:data-[state=checked]:border-red-700"/>}
                                 <AccordionItem  value={table.id}>
                                     <AccordionTrigger className="bg-primary/40 p-4 border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">{table.title}</AccordionTrigger>
                                     <AccordionContent className=" flex justify-center bg-background/20 border-b rounded-b-lg py-4">
@@ -211,45 +227,15 @@ export default function TableField({
                                         </tbody>
                                     </table>
                                     <div className={`absolute gap-2 flex ${editingTableId === table.id ? '-right-17' : '-right-8'} `} >
-                                        {editingTableId !== table.id ? <Edit onClick={() => setEditingTableId(table.id)}/>
-                                        :<><Save /><X onClick={() => setEditingTableId(null)}/></>}
+                                        {(editingTableId !== table.id && !deleteSelect) ? <Edit onClick={() => setEditingTableId(table.id)}/>
+                                        : !deleteSelect ? <><Save onClick={() => setEditingTableId(isEditing ? null : table.id)}/><X onClick={() => setEditingTableId(null)}/></> : <></>}
                                     </div>
                                 </div>
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
-                            // <div key={table.id} className="space-y-2 relative">
-                            //     {/* Edit/Save button positioned in top-right */}
-                            //     <button
-                            //         type="button"
-                            //         onClick={() => setEditingTableId(isEditing ? null : table.id)}
-                            //         className="absolute top-0 right-0 z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            //         title={isEditing ? "Save" : "Edit"}
-                            //     >
-                            //         {isEditing ? (
-                            //             <Save size={18} className="text-green-600" />
-                            //         ) : (
-                            //             <Edit size={18} className="text-gray-600" />
-                            //         )}
-                            //     </button>
-
-                            //      Title
-                            //      {isEditing ? (
-                            //         <input
-                            //             type="text"
-                            //             value={table.title}
-                            //             onChange={(e) => updateTableTitle(table.id, e.target.value)}
-                            //             className="text-center font-semibold w-full bg-transparent border-b focus:outline-none focus:border-blue-500 pr-12"
-                            //         />
-                            //     ) : (
-                            //         <p className="text-center font-semibold w-full bg-transparent border-b pr-12">
-                            //             {table.title}
-                            //         </p>
-                            //     )} 
-
-                            //     Table
-                                
-                            //  </div> 
+                            
+                            // </div>
                         );
                     })}
 
