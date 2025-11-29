@@ -20,7 +20,7 @@ import {
   Pin,
   MapIcon,
   MapPin,
-  Map,
+  // Map,
   PlusSquareIcon,
   EllipsisVertical,
   PlusIcon,
@@ -45,7 +45,7 @@ import { Select, SelectValue, SelectTrigger, SelectContent, SelectItem } from "~
 import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuContent, DropdownMenuItem } from "~/components/ui/dropdown-menu";
 import FieldTypes from "~/components/FieldTypes";
-import TableField from "~/components/TableField";
+import TableField, { type TableData } from "~/components/TableField";
 import { useLinks } from "~/hooks/useLinks";
 
 
@@ -189,6 +189,9 @@ export default function OrgDetailsRedesign({
   const [fieldsModal, setFieldsModal] = useState(false);
   const [selectedType, setSelectedType] = useState(-1);
   const [tables, setTables] = useState(orgData?.table_data)
+  const [useTables, setUseTables ] = useState<boolean>( orgData?.use_tables ?? false)
+  const [editedTables, setEditedTables] = useState<TableData[]>([])
+  const [deleteTables, setDeleteTables] = useState<TableData[]>([])
 
   const linkManager = useLinks(orgData?.links);
 
@@ -347,7 +350,7 @@ export default function OrgDetailsRedesign({
                       name={"address"} 
                       field={fields.address.value} 
                       setField={updateFieldValue('address')} 
-                      Icon={Map} 
+                      Icon={MapPin} 
                       fieldEdit={fields.address.isEditing} 
                       setFieldEdit={updateFieldEdit('address')} 
                       disabled={false} 
@@ -472,6 +475,7 @@ export default function OrgDetailsRedesign({
               </CardHeader>
               <CardContent className="space-y-2">
                     {[...linkManager.existingLinks, ...linkManager.links].map((link, index) => {
+                      console.log(link)
                       const isEditing = linkManager.editingIndex === index;
                       return (
                         <Card className="py-2 rounded-lg bg-background/20" >
@@ -539,8 +543,8 @@ export default function OrgDetailsRedesign({
                     </Card>
                   </CardContent>
             </Card>
-            {orgData.use_tables && 
-              <TableField tableData={tables} setTableData={setTables}/>
+            {useTables && 
+              <TableField  tableData={tables} setTableData={setTables} editedTables={editedTables} setEditedTables={setEditedTables} deleteTables={deleteTables} setDeleteTables={setDeleteTables}/>
             }
             <Card className=" rounded-lg">
               <CardContent className="flex justify-center items-center w-full">

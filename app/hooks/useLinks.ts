@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export function useLinks(initialLinks: {label: string, link: string}[]) {
-    const [links, setLinks] = useState(initialLinks || [])
+    const [links, setLinks] = useState<{label: string, link: string}[]>([])
     const [showAddLink, setShowAddLink] = useState(false);
     const [newLink, setNewLink] = useState<{ label: string, link: string }>({ label: '', link: '' })
     const [existingLinks, setExistingLinks] = useState<{ label: string, link: string }[]>(initialLinks ?? [])

@@ -86,8 +86,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { data: orgsByBase, error: orgBaseError } = await supabase
     .from('organization')
     .select()
-    .eq('base_id', baseData.
-      base_id);
+    .eq('base_id', baseData.base_id);
 
   const orgList = orgsByBase?.map(org => org.id) || [];
 
@@ -96,7 +95,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .select()
     .in('org_id', orgList)
     .eq("is_denied", false);
-  // .or(`base_id.eq.${baseId},org_id.in.(${orgList})`);
 
   const { data: allUsers, error: usersError } = await supabase
     .from('user')
@@ -127,7 +125,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const image_url = formData.get("image_url");
   const newLinksStr = formData.get('links');
   const newLinks = newLinksStr ? JSON.parse(newLinksStr as string) : [];
+  const denialReason = formData.get("denial_reason");
+  
   console.log('pre if: ', formData)
+  
   if (_action === "submit") {
     try {
       const { data, error } = await supabase
@@ -227,7 +228,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       } else if (request_type === "base-update") {
         console.log('obj', Object.fromEntries(formData.entries()))
         const { org_id, request_id, request_type, _action, table_data, delete_tables, ...obj } = Object.fromEntries(formData.entries())
-        // delete updateObj.request_type
+        
         if(table_data){
           const {data: currentTables, error: existingError} = await supabase.from('appFields').select("table_data").eq("base_id", base_id).single();
           if(existingError) throw existingError
@@ -273,13 +274,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
         console.log('update Object: ', updateObj)
 
         delete updateObj.request_type;
+
+        if(updateObj.delete_tables){
+          const {data: currentTables, error: existingError} = await supabase.from('organization').select("table_data").eq("id", org_id).single();
+          if(existingError) throw existingError
+          const existingTables = currentTables?.table_data || [];
+          const deleteTables = JSON.parse(updateObj.delete_tables as string);
+          const newTables = existingTables.filter(table => !deleteTables.includes(table.id))
+          const {data, error} = await supabase.from('organization').update({"table_data": newTables}).eq("id", org_id);
+        }
         
-        // const oldLinks = JSON.parse(currentLinks?.links)
-        //const newLinks = JSON.parse(updateObj.links)
-        // if(newLinks){
-        //   const {data: currentLinks} = await supabase.from('organization').select('links').eq('id', org_id).single();
-        //   updateObj.links = [...newLinks, ...(currentLinks?.links || [])]
-        // }
         if(updateObj.table_data){
           updateObj.table_data = JSON.parse(updateObj.table_data as string)
         }
@@ -304,8 +308,13 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   if (_action === 'deny') {
-    // Handle deny action
-    const { data: updateData, error: updateError } = await supabase.from('request').update({ "is_denied": true }).eq("id", requestId)
+    const { data: updateData, error: updateError } = await supabase
+      .from('request')
+      .update({ 
+        "is_denied": true,
+        "denial_reason": denialReason 
+      })
+      .eq("id", requestId)
     console.log(updateData, updateError)
     return {success: true, _action: "deny"}
   }
@@ -324,7 +333,6 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
     orgData
   } = loaderData;
 
-  // console.log('loaderData: ', loaderData)
   const navigate = useNavigate();
   const [orgHover, setOrgHover] = useState<string | null>(null);
   const [filterBy, setFilterBy] = useState<string[]>(['create-org', 'org-admin', 'base-admin', 'org-update', 'base-update'])
@@ -333,6 +341,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
   const [fetchedData, setFetchedData] = useState(null)
   const [showDenyForm, setShowDenyForm] = useState(false)
   const [denialSelect, setDenialSelect] = useState("")
+  const [customDenialReason, setCustomDenialReason] = useState("")
 
   useEffect(() => {
     if (orgData && orgData.length) {
@@ -352,162 +361,453 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
     if (detailsFetcher.state === 'idle' && detailsFetcher.data) {
       setFetchedData(detailsFetcher.data.data);
     }
-    console.log('dF: ', detailsFetcher)
   }, [detailsFetcher])
 
   useEffect(() => {
     if(actionData && actionData.success){
       setSelectedRequest(null);
+      setShowDenyForm(false);
+      setDenialSelect("");
+      setCustomDenialReason("");
     }
   },[actionData])
 
   function orgNameForId(id: string) {
-    // console.log('tests: ', allOrgs)
-    // console.log('org: ', allOrgs?.filter(org => org.id === id))
-    return allOrgs?.filter(org => org.id === id)[0].name
+    return allOrgs?.filter(org => org.id === id)[0]?.name
   }
 
   function emailForId(id: string) {
-    // console.log('users: ', allUsers)
     return allUsers?.find(user => user.id === id)?.email
   }
 
   function baseForId(id: string) {
-    return allBases?.filter(base => base.id === id)[0].name
+    return allBases?.filter(base => base.id === id)[0]?.name
   }
 
   function labelForId(request: any) {
     const type = request.request_type.includes("org")
-    console.log('type; ', type)
     if (type) {
-      console.log('returned: ', orgNameForId(request.org_id))
       return orgNameForId(request.org_id);
     } else {
       return baseForId(request.base_id);
     }
   }
-  // console.log('selected request: ', selectedRequest)
-  // Add this component above your main component
- function FieldDisplay({
-  fieldKey,
-  value,
-  categories,
-  incoming,
-  originalValue,
-}: {
-  fieldKey: string;
-  value: any;
-  categories: Array<{ type: string; color: string }>;
-  incoming?: boolean;
-  originalValue: string;
-}) {
-  const label = fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1);
 
-  console.log('fieldKey: ', fieldKey, ' value: ', value, ' type: ', typeof value)
-  
-  // Handle null/undefined values and parse strings safely
-  const parseValue = (val: any) => {
-    if (val === null || val === undefined || val === "null") return null;
-    if (typeof val === 'string') {
-      try {
-        return JSON.parse(val);
-      } catch {
-        return val; // Return as-is if not valid JSON
+  // Improved FieldDisplay component
+  function FieldDisplay({
+    fieldKey,
+    value,
+    categories,
+    incoming,
+    originalValue,
+  }: {
+    fieldKey: string;
+    value: any;
+    categories: Array<{ type: string; color: string }>;
+    incoming?: boolean;
+    originalValue?: any;
+  }) {
+    // Convert field key to readable label
+    const label = fieldKey
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+    // Parse value safely
+    const parseValue = (val: any) => {
+      if (val === null || val === undefined || val === "null" || val === "") return null;
+      if (typeof val === 'string') {
+        try {
+          return JSON.parse(val);
+        } catch {
+          return val;
+        }
       }
-    }
-    return val;
+      return val;
+    };
+
+    const parsedValue = parseValue(value);
+    const parsedOriginal = parseValue(originalValue);
+    const [editedValue, setEditedValue] = useState(parsedValue);
+    const [isEditing, setIsEditing] = useState(false);
+
+    // Check if value has changed from original
+    const hasChanged = incoming && parsedOriginal !== undefined && 
+      JSON.stringify(editedValue) !== JSON.stringify(parsedOriginal);
+
+    const handleSave = () => setIsEditing(false);
+    const handleCancel = () => {
+      setEditedValue(parsedValue);
+      setIsEditing(false);
+    };
+
+    // Render different field types
+    const renderField = () => {
+      // Type badge
+      if (fieldKey === "type") {
+        return (
+          <Badge
+            variant="outline"
+            className={`w-fit py-1.5 px-3 shadow-sm ${categories.find((c) => c.type === editedValue)?.color}`}
+          >
+            {editedValue}
+          </Badge>
+        );
+      }
+
+      // Table data
+      if (fieldKey === "table_data") {
+        const tables = Array.isArray(editedValue) ? editedValue : [];
+        if (!tables.length) {
+          return <p className="text-sm text-muted-foreground italic">No tables</p>;
+        }
+        return (
+          <div className="space-y-4 max-h-[300px] overflow-y-auto">
+            {tables.map((table: any, index: number) => (
+              <div key={index} className="border rounded-lg overflow-hidden">
+                <div className="bg-muted px-3 py-2 border-b">
+                  <p className="text-xs font-semibold">Table {index + 1}</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        {table.headers?.map((header: string, i: number) => (
+                          <th key={i} className="px-3 py-2 text-left font-semibold border-r last:border-r-0">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {table.data?.map((row: any[], i: number) => (
+                        <tr key={i} className="hover:bg-muted/30 border-t">
+                          {row.map((cell: any, j: number) => (
+                            <td key={j} className="px-3 py-2 border-r last:border-r-0">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      // Links
+      if (fieldKey === "links") {
+        const links = Array.isArray(editedValue) ? editedValue : [];
+        if (!links.length) {
+          return <p className="text-sm text-muted-foreground italic">No links</p>;
+        }
+        return (
+          <div className="space-y-2">
+            {links.map((link: any, idx: number) => (
+              <div key={idx} className="border rounded-md px-3 py-2 bg-muted/30">
+                <p className="text-xs font-medium text-muted-foreground">{link.label}</p>
+                <a 
+                  href={link.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline break-all"
+                >
+                  {link.link}
+                </a>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      // Delete tables (show list of table IDs to be deleted)
+      if (fieldKey === "delete_tables") {
+        const tableIds = Array.isArray(editedValue) ? editedValue : [];
+        if (!tableIds.length) {
+          return <p className="text-sm text-muted-foreground italic">No tables to delete</p>;
+        }
+        return (
+          <div className="space-y-1">
+            {tableIds.map((id: string, idx: number) => (
+              <p key={idx} className="text-sm border rounded-md px-3 py-1.5 bg-red-50 text-red-700">
+                Table ID: {id}
+              </p>
+            ))}
+          </div>
+        );
+      }
+
+      // Editable text fields (for incoming data only)
+      if (incoming && isEditing) {
+        return (
+          <textarea
+            className="w-full border rounded-md px-3 py-2 bg-background text-sm min-h-[60px] resize-y"
+            value={editedValue ?? ''}
+            onChange={(e) => setEditedValue(e.target.value)}
+          />
+        );
+      }
+
+      // Regular text display
+      return (
+        <div 
+          className={`border rounded-md px-3 py-2 bg-muted/30 text-sm ${
+            hasChanged ? 'border-yellow-400 bg-yellow-50' : ''
+          }`}
+        >
+          {editedValue ? (
+            <p className="whitespace-pre-wrap break-words">{editedValue}</p>
+          ) : (
+            <span className="text-muted-foreground italic">No data</span>
+          )}
+        </div>
+      );
+    };
+
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {hasChanged && (
+            <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-700 border-yellow-300">
+              Changed
+            </Badge>
+          )}
+          {incoming && !isEditing && !["type", "table_data", "links", "delete_tables"].includes(fieldKey) && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Edit2 width={14} />
+            </button>
+          )}
+          {incoming && isEditing && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSave}
+                className="text-green-600 hover:text-green-700"
+              >
+                <SaveIcon width={14} />
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="text-red-600 hover:text-red-700"
+              >
+                <X width={14} />
+              </button>
+            </div>
+          )}
+        </div>
+        {renderField()}
+        {incoming && (
+          <input
+            type="hidden"
+            name={fieldKey}
+            value={typeof editedValue === 'object' && editedValue !== null
+              ? JSON.stringify(editedValue)
+              : (editedValue ?? '')}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Modal Component
+  const RequestModal = () => {
+    if (!selectedRequest) return null;
+
+    const finalDenialReason = denialSelect === "Other" ? customDenialReason : denialSelect;
+
+    return (
+      <Form method="POST">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+          <Card className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
+            <CardHeader className="border-b bg-muted/30">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold">{requests[selectedRequest.request_type].labelFull}</h3>
+                    <Badge variant="outline">{labelForId(selectedRequest)}</Badge>
+                  </div>
+                  {emailForId(selectedRequest.user_id) && (
+                    <p className="text-sm text-muted-foreground">
+                      Requested by: {emailForId(selectedRequest.user_id)}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedRequest(null);
+                    setShowDenyForm(false);
+                    setDenialSelect("");
+                    setCustomDenialReason("");
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <XIcon size={20} />
+                </button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              <div className="grid grid-cols-2 divide-x max-h-[calc(90vh-200px)] overflow-y-auto">
+                {/* Current Data Column */}
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-1 w-1 rounded-full bg-muted-foreground" />
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Current
+                    </p>
+                  </div>
+                  {!fetchedData ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {Object.entries(fetchedData).map(([key, value]) => {
+                        if (!(key in selectedRequest.data) || key === "orgId" || key === "userId" || key === "baseId") {
+                          return null;
+                        }
+                        return (
+                          <FieldDisplay
+                            key={key}
+                            fieldKey={key}
+                            value={value}
+                            categories={categories}
+                            originalValue={value}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Incoming Data Column */}
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-1 w-1 rounded-full bg-blue-600" />
+                    <p className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
+                      Proposed Changes
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(selectedRequest.data).map(([key, value]) => {
+                      if (key === "orgId" || key === "userId" || key === "baseId" || key === "request-type") {
+                        return null;
+                      }
+                      return (
+                        <FieldDisplay
+                          key={key}
+                          fieldKey={key}
+                          value={value}
+                          categories={categories}
+                          incoming
+                          originalValue={fetchedData?.[key]}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+
+            <CardFooter className="border-t bg-muted/30 flex flex-col gap-3 p-4">
+              {!showDenyForm ? (
+                <div className="flex gap-3 w-full justify-center">
+                  <Button
+                    type="submit"
+                    name="_action"
+                    value="approve"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+                  >
+                    Approve Request
+                  </Button>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => setShowDenyForm(true)}
+                    className="border-red-600 text-red-600 hover:bg-red-50 px-8"
+                  >
+                    Deny Request
+                  </Button>
+                </div>
+              ) : (
+                <div className="w-full space-y-3">
+                  <Select onValueChange={setDenialSelect} value={denialSelect}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a reason for denial" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REASONS.map((item, index) => (
+                        <SelectItem value={item} key={index}>{item}</SelectItem>
+                      ))}
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {denialSelect === "Other" && (
+                    <textarea
+                      className="w-full border rounded-lg px-3 py-2 min-h-[80px] resize-y"
+                      placeholder="Please provide a reason for denial..."
+                      value={customDenialReason}
+                      onChange={(e) => setCustomDenialReason(e.target.value)}
+                    />
+                  )}
+
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      type="submit"
+                      name="_action"
+                      value="deny"
+                      className="bg-red-600 hover:bg-red-700 text-white px-8"
+                      disabled={!finalDenialReason}
+                    >
+                      Confirm Denial
+                    </Button>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => {
+                        setShowDenyForm(false);
+                        setDenialSelect("");
+                        setCustomDenialReason("");
+                      }}
+                      className="px-8"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Hidden form fields */}
+              <input type="hidden" name="org_id" value={selectedRequest.org_id} />
+              <input type="hidden" name="request_id" value={selectedRequest.id} />
+              <input type="hidden" name="base_id" value={selectedRequest.base_id} />
+              <input type="hidden" name="user_id" value={selectedRequest.user_id} />
+              <input type="hidden" name="request_type" value={selectedRequest.request_type} />
+              {finalDenialReason && <input type="hidden" name="denial_reason" value={finalDenialReason} />}
+            </CardFooter>
+          </Card>
+        </div>
+      </Form>
+    );
   };
 
-  const [newValue, setNewValue] = useState(() => parseValue(value));
-  const [edit, setEdit] = useState(false);
-  const hasChanged = newValue !== originalValue;
-  
-  function handleSave(){
-    setEdit(false)
-  }
-  
-  const table = fieldKey === "table_data" ? parseValue(value) : [];
-  const links = fieldKey === "links" ? parseValue(value) : [];
-
-  console.log('link: ', links)
-  
-  return (
-    <div className="flex flex-col gap-1.5 overflow-y-scroll max-h-[50vh]">
-      <div className="inline-flex justify-between">
-        <p className="text-sm font-medium text-foreground pb-1">{label}</p>
-        {(incoming && !edit) && <div className="" onClick={() => setEdit(true)}><Edit2 width={14}/></div>}
-        {(incoming && edit) && <div className="flex gap-2"><SaveIcon onClick={handleSave} width={14}/><X onClick={() => {setNewValue(value); setEdit(false)}} width={14}/></div>}
-      </div>
-      {fieldKey === "type" ? (
-  <Badge
-    variant="outline"
-    className={`w-fit py-1.5 px-3 shadow-sm ${categories.find((c) => c.type === value)?.color}`}
-  >
-    {value}
-  </Badge>
-) : fieldKey === "table_data" ? (
-  // Render tables for BOTH incoming and current
-  table && table.length > 0 ? table.map((table, index) => (
-    <table key={index} className="min-w-full border-collapse border rounded-lg overflow-hidden">
-      <thead className="bg-muted">
-        <tr>
-          {table.headers.map((header, i) => (
-            <th key={i} className="border px-4 py-2 text-left font-semibold text-sm">{header}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {table.data.map((row, i) => (
-          <tr key={i} className="hover:bg-muted/50 transition-colors">
-            {row.map((cell, j) => (
-              <td key={j} className="border px-4 py-2 text-sm">{cell}</td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )) : <p className="text-muted-foreground italic">No tables</p>
-) : fieldKey === "links" ? (
-  // Render links for BOTH incoming and current
-  links && links.length > 0 ? (
-    <div className="space-y-1">
-      {links.map((link, idx) => (
-        <p key={idx} className="border rounded-md px-3 py-2 bg-muted/50 text-sm">
-          {link.label}: {link.link}
-        </p>
-      ))}
-    </div>
-  ) : <p className="text-muted-foreground italic">No links</p>
-) : (
-  // All other fields - show edit mode for incoming, read-only for current
-  <>
-    {(incoming && edit) ? (
-      <input 
-        type="text" 
-        className="border rounded-md px-3 py-2 bg-muted/50 text-sm" 
-        value={newValue ?? ''} 
-        name={fieldKey} 
-        onChange={(e) => setNewValue(e.currentTarget.value)}
-      />
-    ) : (
-      <p className={`border ${hasChanged && 'border-yellow-400'} rounded-md px-3 py-2 bg-muted/50 text-sm`}>
-        {newValue ?? <span className="text-muted-foreground italic">No data</span>}
-      </p>
-    )}
-  </>
-)}
-      {(incoming) && (
-        <input 
-          type="hidden" 
-          name={fieldKey} 
-          value={typeof newValue === 'object' ? JSON.stringify(newValue) : (newValue ?? originalValue ?? '')}
-        />
-      )}
-    </div>
-  );
-}
-
-  // SUPERADMIN VIEW: No tabs, just requests
+  // SUPERADMIN VIEW
   if (isSuperAdmin) {
     return (
       <div className="p-4 flex-1">
@@ -518,6 +818,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
             <div className="lg:grid grid-cols-3 gap-4 md:flex md:flex-col">
               {allRequests.filter(item => filterBy.includes(item.request_type)).map(request => (
                 <RequestCard
+                  key={request.id}
                   request={request}
                   allUsers={allUsers}
                   allOrgs={allOrgs}
@@ -530,90 +831,14 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
             <p className="text-muted-foreground pl-1">No requests found.</p>
           )}
         </div>
-        {selectedRequest &&
-              <Form method="POST" >
-        <div className="absolute inset-0 w-full h-screen flex items-center justify-center bg-black/20 backdrop-blur-xs">
-          <Card className="relative flex w-2/3 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
-            <CardHeader>
-              <div className="flex justify-between">
-                <div className="inline-flex gap-2">
-                <p>{requests[selectedRequest.request_type].labelFull + " - "}</p>
-                <Badge variant={"outline"}>{labelForId(selectedRequest)}</Badge>
-                </div>
-                <div className="-mr-2 -mt-2 text-white/30">
-                  <XIcon size={20} onClick={() => {setDenialSelect(""); setShowDenyForm(false); setSelectedRequest(null);}}/>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-6">
-
-              {/* Current Data Column */}
-              <div className="flex flex-col pr-6 border-r">
-                <p className="text-sm font-semibold text-muted-foreground mb-4">Current</p>
-                <div className="flex flex-col gap-3">
-                  {fetchedData && Object.entries(fetchedData).map(([key, value]) => {
-                    if (!(key in selectedRequest.data) || key === "orgId" || key === "userId") {
-                      return null;
-                    }
-                    return <FieldDisplay key={key} fieldKey={key} value={value} categories={categories} originalValue={value}/>;
-                  })}
-                  { !fetchedData && <div className="flex flex-col pr-6 gap-2">
-                    <Skeleton className="h-5 w-24"/>
-                    <Skeleton className="h-7 w-full"/>
-                    </div>}
-                </div>
-              </div>
-
-              {/* Incoming Data Column */}
-              <div className="flex flex-col pl-2">
-                <p className="text-sm font-semibold text-muted-foreground mb-4">Incoming</p>
-                <div className="flex flex-col gap-3">
-                  {Object.entries(selectedRequest.data).map(([key, value]) => {
-                    if (key === "orgId" || key === "userId" || key === 'baseId' || key === "request-type") {
-                      return null;
-                    }
-                    console.log(key, value)
-                    return <FieldDisplay key={key} fieldKey={key} value={value} categories={categories} incoming originalValue={value}/>;
-                  })}
-                </div>
-              </div>
-              <input type="hidden" name="org_id" value={selectedRequest.org_id}/>
-              <input type="hidden" name="request_id" value={selectedRequest.id} />
-              <input type="hidden" name="base_id" value={selectedRequest.base_id} />
-              <input type="hidden" name="request_type" value={selectedRequest.request_type} />
-              
-            </CardContent>
-            <CardFooter className="flex flex-col w-full justify-center gap-4">
-              <div className="flex gap-3">
-                <Button type="submit" name="_action" value="approve" className="bg-blue-600 hover:bg-blue-700 text-white">Approve</Button>
-                <Button variant={"ghost"} className="border-2 border-red-600 hover:bg-red-600/10 text-red-500 px-6 py-2" type="button" onClick={() => setShowDenyForm(!showDenyForm)}>Deny</Button>
-              </div>
-              {showDenyForm && <><div className="w-1/2">
-                <Select onValueChange={(e) => setDenialSelect(e)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a reason"/>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REASONS.map((item, index) => <SelectItem value={item} key={index}>{item}</SelectItem>)}
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="w-1/2">
-                {denialSelect === "Other" && <textarea className="bg-input w-full border rounded-lg" name="other-reason"/>}
-              </div></>}
-            </CardFooter>
-          </Card>
-          
-        </div>
-        </Form>}
+        <RequestModal />
       </div>
     );
   }
 
-  // BASE ADMIN VIEW: With tabs
+  // BASE ADMIN VIEW
   return (
-    <div className=" flex-1">
+    <div className="flex-1">
       {baseData ? (
         <Tabs defaultValue="requests">
           <TabsList className="bg-card border mt-4 ml-4 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
@@ -637,16 +862,17 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
             <div className="flex flex-col gap-4 mx-4">
               <FilterByType filterBy={filterBy} setFilterBy={setFilterBy} />
               {orgRequests && orgRequests.length > 0 ? (
-                orgRequests.map(request => (
-                  <div key={request.id} className="lg:grid grid-cols-3 md:flex md:flex-col">
+                <div className="lg:grid grid-cols-3 gap-4 md:flex md:flex-col">
+                  {orgRequests.filter(item => filterBy.includes(item.request_type)).map(request => (
                     <RequestCard
+                      key={request.id}
                       request={request}
                       allUsers={allUsers}
-                      allOrgs={allOrgs}
+                      allOrgs={orgsByBase}
                       setSelectedRequest={setSelectedRequest}
                     />
-                  </div>
-                ))
+                  ))}
+                </div>
               ) : (
                 <p className="text-muted-foreground">No requests found.</p>
               )}
@@ -660,58 +886,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
       ) : (
         <Outlet />
       )}
-      {selectedRequest &&
-              <Form method="POST" >
-        <div className="absolute inset-0 w-full h-screen flex items-center justify-center bg-black/20 backdrop-blur-xs">
-          <Card className="relative flex w-2/3 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
-            <CardHeader>
-              <div className="flex justify-between">
-                <div className="inline-flex gap-2">
-                <p>{requests[selectedRequest.request_type].labelFull + " - "}</p>
-                <Badge variant={"outline"}>{labelForId(selectedRequest)}</Badge>
-                </div>
-                <div className="-mr-2 -mt-2 text-white/30">
-                  <XIcon size={20} onClick={() => setSelectedRequest(null)}/>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-6">
-
-              {/* Current Data Column */}
-              <div className="flex flex-col pr-6 border-r">
-                <p className="text-sm font-semibold text-muted-foreground mb-4">Current</p>
-                <div className="flex flex-col gap-3">
-                  {fetchedData && Object.entries(fetchedData).map(([key, value]) => {
-                    if (!(key in selectedRequest.data) || key === "orgId" || key === "userId") {
-                      return null;
-                    }
-                    return <FieldDisplay key={key} fieldKey={key} value={value} categories={categories} />;
-                  })}
-                </div>
-              </div>
-
-              {/* Incoming Data Column */}
-              <div className="flex flex-col pl-2">
-                <p className="text-sm font-semibold text-muted-foreground mb-4">Incoming</p>
-                <div className="flex flex-col gap-3">
-                  {Object.entries(selectedRequest.data).map(([key, value]) => {
-                    if (key === "orgId" || key === "userId") {
-                      return null;
-                    }
-                    return <FieldDisplay key={key} fieldKey={key} value={value} categories={categories} incoming/>;
-                  })}
-                </div>
-              </div>
-              <input type="hidden" name="org_id" value={selectedRequest.org_id}/>
-              <input type="hidden" name="request_id" value={selectedRequest.id} />
-            </CardContent>
-            <CardFooter className="flex w-full justify-center gap-2">
-              <Button type="submit" name="_action" value="approve" className="bg-blue-600 hover:bg-blue-700 text-white">Approve</Button>
-              <Button variant={"ghost"} className="border-2 border-red-600 hover:bg-red-600/10 text-red-500 px-6 py-2" type="button" onClick={() => setSelectedRequest(null)}>Deny</Button>
-            </CardFooter>
-          </Card>
-        </div>
-        </Form>}
+      <RequestModal />
     </div>
   );
 }
