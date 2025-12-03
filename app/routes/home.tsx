@@ -1,5 +1,5 @@
 import type { Route } from "./+types/home";
-import { Form, Outlet, redirect, useFetcher, useNavigate, useSearchParams, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { Form, Outlet, redirect, useFetcher, useLocation, useNavigate, useSearchParams, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
@@ -10,8 +10,9 @@ import { Button } from "~/components/ui/button";
 import { categories, REASONS, requests } from "~/lib/constants";
 import { Badge } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
-import { Edit2, SaveIcon, X, XIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import toast from "react-hot-toast";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -342,6 +343,15 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
   const [showDenyForm, setShowDenyForm] = useState(false)
   const [denialSelect, setDenialSelect] = useState("")
   const [customDenialReason, setCustomDenialReason] = useState("")
+  const location = useLocation();
+
+  useEffect(() => {
+    console.log('location: ', location)
+    if(location.state?.toast) {
+      toast.success(location.state.toast);
+      window.history.replaceState({}, '');
+    }
+  }, [location])
 
   useEffect(() => {
     if (orgData && orgData.length) {
@@ -428,18 +438,67 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
 
     const parsedValue = parseValue(value);
     const parsedOriginal = parseValue(originalValue);
-    const [editedValue, setEditedValue] = useState(parsedValue);
-    const [isEditing, setIsEditing] = useState(false);
 
-    // Check if value has changed from original
-    const hasChanged = incoming && parsedOriginal !== undefined && 
-      JSON.stringify(editedValue) !== JSON.stringify(parsedOriginal);
+    // Determine badge type based on field type and values
+    const getBadgeInfo = () => {
+      if (!incoming) return null;
 
-    const handleSave = () => setIsEditing(false);
-    const handleCancel = () => {
-      setEditedValue(parsedValue);
-      setIsEditing(false);
+      // For delete_tables, always show "Removed"
+      if (fieldKey === "delete_tables") {
+        return { text: "Removed", className: "bg-red-100 text-red-700 border-red-300" };
+      }
+
+      // Don't show badge until we have original data to compare against
+      // (except for delete_tables which is always "Removed")
+      // if (parsedOriginal === undefined || parsedOriginal === null) {
+      //   return null;
+      // }
+
+      // For table_data, check if new tables are being added
+      if (fieldKey === "table_data") {
+        const currentTables = Array.isArray(parsedOriginal) ? parsedOriginal : [];
+        const incomingTables = Array.isArray(parsedValue) ? parsedValue : [];
+
+        const existingMap = new Map(currentTables.map(item => [item.id, item]));
+        incomingTables.forEach(item => existingMap.set(item.id, item));
+        const result = Array.from(existingMap.values());
+
+        console.log(existingMap, result)
+        
+        if (result.length > currentTables.length) {
+          return { text: "Added", className: "bg-green-400/30 text-green-500 border-green-500/40" };
+        } else if (result.length < currentTables.length) {
+          return { text: "Removed", className: "bg-red-100 text-red-700 border-red-300" };
+        } else if (JSON.stringify(result) !== JSON.stringify(currentTables)) {
+          return { text: "Changed", className: "bg-yellow-400/30 text-yellow-500 border-yellow-300" };
+        }
+        return null;
+      }
+
+      // For links, check if new links are being added
+      if (fieldKey === "links") {
+        const currentLinks = Array.isArray(parsedOriginal) ? parsedOriginal : [];
+        const incomingLinks = Array.isArray(parsedValue) ? parsedValue : [];
+        
+        if (incomingLinks.length > currentLinks.length) {
+          return { text: "Added", className: "bg-green-100 text-green-700 border-green-300" };
+        } else if (incomingLinks.length < currentLinks.length) {
+          return { text: "Removed", className: "bg-red-100 text-red-700 border-red-300" };
+        } else if (JSON.stringify(incomingLinks) !== JSON.stringify(currentLinks)) {
+          return { text: "Changed", className: "bg-yellow-100 text-yellow-700 border-yellow-300" };
+        }
+        return null;
+      }
+
+      // For other fields, check if changed
+      if (JSON.stringify(parsedValue) !== JSON.stringify(parsedOriginal)) {
+        return { text: "Changed", className: "bg-yellow-400/30 text-yellow-400 border-yellow-400/30" };
+      }
+
+      return null;
     };
+
+    const badgeInfo = getBadgeInfo();
 
     // Render different field types
     const renderField = () => {
@@ -448,26 +507,27 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
         return (
           <Badge
             variant="outline"
-            className={`w-fit py-1.5 px-3 shadow-sm ${categories.find((c) => c.type === editedValue)?.color}`}
+            className={`w-fit py-1.5 px-3 shadow-sm ${categories.find((c) => c.type === parsedValue)?.color}`}
           >
-            {editedValue}
+            {parsedValue}
           </Badge>
         );
       }
 
       // Table data
       if (fieldKey === "table_data") {
-        const tables = Array.isArray(editedValue) ? editedValue : [];
+        const tables = Array.isArray(parsedValue) ? parsedValue : [];
         if (!tables.length) {
           return <p className="text-sm text-muted-foreground italic">No tables</p>;
         }
         return (
-          <div className="space-y-4 max-h-[300px] overflow-y-auto">
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
             {tables.map((table: any, index: number) => (
-              <div key={index} className="border rounded-lg overflow-hidden">
-                <div className="bg-muted px-3 py-2 border-b">
-                  <p className="text-xs font-semibold">Table {index + 1}</p>
+              <>
+                <div className="">
+                  <p className="text-xs italic  font-semibold">{table.title ?? "Untitled"}</p>
                 </div>
+              <div key={index} className="border rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead className="bg-muted/50">
@@ -493,6 +553,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
                   </table>
                 </div>
               </div>
+            </>
             ))}
           </div>
         );
@@ -500,7 +561,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
 
       // Links
       if (fieldKey === "links") {
-        const links = Array.isArray(editedValue) ? editedValue : [];
+        const links = Array.isArray(parsedValue) ? parsedValue : [];
         if (!links.length) {
           return <p className="text-sm text-muted-foreground italic">No links</p>;
         }
@@ -525,7 +586,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
 
       // Delete tables (show list of table IDs to be deleted)
       if (fieldKey === "delete_tables") {
-        const tableIds = Array.isArray(editedValue) ? editedValue : [];
+        const tableIds = Array.isArray(parsedValue) ? parsedValue : [];
         if (!tableIds.length) {
           return <p className="text-sm text-muted-foreground italic">No tables to delete</p>;
         }
@@ -540,26 +601,13 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
         );
       }
 
-      // Editable text fields (for incoming data only)
-      if (incoming && isEditing) {
-        return (
-          <textarea
-            className="w-full border rounded-md px-3 py-2 bg-background text-sm min-h-[60px] resize-y"
-            value={editedValue ?? ''}
-            onChange={(e) => setEditedValue(e.target.value)}
-          />
-        );
-      }
-
       // Regular text display
       return (
         <div 
-          className={`border rounded-md px-3 py-2 bg-muted/30 text-sm ${
-            hasChanged ? 'border-yellow-400 bg-yellow-50' : ''
-          }`}
+          className={`border rounded-md px-3 py-2 bg-muted/30 text-sm`}
         >
-          {editedValue ? (
-            <p className="whitespace-pre-wrap break-words">{editedValue}</p>
+          {parsedValue ? (
+            <p className="whitespace-pre-wrap break-words">{parsedValue}</p>
           ) : (
             <span className="text-muted-foreground italic">No data</span>
           )}
@@ -571,37 +619,10 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">{label}</p>
-          {hasChanged && (
-            <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-700 border-yellow-300">
-              Changed
+          {badgeInfo && (
+            <Badge variant="outline" className={`text-xs ${badgeInfo.className}`}>
+              {badgeInfo.text}
             </Badge>
-          )}
-          {incoming && !isEditing && !["type", "table_data", "links", "delete_tables"].includes(fieldKey) && (
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Edit2 width={14} />
-            </button>
-          )}
-          {incoming && isEditing && (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleSave}
-                className="text-green-600 hover:text-green-700"
-              >
-                <SaveIcon width={14} />
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="text-red-600 hover:text-red-700"
-              >
-                <X width={14} />
-              </button>
-            </div>
           )}
         </div>
         {renderField()}
@@ -609,9 +630,9 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
           <input
             type="hidden"
             name={fieldKey}
-            value={typeof editedValue === 'object' && editedValue !== null
-              ? JSON.stringify(editedValue)
-              : (editedValue ?? '')}
+            value={typeof parsedValue === 'object' && parsedValue !== null
+              ? JSON.stringify(parsedValue)
+              : (parsedValue ?? '')}
           />
         )}
       </div>
@@ -627,8 +648,9 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
     return (
       <Form method="POST">
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-          <Card className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
-            <CardHeader className="border-b bg-muted/30">
+          <Card className="relative w-full p-0 max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
+            <CardHeader className="border-b py-4
+             bg-muted/30">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -677,17 +699,18 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {Object.entries(fetchedData).map(([key, value]) => {
-                        if (!(key in selectedRequest.data) || key === "orgId" || key === "userId" || key === "baseId") {
+                      {/* Match the order of incoming fields */}
+                      {Object.entries(selectedRequest.data).map(([key, value]) => {
+                        if (key === "orgId" || key === "userId" || key === "baseId" || key === "request-type") {
                           return null;
                         }
                         return (
                           <FieldDisplay
                             key={key}
                             fieldKey={key}
-                            value={value}
+                            value={fetchedData?.[key]}
                             categories={categories}
-                            originalValue={value}
+                            originalValue={fetchedData?.[key]}
                           />
                         );
                       })}
@@ -809,6 +832,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
 
   // SUPERADMIN VIEW
   if (isSuperAdmin) {
+    // toast("test")
     return (
       <div className="p-4 flex-1">
         <div className="flex flex-col gap-4">

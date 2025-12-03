@@ -1,13 +1,14 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
-import { Form, redirect, useActionData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { Form, redirect, useActionData, useFetcher, useNavigate, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
 import InputWithLabel from "~/components/ui/input-with-label";
 import type { Route } from "../+types/root";
 import { Tabs, TabsList, TabsContent, TabsTrigger } from "~/components/ui/tabs";
 import { Select, SelectItem, SelectTrigger, SelectValue, SelectContent} from "~/components/ui/select";
+import toast from "react-hot-toast";
 
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
@@ -45,9 +46,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 const {data: userConnect, error: userError} = await supabase.from("user").select("id, role, admin_id").eq("users_id", data.user?.id).single()
                 // console.log(userConnect?.id)
                 if(userConnect?.role === "SUPERADMIN"){
-                    const response = redirect("/home?id=superadmin");
-                    response.headers.set('Set-Cookie', `user_id=${userConnect?.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
-                    return response;
+                    // const response = redirect("/home?id=superadmin");
+                    // response.headers.set('Set-Cookie', `user_id=${userConnect?.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
+                    return new Response(JSON.stringify(
+                        {
+                            success: true,
+                            role: "SUPERADMIN",
+                            userId: userConnect?.id
+                        }),
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Set-Cookie': `user_id=${userConnect?.id}; Path=/; Max-Age=${7*24*60*60}; SameSite=Strict; Secure`
+                            }
+                        }
+                    );
                 }else{
                     const isSecureContext = request.url.startsWith('https://') || 
                         new URL(request.url).hostname === 'localhost';
@@ -108,7 +121,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 }
 
-export default function Login({loaderData}: Route.ComponentProps){
+export default function Login({loaderData, actionData}: Route.ComponentProps){
     const {bases, orgs} = loaderData;
     const [baseList, setBaseList] = useState(bases);
     const [orgList, setOrgList] = useState(orgs);
@@ -117,11 +130,13 @@ export default function Login({loaderData}: Route.ComponentProps){
     const [showLogin, setShowLogin] = useState(true);
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
-    const actionData = useActionData();
+    // const actionData = useActionData();
     const [showEmailError, setShowEmailError] = useState(false);
     const [filteredOrgList, setFilteredOrgList] = useState([]);
     const [baseOrg, setBaseOrg] = useState<"base" | "org" >("org")
     const [register, setRegister] = useState('');
+    // const fetcher = useFetcher();
+    const navigate = useNavigate();
 
     // useEffect(() => {
     //     if(actionData ){
@@ -129,7 +144,18 @@ export default function Login({loaderData}: Route.ComponentProps){
     //         setShowEmailError(true);
     //     }
     // }, [actionData])
-    console.log(actionData)
+    // console.log('ad', fetcher)
+
+    useEffect(() => {
+        if(actionData?.success){
+            toast.success("Welcome Back!");
+            if(actionData.role === "SUPERADMIN"){
+                navigate("/home?id=superadmin");
+            } else {
+                navigate("/home")
+            }
+        }
+    }, [actionData])
 
     function handleBaseChange(e){
         const newList = orgList.filter((org: { base_id: string; }) => org.base_id === e)

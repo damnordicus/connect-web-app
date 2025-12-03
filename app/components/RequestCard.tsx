@@ -100,19 +100,28 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
             theme.border = "border";
             theme.fill = "bg-violet-400/20";
             theme.iconText = "text-violet-600";
-            content = <div className=" grid grid-cols-[auto_1fr] gap-x-4">
-                {Object.entries(request.data).map(([key, value]) => {
-                    if (key !== "orgId" && key !== "userId" && key !== "baseId" && key !== "request-type")
-                        return (
-                            <>
-                                <p className="text-muted-foreground">{key.toUpperCase().slice(0, 1) + key.slice(1) + ":"}</p>
-                                <p>{value}</p>
-                                <input type="hidden" name={key} value={value}/>
-                            </>
-                        )
-                }
-                )}
+            content = 
+            <div className="flex">
+                Proposed Changes: 
+                <div className="space-x-1 ml-2">
+                <Badge variant={'outline'} className="border-green-600 bg-green-600/20 text-green-500 pl-0.5"><Badge variant={'secondary'} className="">4</Badge> Additions</Badge>
+                <Badge variant={'outline'} className="border-yellow-600 bg-yellow-600/20 text-yellow-500 pl-0.5"><Badge variant={'secondary'} className="">4</Badge> Changes</Badge>
+                <Badge variant={'outline'} className="border-rose-400/40 bg-rose-600/20 text-rose-500 pl-0.5"><Badge variant={'secondary'} className="">4</Badge> Deletions</Badge>
+                </div>
             </div>
+            // <div className=" grid grid-cols-[auto_1fr] gap-x-4">
+            //     {Object.entries(request.data).map(([key, value]) => {
+            //         if (key !== "orgId" && key !== "userId" && key !== "baseId" && key !== "request-type")
+            //             return (
+            //                 <>
+            //                     <p className="text-muted-foreground">{key.toUpperCase().slice(0, 1) + key.slice(1) + ":"}</p>
+            //                     <p>{value}</p>
+            //                     <input type="hidden" name={key} value={value}/>
+            //                 </>
+            //             )
+            //     }
+            //     )}
+            // </div>
             break;
         default: 
             cardTitle = "Request"

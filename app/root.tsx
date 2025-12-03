@@ -6,6 +6,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import toast, {Toaster} from 'react-hot-toast';
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -43,7 +44,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (<>
+  <Toaster 
+    gutter={8}
+    toastOptions={{
+      className: '',
+      style: {
+        background: 'var(--input)',
+        color: '#cccccc',
+        border:`1px solid var(--border)`,
+      }
+    }}/>
+  <Outlet />
+  </>);
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
