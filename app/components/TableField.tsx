@@ -156,6 +156,26 @@ export default function TableField({
         }
     };
     const [deleteSelect, setDeleteSelect] = useState(false)
+    const [title, setTitle] = useState<Record<string, string>>(() => {
+        const initialTitles: Record<string,string> = {};
+        data.forEach(table => {
+            initialTitles[table.id] = table.title;
+        });
+        return initialTitles
+    });
+
+    useEffect(() => {
+        const newTitles: Record<string, string> = {};
+        data.forEach(table => {
+            if(title[table.id] === undefined){
+                newTitles[table.id] = table.title;
+            } else {
+                newTitles[table.id] = title[table.id];
+            }
+        });
+        setTitle(newTitles);
+    },[data.length]);
+
     return (
         <div className="col-span-2">
             <Card className="rounded-sm">
@@ -179,11 +199,10 @@ export default function TableField({
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {/* Existing Tables */}
-                    {data?.length > 0 && data.map((table) => {
+                    {data?.length > 0 && data.map((table, index) => {
                         const isEditing = editingTableId === table.id;
                         
                         return (
-                            // <div className="flex w-full gap-4 transition-all">
                             <Accordion type="single" className={`relative w-full ${deleteSelect ? 'pl-8' : ''} transition-all`} collapsible>
                                 {deleteSelect && <Checkbox onCheckedChange={() => setDeleteTableId((prev) => {
                                     if(prev.includes(table.id)){
@@ -194,7 +213,7 @@ export default function TableField({
                                 }
                                 )} className="absolute left-0 top-4 dark:text-red-600/80 dark:data-[state=checked]:bg-input/20 dark:data-[state=checked]:border-red-700"/>}
                                 <AccordionItem  value={table.id}>
-                                    <AccordionTrigger className="bg-primary/40 p-4 border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">{table.title}</AccordionTrigger>
+                                    <AccordionTrigger className="bg-primary/40 p-4 border shadow-[0_4px_16px_rgba(0,0,0,0.4)]">{!isEditing ? <div className="flex justify-between items-center w-full" >{title[table.id] ?? table.title}</div> : <input className="bg-input/50 w-full p-1 px-2 rounded-md border" type="text" value={title[table.id] ?? table.title} onChange={(e) => setTitle({...title, [table.id]: e.currentTarget.value})} onClick={(e) => e.stopPropagation()} />}</AccordionTrigger>
                                     <AccordionContent className=" flex justify-center bg-background/20 border-b rounded-b-lg py-4">
                                     <div className={`relative flex w-fit justify-center border rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.3)] `}>
                                     <table className=" border-collapse">
@@ -241,14 +260,12 @@ export default function TableField({
                                     </table>
                                     <div className={`absolute gap-2 flex ${editingTableId === table.id ? '-right-17' : '-right-8'} `} >
                                         {(editingTableId !== table.id && !deleteSelect) ? <Edit onClick={() => setEditingTableId(table.id)}/>
-                                        : !deleteSelect ? <><Save onClick={() => setEditingTableId(isEditing ? null : table.id)}/><X onClick={() => setEditingTableId(null)}/></> : <></>}
+                                        : !deleteSelect ? <><Save onClick={() => {if(title[table.id] !== table.title){updateTableTitle(table.id, title[table.id]);} setEditingTableId(null)}}/><X onClick={() => setEditingTableId(null)}/></> : <></>}
                                     </div>
                                 </div>
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
-                            
-                            // </div>
                         );
                     })}
 

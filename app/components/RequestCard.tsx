@@ -1,4 +1,4 @@
-import { Check, Edit2, EllipsisVertical, StampIcon, Trash2Icon, User } from "lucide-react";
+import { Check, DatabaseBackup, Edit2, EllipsisVertical, StampIcon, Trash2Icon, User } from "lucide-react";
 import { Form } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { useRef, type Ref } from "react";
 import { Badge } from "./ui/badge";
 import { requests } from "~/lib/constants";
+import RequestContentBadge from "./RequestContentBadge";
 
 export default function RequestCard ({request, allUsers, allOrgs, allBases, setSelectedRequest}: any) {
     const { request_type } = request;
@@ -81,34 +82,14 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
             theme.border = "border border-border";
             theme.fill = "bg-sky-400/20";
             theme.iconText = "text-sky-600";
-            content = <div className=" grid grid-cols-[auto_1fr] gap-x-4">
-                {Object.entries(request.data).map(([key, value]) => {
-                    if (key !== "orgId" && key !== "userId")
-                        return (
-                            <>
-                                <p className="text-muted-foreground">{key.toUpperCase().slice(0, 1) + key.slice(1) + ":"}</p>
-                                {(key === "image_url") ? <img src={value} width={200}/> : <p>{value}</p>}
-                                <input type="hidden" name={key === 'weburl' ? 'web_url' : key} value={value}/>
-                            </>
-                        )
-                }
-                )}
-            </div>
+            content = <RequestContentBadge setSelectedRequest={setSelectedRequest} request={request} count={Object.entries(request.data).filter(([key,value]) => (key !== "orgId" && key !== "userId")).length}/>
             break;
         case "base-update":
             cardTitle = `Base Update`;
             theme.border = "border";
             theme.fill = "bg-violet-400/20";
             theme.iconText = "text-violet-600";
-            content = 
-            <div className="flex">
-                Proposed Changes: 
-                <div className="space-x-1 ml-2">
-                <Badge variant={'outline'} className="border-green-600 bg-green-600/20 text-green-500 pl-0.5"><Badge variant={'secondary'} className="">4</Badge> Additions</Badge>
-                <Badge variant={'outline'} className="border-yellow-600 bg-yellow-600/20 text-yellow-500 pl-0.5"><Badge variant={'secondary'} className="">4</Badge> Changes</Badge>
-                <Badge variant={'outline'} className="border-rose-400/40 bg-rose-600/20 text-rose-500 pl-0.5"><Badge variant={'secondary'} className="">4</Badge> Deletions</Badge>
-                </div>
-            </div>
+            content = <RequestContentBadge setSelectedRequest={setSelectedRequest} request={request} count={Object.entries(request.data).filter(([key,value]) => (key !== "userId" && key !== "baseId" && key !== "request-type")).length}/>
             // <div className=" grid grid-cols-[auto_1fr] gap-x-4">
             //     {Object.entries(request.data).map(([key, value]) => {
             //         if (key !== "orgId" && key !== "userId" && key !== "baseId" && key !== "request-type")
@@ -145,7 +126,7 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
     }
 
     return (
-        <Card className={`relative rounded-lg overflow-clip bg-card text-foreground w-full border shadow-[0_4px_16px_rgba(0,0,0,0.4)]`} onClick={() => setSelectedRequest(request)}>
+        <Card className={`relative rounded-lg overflow-clip bg-card text-foreground w-full border shadow-[0_4px_16px_rgba(0,0,0,0.4)]`} >
              <div className={`absolute inset-y-0 left-0 w-[8px] ${requests[request_type].color} `}></div>   
             <Form method="POST" ref={formRef}>
             <CardHeader>

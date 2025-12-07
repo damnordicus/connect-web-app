@@ -892,7 +892,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
                       key={request.id}
                       request={request}
                       allUsers={allUsers}
-                      allOrgs={orgsByBase}
+                      allOrgs={allOrgs}
                       setSelectedRequest={setSelectedRequest}
                     />
                   ))}
