@@ -18,9 +18,10 @@ const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const cookieHeader = request.headers.get('Cookie');
+  console.log('pre-header: ', request.headers)
   console.log('header: ', cookieHeader)
   if (!cookieHeader) {
-    return redirect('login');
+    return redirect('/');
   }
 
   const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
@@ -35,7 +36,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const baseId = url.searchParams.get('id');
   console.log('baseId: ', baseId)
   if (!baseId) {
-    return redirect("login");
+    return redirect("/");
   }
 
   // SUPERADMIN CASE: No base/org assignment, just pull all requests

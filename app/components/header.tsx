@@ -62,27 +62,9 @@ export default function Header({loaderData}: Route.ComponentProps){
             <CardContent className="inline-flex gap-8 justify-between">
                 <div className="flex items-center gap-8">
                 <p className="text-2xl text-white" onClick={() => navigate('home')}>Virtual Directory</p>
-                {/* {user[0].role !== "SUPERADMIN" && 
-                <>
-                <Select name="current-org" value={currentOrg || ""} onValueChange={(e) => handleOrgChange(e)}>
-                    <SelectTrigger className="w-[200px] bg-white/30">
-                        <SelectValue placeholder="Select an option"/>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {orgs.length > 0 && <SelectGroup>
-                            <SelectLabel>Organizations</SelectLabel>
-                            {orgs.map((org, index) => <SelectItem key={index} value={org.id}>{org.name}</SelectItem>)}
-                        </SelectGroup>}
-                        {bases.length > 0 && 
-                        <SelectGroup>
-                            <SelectLabel>Bases</SelectLabel>
-                             {bases.map((base, index) => <SelectItem key={index} value={base.base.id}>{base.base.name}</SelectItem>)}
-                        </SelectGroup>}
-                    </SelectContent>
-                </Select>
-                <Button className="bg-white/30 border hover:bg-white hover:text-black" onClick={() => navigate("requestOrg")}>Request Org Admin</Button></>} */}
+                
                 </div>
-                <Button variant={'ghost'} onClick={() => {Cookies.remove('user_id'); navigate('/')}}>Logout</Button>
+                <Button variant={'ghost'} onClick={() => {Cookies.remove('user_id'); Cookies.remove('use_id'); navigate('/')}}>Logout</Button>
             </CardContent>
         </Card>
         <Outlet/>
