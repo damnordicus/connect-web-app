@@ -133,6 +133,34 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
   const [editedTables, setEditedTables] = useState<TableData[]>([])
   const [deleteTables, setDeleteTables] = useState<TableData[]>([])
 
+  const [tiles, setTiles] = useState([
+    {
+      id: 0,
+      title: "Base Info",
+      visible: true,
+      color: 'bg-sky-600/20'
+    },
+    {
+      id: 1,
+      title: "Commanders Hotline",
+      visible: true,
+      color: 'bg-rose-600/20'
+    },
+    {
+      id: 2,
+      title: "Tile 3",
+      visible: true,
+      color: 'bg-red-600/20'
+    },
+    {
+      id: 3,
+      title: "Tile 4",
+      visible: true,
+      color: 'bg-green-600/20'
+
+    },
+  ])
+
   useEffect(() => {
     console.log(actionData)
     if(actionData && (actionData.optionData === null)){
@@ -322,23 +350,48 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
                   <Form method="POST">
                     <div className="flex flex-cols-[auto_1fr] gap-4">
                       <div className="relative flex flex-col justify-center">
+                        <div className="h-full mt-2">
 
-                      <div className="flex items-center gap-4 pb-4">
-                        <Checkbox name="showName" checked={showName} onCheckedChange={() => setShowName(!showName)} />
-                        <label className="text-sm">Show Base name on image card? </label>
+                        <div className="flex items-center gap-4 pb-4">
+                          <Checkbox name="showName" checked={showName} onCheckedChange={() => setShowName(!showName)} />
+                          <label className="text-sm">Show Base name on image card? </label>
+                        </div>
+                        {tiles.map(item => 
+                        <div className="flex items-center gap-4 pb-4">
+                          <Checkbox name={`show-${item.title.toLowerCase()}`} checked={item.visible} onCheckedChange={() => setTiles(prev => prev.map(tile => tile.id === item.id ? {...tile, visible: !tile.visible} : tile))} />
+                          <label className="text-sm">Show {item.title}? </label>
+                        </div>)}
+                        </div>
+                        
+                        <Button type="submit" name="submit" value="showName-submit" variant={"outline"} className="w-full absolute bottom-0">
+                          <SaveIcon size={18}/>Save
+                        </Button>
                       </div>
-                    <Button type="submit" name="submit" value="showName-submit" variant={"outline"} className="w-full absolute bottom-0"><SaveIcon size={18}/>Save</Button>
-                      </div>
-                      <div className="relative w-[400px] h-[200px] mx-auto rounded-xl bg-gray-200 shadow-lg">
-                        <img src={selectedBase.image_url} className="w-full h-[200px] object-cover rounded-xl"/>
-                        {showName && <div className="bg-black/40 rounded-xl absolute inset-0 items-center flex flex-col justify-center text-white">
-                          <p className="text-center text-xl font-bold">{selectedBase.base.name}</p>
-                          <p>{selectedBase.base.city + ", " + selectedBase.base.state}</p>
-                        </div>}
+                      
+                      {/* Wrapper for the entire card preview */}
+                      <div className="w-[400px] mx-auto border rounded-lg bg-gray-800 p-2">
+                        {/* Image container with overlay */}
+                        <div className="relative w-full h-[200px] rounded-xl bg-gray-200 shadow-lg">
+                          <img src={selectedBase.image_url} className="w-full h-[200px] object-cover rounded-xl"/>
+                          {showName && (
+                            <div className="bg-black/40 rounded-xl absolute inset-0 items-center flex flex-col justify-center text-white">
+                              <p className="text-center text-xl font-bold">{selectedBase.base.name}</p>
+                              <p>{selectedBase.base.city + ", " + selectedBase.base.state}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Grid of tiles below the image */}
+                        <div className="w-full grid grid-cols-2 gap-2 mt-2">
+                          {tiles.map(item => {
+                            if(item.visible)
+                              return(<div className={`flex rounded-lg border-2 aspect-square justify-center items-center ${item.color}`}>
+                            <p className="">{item.title}</p>
+                          </div>)})}
+                          {/* Add more tiles as needed */}
+                        </div>
                       </div>
                     </div>
-
-                    {/* <input type="checkbox" name="showName" checked={showName} onChange={() => setShowName(!showName)}/> */}
                   </Form>
                 </TabsContent>
               </Tabs>
