@@ -10,9 +10,10 @@ import { Button } from "~/components/ui/button";
 import { categories, REASONS, requests } from "~/lib/constants";
 import { Badge } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
-import { XIcon } from "lucide-react";
+import { Database, Eye, EyeClosed, XIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import toast from "react-hot-toast";
+import TileContentViewer from "~/components/TileContentView";
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -491,6 +492,10 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
         return null;
       }
 
+      if (fieldKey === "tiles_config"){
+        return {text: "Added"}
+      }
+
       // For other fields, check if changed
       if (JSON.stringify(parsedValue) !== JSON.stringify(parsedOriginal)) {
         return { text: "Changed", className: "bg-yellow-400/30 text-yellow-400 border-yellow-400/30" };
@@ -600,6 +605,21 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
             ))}
           </div>
         );
+      }
+      if(fieldKey === "tiles_config"){
+        console.log(parsedValue)
+        return (
+          <div className="flex flex-col gap-y-2">
+            {parsedValue?.length && parsedValue.length > 0 && parsedValue.map( tile => 
+            <div className={`flex ${!tile.visible && 'line-through text-white/50'} justify-between border rounded-md p-2 w-full items-center`}>
+              <p>{tile.title}</p>
+              <div className="inline-flex items-center gap-2">
+              <Badge variant={"outline"}>{tile.type}</Badge>
+              <p>{tile.visible ? <Eye size={18}/> : <EyeClosed />}</p>
+              </div>
+            </div>)}
+          </div>
+        )
       }
 
       // Regular text display
@@ -727,10 +747,23 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
                       Proposed Changes
                     </p>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {Object.entries(selectedRequest.data).map(([key, value]) => {
                       if (key === "orgId" || key === "userId" || key === "baseId" || key === "request-type") {
                         return null;
+                      }
+                      if(key === "tiles_config"){
+                        return (
+                          <>
+                          <p className="text-sm font-semibold">Tiles Config</p>
+                          <div className=" border rounded-lg p-2 ">
+                            <TileContentViewer 
+                              tiles={JSON.parse(selectedRequest.data.tiles_config)} 
+                              compact={false} 
+                              />
+                          </div>
+                          </>
+                        )
                       }
                       return (
                         <FieldDisplay

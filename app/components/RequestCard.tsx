@@ -1,4 +1,4 @@
-import { Check, DatabaseBackup, Edit2, EllipsisVertical, StampIcon, Trash2Icon, User } from "lucide-react";
+import { Check, Database, DatabaseBackup, Edit2, EllipsisVertical, StampIcon, Trash2Icon, User } from "lucide-react";
 import { Form } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
@@ -7,6 +7,7 @@ import { useRef, type Ref } from "react";
 import { Badge } from "./ui/badge";
 import { requests } from "~/lib/constants";
 import RequestContentBadge from "./RequestContentBadge";
+import TileContentViewer from "./TileContentView"
 
 export default function RequestCard ({request, allUsers, allOrgs, allBases, setSelectedRequest}: any) {
     const { request_type } = request;
@@ -82,7 +83,37 @@ export default function RequestCard ({request, allUsers, allOrgs, allBases, setS
             theme.border = "border border-border";
             theme.fill = "bg-sky-400/20";
             theme.iconText = "text-sky-600";
-            content = <RequestContentBadge setSelectedRequest={setSelectedRequest} request={request} count={Object.entries(request.data).filter(([key,value]) => (key !== "orgId" && key !== "userId")).length}/>
+            const hasTiles = request.data.tiles_config;
+            content = (
+                <div className="space-y-3">
+                    {/* Existing content badge */}
+                    <RequestContentBadge 
+                        setSelectedRequest={setSelectedRequest} 
+                        request={request} 
+                        count={Object.entries(request.data).filter(([key,value]) => (
+                            key !== "userId" && 
+                            key !== "baseId" && 
+                            key !== "orgId" && 
+                            key !== "request-type" &&
+                            key !== "tiles_config"
+                        )).length}
+                    />
+                    
+                    {/* Tile configuration preview */}
+                    {hasTiles && (
+                        <div className="mt-3">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Database className="h-4 w-4 text-muted-foreground" />
+                                <p className="text-sm font-medium">App Tiles Configuration</p>
+                            </div>
+                            <TileContentViewer 
+                                tiles={JSON.parse(hasTiles)} 
+                                compact={true} 
+                            />
+                        </div>
+                    )}
+                </div>
+            );
             break;
         case "base-update":
             cardTitle = `Base Update`;

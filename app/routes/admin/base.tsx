@@ -38,6 +38,8 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { EditableField } from "~/components/EditableField";
 import FieldTypes from "~/components/FieldTypes";
 import TableField, { type TableData } from "~/components/TableField";
+import TileConfiguration, { type TileData} from "~/components/TileConfiguration";
+import AppPreview from "~/components/AppPreview";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -133,33 +135,27 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
   const [editedTables, setEditedTables] = useState<TableData[]>([])
   const [deleteTables, setDeleteTables] = useState<TableData[]>([])
 
-  const [tiles, setTiles] = useState([
-    {
-      id: 0,
-      title: "Base Info",
-      visible: true,
-      color: 'bg-sky-600/20'
-    },
-    {
-      id: 1,
-      title: "Commanders Hotline",
-      visible: true,
-      color: 'bg-rose-600/20'
-    },
-    {
-      id: 2,
-      title: "Tile 3",
-      visible: true,
-      color: 'bg-red-600/20'
-    },
-    {
-      id: 3,
-      title: "Tile 4",
-      visible: true,
-      color: 'bg-green-600/20'
-
-    },
-  ])
+ const [tiles, setTiles] = useState<TileData[]>(appFieldData?.tiles_config || [
+  {
+    id: "1",
+    title: "Base Info",
+    type: "text",
+    color: "bg-sky-600/20",
+    visible: true,
+    content: selectedBase.description || "",
+  },
+  {
+    id: "2",
+    title: "Contact",
+    type: "links",
+    color: "bg-rose-600/20",
+    visible: true,
+    content: [
+      { label: "Phone", url: `tel:${selectedBase.phone}` },
+      { label: "Email", url: `mailto:${selectedBase.email}` },
+    ],
+  },
+]);
 
   useEffect(() => {
     console.log(actionData)
@@ -346,53 +342,79 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
                   </div>
 
                 </TabsContent>
-                <TabsContent value="appView">
-                  <Form method="POST">
-                    <div className="flex flex-cols-[auto_1fr] gap-4">
-                      <div className="relative flex flex-col justify-center">
-                        <div className="h-full mt-2">
+                <TabsContent value="appView" className="mt-4">
+                  <div className="grid lg:grid-cols-2 gap-6">
+                    {/* Configuration Panel */}
+                    <div className="space-y-6">
+                      <Card className="shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                        <CardHeader>
+                          <h3 className="text-lg font-semibold">Header Settings</h3>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex items-center gap-4">
+                            <Checkbox
+                              checked={false}
+                              onCheckedChange={() => {}}
+                            />
+                            <label className="text-sm">Show logo on card</label>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <Checkbox
+                              checked={false}
+                              onCheckedChange={() => {}}
+                            />
+                            <label className="text-sm">Show organization type</label>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                        <div className="flex items-center gap-4 pb-4">
-                          <Checkbox name="showName" checked={showName} onCheckedChange={() => setShowName(!showName)} />
-                          <label className="text-sm">Show Base name on image card? </label>
-                        </div>
-                        {tiles.map(item => 
-                        <div className="flex items-center gap-4 pb-4">
-                          <Checkbox name={`show-${item.title.toLowerCase()}`} checked={item.visible} onCheckedChange={() => setTiles(prev => prev.map(tile => tile.id === item.id ? {...tile, visible: !tile.visible} : tile))} />
-                          <label className="text-sm">Show {item.title}? </label>
-                        </div>)}
-                        </div>
-                        
-                        <Button type="submit" name="submit" value="showName-submit" variant={"outline"} className="w-full absolute bottom-0">
-                          <SaveIcon size={18}/>Save
+                      <Card className="shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                        <CardHeader>
+                          <h3 className="text-lg font-semibold">App Tiles</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Configure what appears on the mobile app
+                          </p>
+                        </CardHeader>
+                        <CardContent>
+                          <TileConfiguration
+                            tiles={tiles}
+                            setTiles={setTiles}
+                            entityType="org"
+                          />
+                        </CardContent>
+                      </Card>
+
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" onClick={() => {/* handle save */}}>
+                          <SaveIcon className="h-4 w-4 mr-2" />
+                          Save App Configuration
                         </Button>
                       </div>
-                      
-                      {/* Wrapper for the entire card preview */}
-                      <div className="w-[400px] mx-auto border rounded-lg bg-gray-800 p-2">
-                        {/* Image container with overlay */}
-                        <div className="relative w-full h-[200px] rounded-xl bg-gray-200 shadow-lg">
-                          <img src={selectedBase.image_url} className="w-full h-[200px] object-cover rounded-xl"/>
-                          {showName && (
-                            <div className="bg-black/40 rounded-xl absolute inset-0 items-center flex flex-col justify-center text-white">
-                              <p className="text-center text-xl font-bold">{selectedBase.base.name}</p>
-                              <p>{selectedBase.base.city + ", " + selectedBase.base.state}</p>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Grid of tiles below the image */}
-                        <div className="w-full grid grid-cols-2 gap-2 mt-2">
-                          {tiles.map(item => {
-                            if(item.visible)
-                              return(<div className={`flex rounded-lg border-2 aspect-square justify-center items-center ${item.color}`}>
-                            <p className="">{item.title}</p>
-                          </div>)})}
-                          {/* Add more tiles as needed */}
-                        </div>
-                      </div>
                     </div>
-                  </Form>
+
+                    {/* Preview Panel */}
+                    <div className="lg:sticky lg:top-4 h-fit">
+                      <Card className="shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                        <CardHeader>
+                          <h3 className="text-lg font-semibold">App Preview</h3>
+                          <p className="text-sm text-muted-foreground">
+                            See how your organization will appear in the app
+                          </p>
+                        </CardHeader>
+                        <CardContent>
+                          <AppPreview
+                            showHeader={true}
+                            headerTitle={selectedBase.name}
+                            headerImage={coverImage ?? undefined}
+                            tiles={tiles}
+                            showLogo={false}
+                            showType={false}
+                            orgType={""}
+                          />
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
                 </TabsContent>
               </Tabs>
             </CardHeader>
