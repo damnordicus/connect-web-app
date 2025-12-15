@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
 import {
   Accordion,
   AccordionContent,
@@ -15,10 +14,9 @@ import {
   FileText,
   Eye,
   EyeOff,
-  ChevronDown,
   ExternalLink,
 } from "lucide-react";
-import type { TileData } from "./TileConfiguration";
+import type { TileData, TileContentSection } from "./TileConfiguration";
 
 interface TileContentViewerProps {
   tiles: TileData[];
@@ -29,9 +27,23 @@ export default function TileContentViewer({
   tiles,
   compact = false,
 }: TileContentViewerProps) {
-  const [expandedTiles, setExpandedTiles] = useState<Set<string>>(new Set());
+  const getTileIcon = (sections: TileContentSection[]) => {
+    if (sections.length === 0) return <FileText className="h-4 w-4" />;
+    
+    const firstType = sections[0].type;
+    switch (firstType) {
+      case "text":
+        return <FileText className="h-4 w-4" />;
+      case "links":
+        return <LinkIcon className="h-4 w-4" />;
+      case "table":
+        return <Database className="h-4 w-4" />;
+      case "images":
+        return <ImageIcon className="h-4 w-4" />;
+    }
+  };
 
-  const getTileIcon = (type: TileData["type"]) => {
+  const getSectionIcon = (type: TileContentSection["type"]) => {
     switch (type) {
       case "text":
         return <FileText className="h-4 w-4" />;
@@ -44,7 +56,7 @@ export default function TileContentViewer({
     }
   };
 
-  const getTypeLabel = (type: TileData["type"]) => {
+  const getTypeLabel = (type: TileContentSection["type"]) => {
     switch (type) {
       case "text":
         return "Text";
@@ -58,44 +70,39 @@ export default function TileContentViewer({
   };
 
   const getContentSummary = (tile: TileData) => {
-    switch (tile.type) {
-      case "text":
-        const text = tile.content || "";
-        return text.length > 50 ? `${text.substring(0, 50)}...` : text;
-      case "links":
-        const links = Array.isArray(tile.content) ? tile.content : [];
-        return `${links.length} link${links.length !== 1 ? "s" : ""}`;
-      case "table":
-        return "Table data";
-      case "images":
-        const images = Array.isArray(tile.content) ? tile.content : [];
-        return `${images.length} image${images.length !== 1 ? "s" : ""}`;
-    }
+    if (tile.sections.length === 0) return "No content";
+    
+    const typeCounts = tile.sections.reduce((acc, section) => {
+      acc[section.type] = (acc[section.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(typeCounts)
+      .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
+      .join(', ');
   };
 
-  const renderFullContent = (tile: TileData) => {
-    switch (tile.type) {
+  const renderSectionContent = (section: TileContentSection) => {
+    switch (section.type) {
       case "text":
         return (
           <div className="bg-muted/30 rounded-md p-3">
             <p className="text-sm whitespace-pre-wrap">
-              {tile.content || <span className="text-muted-foreground italic">No content</span>}
+              {section.content || <span className="text-muted-foreground italic">No content</span>}
             </p>
           </div>
         );
 
       case "links":
-        const links = Array.isArray(tile.content) ? tile.content : [];
+        const links = Array.isArray(section.content) ? section.content : [];
         if (links.length === 0) {
-          return (
-            <p className="text-sm text-muted-foreground italic">No links</p>
-          );
+          return <p className="text-sm text-muted-foreground italic">No links</p>;
         }
         return (
           <div className="space-y-2">
             {links.map((link: { label: string; url: string }, idx: number) => (
               <Card key={idx} className="bg-muted/30">
-                <CardContent className=" flex items-center justify-between">
+                <CardContent className="flex items-center justify-between p-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{link.label}</p>
                     <p className="text-xs text-muted-foreground truncate">
@@ -110,7 +117,7 @@ export default function TileContentViewer({
         );
 
       case "table":
-        if (!tile.content?.headers || !tile.content?.data) {
+        if (!section.content?.headers || !section.content?.data) {
           return (
             <p className="text-sm text-muted-foreground italic">No table data</p>
           );
@@ -121,7 +128,7 @@ export default function TileContentViewer({
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    {tile.content.headers.map((header: string, i: number) => (
+                    {section.content.headers.map((header: string, i: number) => (
                       <th
                         key={i}
                         className="px-3 py-2 text-left font-semibold border-r last:border-r-0"
@@ -132,7 +139,7 @@ export default function TileContentViewer({
                   </tr>
                 </thead>
                 <tbody>
-                  {tile.content.data.map((row: any[], i: number) => (
+                  {section.content.data.map((row: any[], i: number) => (
                     <tr key={i} className="hover:bg-muted/30 border-t">
                       {row.map((cell: any, j: number) => (
                         <td key={j} className="px-3 py-2 border-r last:border-r-0">
@@ -148,11 +155,9 @@ export default function TileContentViewer({
         );
 
       case "images":
-        const images = Array.isArray(tile.content) ? tile.content : [];
+        const images = Array.isArray(section.content) ? section.content : [];
         if (images.length === 0) {
-          return (
-            <p className="text-sm text-muted-foreground italic">No images</p>
-          );
+          return <p className="text-sm text-muted-foreground italic">No images</p>;
         }
         return (
           <div className="grid grid-cols-2 gap-2">
@@ -180,7 +185,6 @@ export default function TileContentViewer({
   };
 
   if (compact) {
-    // Compact view - just show counts and basic info
     return (
       <div className="flex flex-wrap gap-2">
         {tiles.map((tile) => (
@@ -189,8 +193,13 @@ export default function TileContentViewer({
             variant="outline"
             className="flex items-center gap-1.5 px-2 py-1"
           >
-            {getTileIcon(tile.type)}
+            {getTileIcon(tile.sections)}
             <span className="text-xs">{tile.title}</span>
+            {tile.sections.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ({tile.sections.length})
+              </span>
+            )}
             {tile.visible ? (
               <Eye className="h-3 w-3 text-green-600" />
             ) : (
@@ -202,7 +211,6 @@ export default function TileContentViewer({
     );
   }
 
-  // Full view with expandable content
   return (
     <Accordion type="multiple" className="w-full space-y-2">
       {tiles.map((tile) => (
@@ -214,7 +222,7 @@ export default function TileContentViewer({
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
             <div className="flex items-center gap-3 flex-1 text-left">
               <div className={`p-2 rounded-md ${tile.color}`}>
-                {getTileIcon(tile.type)}
+                {getTileIcon(tile.sections)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -231,7 +239,7 @@ export default function TileContentViewer({
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="secondary" className="text-xs">
-                    {getTypeLabel(tile.type)}
+                    {tile.sections.length} section{tile.sections.length !== 1 ? 's' : ''}
                   </Badge>
                   <span>{getContentSummary(tile)}</span>
                 </div>
@@ -239,7 +247,29 @@ export default function TileContentViewer({
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
-            <div className="pt-2">{renderFullContent(tile)}</div>
+            <div className="pt-2 space-y-4">
+              {tile.sections.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No content sections</p>
+              ) : (
+                tile.sections.map((section, index) => (
+                  <div key={section.id} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      {getSectionIcon(section.type)}
+                      <span className="text-sm font-medium">
+                        {section.label || getTypeLabel(section.type)}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        {getTypeLabel(section.type)}
+                      </Badge>
+                    </div>
+                    {renderSectionContent(section)}
+                    {index < tile.sections.length - 1 && (
+                      <div className="border-t my-3" />
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </AccordionContent>
         </AccordionItem>
       ))}

@@ -40,6 +40,7 @@ import FieldTypes from "~/components/FieldTypes";
 import TableField, { type TableData } from "~/components/TableField";
 import TileConfiguration, { type TileData} from "~/components/TileConfiguration";
 import AppPreview from "~/components/AppPreview";
+import { loadTiles, TileTemplates } from "~/lib/tileUtils";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -135,27 +136,15 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
   const [editedTables, setEditedTables] = useState<TableData[]>([])
   const [deleteTables, setDeleteTables] = useState<TableData[]>([])
 
- const [tiles, setTiles] = useState<TileData[]>(appFieldData?.tiles_config || [
-  {
-    id: "1",
-    title: "Base Info",
-    type: "text",
-    color: "bg-sky-600/20",
-    visible: true,
-    content: selectedBase.description || "",
-  },
-  {
-    id: "2",
-    title: "Contact",
-    type: "links",
-    color: "bg-rose-600/20",
-    visible: true,
-    content: [
-      { label: "Phone", url: `tel:${selectedBase.phone}` },
-      { label: "Email", url: `mailto:${selectedBase.email}` },
-    ],
-  },
-]);
+ const [tiles, setTiles] = useState<TileData[]>(() => {
+  return loadTiles(
+    appFieldData?.tiles_config,
+    [
+      TileTemplates.textOnly("Base Info", selectedBase.description || ""),
+      TileTemplates.contactInfo(selectedBase.phone, selectedBase.email)
+    ]
+  );
+});
 
   useEffect(() => {
     console.log(actionData)
@@ -346,8 +335,8 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
                   <div className="grid lg:grid-cols-2 gap-6">
                     {/* Configuration Panel */}
                     <div className="space-y-6">
-                      <Card className="shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                        <CardHeader>
+                      <Card className="border rounded-lg">
+                        <CardHeader className="">
                           <h3 className="text-lg font-semibold">Header Settings</h3>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -368,13 +357,13 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
                         </CardContent>
                       </Card>
 
-                      <Card className="shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                        <CardHeader>
+                      <div className="border rounded-lg">
+                        <div className="px-6 my-4">
                           <h3 className="text-lg font-semibold">App Tiles</h3>
                           <p className="text-sm text-muted-foreground">
                             Configure what appears on the mobile app
                           </p>
-                        </CardHeader>
+                        </div>
                         <CardContent>
                           <TileConfiguration
                             tiles={tiles}
@@ -382,19 +371,19 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
                             entityType="org"
                           />
                         </CardContent>
-                      </Card>
+                      </div>
 
-                      <div className="flex justify-end gap-2">
-                        <Button type="button" onClick={() => {/* handle save */}}>
+                      {/* <div className="flex justify-end gap-2"> 
+                          <Button type="button" onClick={() => {}}>
                           <SaveIcon className="h-4 w-4 mr-2" />
                           Save App Configuration
                         </Button>
-                      </div>
+                      </div>*/}
                     </div>
 
                     {/* Preview Panel */}
                     <div className="lg:sticky lg:top-4 h-fit">
-                      <Card className="shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                      <Card className="rounded-lg">
                         <CardHeader>
                           <h3 className="text-lg font-semibold">App Preview</h3>
                           <p className="text-sm text-muted-foreground">

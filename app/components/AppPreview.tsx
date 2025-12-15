@@ -1,6 +1,6 @@
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
-import type { TileData } from "./TileConfiguration";
+import type { TileData, TileContentSection } from "./TileConfiguration";
 import { Database, Image as ImageIcon, Link as LinkIcon, FileText } from "lucide-react";
 
 interface AppPreviewProps {
@@ -26,8 +26,12 @@ export default function AppPreview({
 }: AppPreviewProps) {
   const visibleTiles = tiles.filter((tile) => tile.visible);
 
-  const getTileIcon = (type: TileData["type"]) => {
-    switch (type) {
+  const getTileIcon = (sections: TileContentSection[]) => {
+    // Show icon for first section type, or a generic icon if no sections
+    if (sections.length === 0) return <FileText className="h-5 w-5" />;
+    
+    const firstType = sections[0].type;
+    switch (firstType) {
       case "text":
         return <FileText className="h-5 w-5" />;
       case "links":
@@ -40,32 +44,26 @@ export default function AppPreview({
   };
 
   const getTileContentPreview = (tile: TileData) => {
-    switch (tile.type) {
-      case "text":
-        return (
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            {tile.content || "No content"}
-          </p>
-        );
-      case "links":
-        return (
-          <p className="text-xs text-muted-foreground">
-            {tile.content?.length || 0} links
-          </p>
-        );
-      case "table":
-        return (
-          <p className="text-xs text-muted-foreground">
-            Table data
-          </p>
-        );
-      case "images":
-        return (
-          <p className="text-xs text-muted-foreground">
-            {tile.content?.length || 0} images
-          </p>
-        );
+    if (tile.sections.length === 0) {
+      return <p className="text-xs text-muted-foreground">No content</p>;
     }
+
+    // Show count of each content type
+    const typeCounts = tile.sections.reduce((acc, section) => {
+      acc[section.type] = (acc[section.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return (
+      <div className="text-xs text-muted-foreground">
+        {Object.entries(typeCounts).map(([type, count], index) => (
+          <span key={type}>
+            {count} {type}{count > 1 ? 's' : ''}
+            {index < Object.keys(typeCounts).length - 1 ? ', ' : ''}
+          </span>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -132,18 +130,27 @@ export default function AppPreview({
 
           {/* Tiles Grid */}
           <div className="grid grid-cols-2 gap-3">
-            {visibleTiles.map((tile) => (
+            {visibleTiles.map((tile) => {
+              const color = tile.color.split("-")
+              const baseColor = color[1]
+              const borderColor = 'border-' + baseColor + '-300'
+              return(
               <Card
                 key={tile.id}
-                className={`${tile.color} border-2 hover:shadow-md transition-shadow cursor-pointer`}
+                className={`${tile.color} border-2 ${borderColor} rounded-lg hover:shadow-md transition-shadow cursor-pointer`}
               >
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center h-[120px]">
-                  <div className="mb-2 opacity-70">{getTileIcon(tile.type)}</div>
+                  <div className="mb-2 opacity-70">{getTileIcon(tile.sections)}</div>
                   <h3 className="font-semibold text-sm mb-1">{tile.title}</h3>
                   {getTileContentPreview(tile)}
+                  {tile.sections.length > 1 && (
+                    <Badge variant="outline" className="mt-1 text-xs">
+                      {tile.sections.length} items
+                    </Badge>
+                  )}
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
 
           {/* Empty State */}

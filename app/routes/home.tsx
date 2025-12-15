@@ -230,7 +230,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         return {success: true, _action: "approve"}
       } else if (request_type === "base-update") {
         console.log('obj', Object.fromEntries(formData.entries()))
-        const { org_id, request_id, request_type, _action, table_data, delete_tables, ...obj } = Object.fromEntries(formData.entries())
+        const { org_id, request_id, request_type, _action, table_data, delete_tables, tiles_config, ...obj } = Object.fromEntries(formData.entries())
         
         if(table_data){
           const {data: currentTables, error: existingError} = await supabase.from('appFields').select("table_data").eq("base_id", base_id).single();
@@ -258,6 +258,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
           const deleteTables = JSON.parse(delete_tables as string);
           const newTables = existingTables.filter(table => !deleteTables.includes(table.id))
           const {data, error} = await supabase.from('appFields').update({"table_data": newTables}).eq("base_id", base_id);
+        }
+
+        if(tiles_config){
+          await supabase.from('appFields').update({"tiles_config": JSON.parse(tiles_config as string)}).eq("base_id", base_id);
         }
 
         console.log('test', obj)
@@ -762,6 +766,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
                               compact={false} 
                               />
                           </div>
+                          <input type="hidden" name="tiles_config" value={selectedRequest.data.tiles_config}/>
                           </>
                         )
                       }
@@ -896,7 +901,9 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
 
   // BASE ADMIN VIEW
   return (
-    <div className="flex-1">
+    <div className="flex w-full justify-center">
+
+    <div className="flex w-full justify-start lg:justify-center lg:w-1/2">
       {baseData ? (
         <Tabs defaultValue="requests">
           <TabsList className="bg-card border mt-4 ml-4 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
@@ -904,30 +911,30 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
               value="requests"
               className="data-[state=active]:!bg-primary"
               onClick={() => navigate(`.?id=${baseData.base.id}`)}
-            >
+              >
               Requests
             </TabsTrigger>
             <TabsTrigger
               value="baseInfo"
               className="data-[state=active]:!bg-primary"
               onClick={() => navigate(`base?id=${baseData.base.id}`)}
-            >
+              >
               {baseData.base.name}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="requests" className="mt-2">
-            <div className="flex flex-col gap-4 mx-4">
+            <div className="flex flex-col gap-4 mx-4 w-full">
               <FilterByType filterBy={filterBy} setFilterBy={setFilterBy} />
               {orgRequests && orgRequests.length > 0 ? (
                 <div className="lg:grid grid-cols-3 gap-4 md:flex md:flex-col">
                   {orgRequests.filter(item => filterBy.includes(item.request_type)).map(request => (
                     <RequestCard
-                      key={request.id}
-                      request={request}
-                      allUsers={allUsers}
-                      allOrgs={allOrgs}
-                      setSelectedRequest={setSelectedRequest}
+                    key={request.id}
+                    request={request}
+                    allUsers={allUsers}
+                    allOrgs={allOrgs}
+                    setSelectedRequest={setSelectedRequest}
                     />
                   ))}
                 </div>
@@ -946,5 +953,6 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
       )}
       <RequestModal />
     </div>
+      </div>
   );
 }

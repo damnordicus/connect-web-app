@@ -4,7 +4,6 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import {
   Dialog,
@@ -22,17 +21,24 @@ import {
   Trash2,
   Edit2,
   GripVertical,
-  XIcon,
+  MoveUp,
+  MoveDown,
 } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
+
+export interface TileContentSection {
+  id: string;
+  type: "table" | "links" | "images" | "text";
+  content: any;
+  label?: string; // Optional label for each section
+}
 
 export interface TileData {
   id: string;
   title: string;
-  type: "table" | "links" | "images" | "text";
   color: string;
   visible: boolean;
-  content: any; // Will be typed based on type
+  sections: TileContentSection[]; // Array of different content types
 }
 
 interface TileConfigurationProps {
@@ -69,37 +75,32 @@ export default function TileConfiguration({
   const [editingTile, setEditingTile] = useState<TileData | null>(null);
   const [newTile, setNewTile] = useState<Partial<TileData>>({
     title: "",
-    type: "text",
     color: "bg-sky-600/20",
     visible: true,
-    content: null,
+    sections: [],
   });
 
   const handleAddTile = () => {
     const tile: TileData = {
       id: Date.now().toString(),
       title: newTile.title || "New Tile",
-      type: newTile.type as TileData["type"],
       color: newTile.color || "bg-sky-600/20",
       visible: true,
-      content: newTile.content !== null && newTile.content !== undefined
-        ? newTile.content
-        : getDefaultContent(newTile.type as TileData["type"])
+      sections: newTile.sections || [],
     };
 
     setTiles([...tiles, tile]);
     setNewTile({
       title: "",
-      type: "text",
       color: "bg-sky-600/20",
       visible: true,
-      content: null,
+      sections: [],
     });
     setShowAddModal(false);
   };
 
   const handleEditTile = (tile: TileData) => {
-    setEditingTile(tile);
+    setEditingTile(JSON.parse(JSON.stringify(tile))); // Deep clone
     setShowEditModal(true);
   };
 
@@ -120,7 +121,7 @@ export default function TileConfiguration({
     );
   };
 
-  const getDefaultContent = (type: TileData["type"]) => {
+  const getDefaultContent = (type: TileContentSection["type"]) => {
     switch (type) {
       case "text":
         return "";
@@ -135,20 +136,157 @@ export default function TileConfiguration({
     }
   };
 
+  const addSection = (
+    tile: Partial<TileData>,
+    setTileData: React.Dispatch<React.SetStateAction<Partial<TileData>>>,
+    type: TileContentSection["type"]
+  ) => {
+    const newSection: TileContentSection = {
+      id: Date.now().toString(),
+      type,
+      content: getDefaultContent(type),
+      label: "",
+    };
+
+    setTileData(prev => ({
+      ...prev,
+      sections: [...(prev.sections || []), newSection],
+    }));
+  };
+
+  const updateSection = (
+    tile: Partial<TileData>,
+    setTileData: React.Dispatch<React.SetStateAction<Partial<TileData>>>,
+    sectionId: string,
+    updates: Partial<TileContentSection>
+  ) => {
+    setTileData(prev => ({
+      ...prev,
+      sections: (prev.sections || []).map(section =>
+        section.id === sectionId ? { ...section, ...updates } : section
+      ),
+    }));
+  };
+
+  const deleteSection = (
+    tile: Partial<TileData>,
+    setTileData: React.Dispatch<React.SetStateAction<Partial<TileData>>>,
+    sectionId: string
+  ) => {
+    setTileData(prev => ({
+      ...prev,
+      sections: (prev.sections || []).filter(section => section.id !== sectionId),
+    }));
+  };
+
+  const moveSectionUp = (
+    tile: Partial<TileData>,
+    setTileData: React.Dispatch<React.SetStateAction<Partial<TileData>>>,
+    index: number
+  ) => {
+    if (index === 0) return;
+    setTileData(prev => {
+      const sections = [...(prev.sections || [])];
+      [sections[index - 1], sections[index]] = [sections[index], sections[index - 1]];
+      return { ...prev, sections };
+    });
+  };
+
+  const moveSectionDown = (
+    tile: Partial<TileData>,
+    setTileData: React.Dispatch<React.SetStateAction<Partial<TileData>>>,
+    index: number
+  ) => {
+    if (index === (tile.sections?.length || 0) - 1) return;
+    setTileData(prev => {
+      const sections = [...(prev.sections || [])];
+      [sections[index], sections[index + 1]] = [sections[index + 1], sections[index]];
+      return { ...prev, sections };
+    });
+  };
+
+  const renderSectionEditor = (
+    section: TileContentSection,
+    tile: Partial<TileData>,
+    setTileData: React.Dispatch<React.SetStateAction<Partial<TileData>>>,
+    index: number
+  ) => {
+    const sectionType = TILE_TYPES.find(t => t.value === section.type);
+    const SectionIcon = sectionType?.icon || FileText;
+
+    return (
+      <Card key={section.id} className="p-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="flex flex-col gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              type="button"
+              onClick={() => moveSectionUp(tile, setTileData, index)}
+              disabled={index === 0}
+            >
+              <MoveUp className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              type="button"
+              onClick={() => moveSectionDown(tile, setTileData, index)}
+              disabled={index === (tile.sections?.length || 0) - 1}
+            >
+              <MoveDown className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SectionIcon className="h-4 w-4" />
+                <Badge variant="outline">{sectionType?.label}</Badge>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                type="button"
+                onClick={() => deleteSection(tile, setTileData, section.id)}
+              >
+                <Trash2 className="h-4 w-4 text-red-600" />
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Section Label (Optional)</Label>
+              <Input
+                placeholder="e.g., 'Contact Information', 'Hours'"
+                value={section.label || ""}
+                onChange={(e) =>
+                  updateSection(tile, setTileData, section.id, { label: e.target.value })
+                }
+              />
+            </div>
+
+            {renderContentEditor(section, tile, setTileData)}
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   const renderContentEditor = (
+    section: TileContentSection,
     tile: Partial<TileData>,
     setTileData: React.Dispatch<React.SetStateAction<Partial<TileData>>>
   ) => {
-    switch (tile.type) {
+    switch (section.type) {
       case "text":
         return (
           <div className="space-y-2">
             <Label>Text Content</Label>
             <textarea
-              className="w-full border rounded-md p-2 min-h-[100px]"
-              value={tile.content || ""}
+              className="w-full border rounded-md p-2 min-h-[100px] bg-input/30"
+              value={section.content || ""}
               onChange={(e) =>
-                setTileData(prev => ({ ...prev, content: e.target.value }))
+                updateSection(tile, setTileData, section.id, { content: e.target.value })
               }
               placeholder="Enter text content..."
             />
@@ -160,17 +298,14 @@ export default function TileConfiguration({
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <Label>Links</Label>
-              <input type="hidden" name="testa" value="sdsdf"/>
               <Button
                 size="sm"
                 type="button"
-                name="button-test"
                 onClick={() => {
-                  const links = tile.content || [];
-                  setTileData(prev => ({
-                    ...prev,
+                  const links = section.content || [];
+                  updateSection(tile, setTileData, section.id, {
                     content: [...links, { label: "", url: "" }],
-                  }));
+                  });
                 }}
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -178,25 +313,25 @@ export default function TileConfiguration({
               </Button>
             </div>
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {(tile.content || []).map((link: any, index: number) => (
-                <Card key={index} className="p-3">
+              {(section.content || []).map((link: any, linkIndex: number) => (
+                <Card key={linkIndex} className="p-3">
                   <div className="space-y-2">
                     <Input
                       placeholder="Label"
                       value={link.label}
                       onChange={(e) => {
-                        const links = [...tile.content];
-                        links[index].label = e.target.value;
-                        setTileData(prev => ({ ...prev, content: links }));
+                        const links = [...section.content];
+                        links[linkIndex].label = e.target.value;
+                        updateSection(tile, setTileData, section.id, { content: links });
                       }}
                     />
                     <Input
                       placeholder="URL"
                       value={link.url}
                       onChange={(e) => {
-                        const links = [...tile.content];
-                        links[index].url = e.target.value;
-                        setTileData(prev => ({ ...prev, content: links }));
+                        const links = [...section.content];
+                        links[linkIndex].url = e.target.value;
+                        updateSection(tile, setTileData, section.id, { content: links });
                       }}
                     />
                     <Button
@@ -204,10 +339,10 @@ export default function TileConfiguration({
                       variant="destructive"
                       type="button"
                       onClick={() => {
-                        const links = tile.content.filter(
-                          (_: any, i: number) => i !== index
+                        const links = section.content.filter(
+                          (_: any, i: number) => i !== linkIndex
                         );
-                        setTileData(prev => ({ ...prev, content: links }));
+                        updateSection(tile, setTileData, section.id, { content: links });
                       }}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -224,8 +359,7 @@ export default function TileConfiguration({
           <div className="space-y-4">
             <Label>Table Configuration</Label>
             <p className="text-sm text-muted-foreground">
-              Table data will use the existing table configuration from the
-              Tables section.
+              Table data will use the existing table configuration from the Tables section.
             </p>
           </div>
         );
@@ -241,23 +375,23 @@ export default function TileConfiguration({
               size="sm"
               type="button"
               onClick={() => {
-                const images = tile.content || [];
-                setTileData(prev => ({ ...prev, content: [...images, ""] }));
+                const images = section.content || [];
+                updateSection(tile, setTileData, section.id, { content: [...images, ""] });
               }}
             >
               <Plus className="h-4 w-4 mr-1" />
               Add Image
             </Button>
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {(tile.content || []).map((url: string, index: number) => (
-                <div key={index} className="flex gap-2">
+              {(section.content || []).map((url: string, imgIndex: number) => (
+                <div key={imgIndex} className="flex gap-2">
                   <Input
                     placeholder="Image URL"
                     value={url}
                     onChange={(e) => {
-                      const images = [...tile.content];
-                      images[index] = e.target.value;
-                      setTileData(prev => ({ ...prev, content: images }));
+                      const images = [...section.content];
+                      images[imgIndex] = e.target.value;
+                      updateSection(tile, setTileData, section.id, { content: images });
                     }}
                   />
                   <Button
@@ -265,10 +399,10 @@ export default function TileConfiguration({
                     type="button"
                     variant="destructive"
                     onClick={() => {
-                      const images = tile.content.filter(
-                        (_: any, i: number) => i !== index
+                      const images = section.content.filter(
+                        (_: any, i: number) => i !== imgIndex
                       );
-                      setTileData(prev => ({ ...prev, content: images }));
+                      updateSection(tile, setTileData, section.id, { content: images });
                     }}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -291,11 +425,11 @@ export default function TileConfiguration({
         {tiles.map((tile) => (
           <Card
             key={tile.id}
-            className={`${!tile.visible ? "opacity-50" : ""}`}
+            className={`${!tile.visible ? "opacity-50" : ""} rounded-lg bg-input/20`}
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
-                <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
+                <GripVertical className="h-5 w-5 text-muted-foreground" />
                 <Checkbox
                   checked={tile.visible}
                   onCheckedChange={() => handleToggleVisibility(tile.id)}
@@ -304,7 +438,7 @@ export default function TileConfiguration({
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium">{tile.title}</h4>
                     <Badge variant="outline" className="text-xs">
-                      {TILE_TYPES.find((t) => t.value === tile.type)?.label}
+                      {tile.sections.length} section{tile.sections.length !== 1 ? 's' : ''}
                     </Badge>
                   </div>
                 </div>
@@ -340,7 +474,7 @@ export default function TileConfiguration({
 
       {/* Add Tile Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto bg-card">
           <DialogHeader>
             <DialogTitle>Add New Tile</DialogTitle>
           </DialogHeader>
@@ -354,30 +488,6 @@ export default function TileConfiguration({
                 }
                 placeholder="Enter tile title..."
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tile Type</Label>
-              <Select
-                value={newTile.type}
-                onValueChange={(value) =>
-                  setNewTile(prev => ({ ...prev, type: value as TileData["type"] }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TILE_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div className="flex items-center gap-2">
-                        <type.icon className="h-4 w-4" />
-                        {type.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">
@@ -401,7 +511,42 @@ export default function TileConfiguration({
               </div>
             </div>
 
-            {renderContentEditor(newTile, setNewTile)}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <Label>Content Sections</Label>
+                <Select
+                  onValueChange={(value) =>
+                    addSection(newTile, setNewTile, value as TileContentSection["type"])
+                  }
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Add section..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TILE_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        <div className="flex items-center gap-2">
+                          <type.icon className="h-4 w-4" />
+                          {type.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {newTile.sections && newTile.sections.length > 0 ? (
+                <div className="space-y-3">
+                  {newTile.sections.map((section, index) =>
+                    renderSectionEditor(section, newTile, setNewTile, index)
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No sections added yet. Use the dropdown above to add content sections.
+                </p>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant={"outline"} type="button" onClick={() => setShowAddModal(false)}>
@@ -413,8 +558,8 @@ export default function TileConfiguration({
       </Dialog>
 
       {/* Edit Tile Modal */}
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal} >
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto bg-card">
           <DialogHeader>
             <DialogTitle>Edit Tile</DialogTitle>
           </DialogHeader>
@@ -452,7 +597,42 @@ export default function TileConfiguration({
                 </div>
               </div>
 
-              {renderContentEditor(editingTile, setEditingTile)}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <Label>Content Sections</Label>
+                  <Select
+                    onValueChange={(value) =>
+                      addSection(editingTile, setEditingTile, value as TileContentSection["type"])
+                    }
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Add section..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TILE_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex items-center gap-2">
+                            <type.icon className="h-4 w-4" />
+                            {type.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {editingTile.sections && editingTile.sections.length > 0 ? (
+                  <div className="space-y-3">
+                    {editingTile.sections.map((section, index) =>
+                      renderSectionEditor(section, editingTile, setEditingTile, index)
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No sections added yet. Use the dropdown above to add content sections.
+                  </p>
+                )}
+              </div>
             </div>
           )}
           <DialogFooter>
