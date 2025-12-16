@@ -19,6 +19,7 @@ import {
   Phone,
   PhoneIcon,
   PlusIcon,
+  Quote,
   QuoteIcon,
   Save,
   SaveIcon,
@@ -38,7 +39,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { EditableField } from "~/components/EditableField";
 import FieldTypes from "~/components/FieldTypes";
 import TableField, { type TableData } from "~/components/TableField";
-import TileConfiguration, { type TileData} from "~/components/TileConfiguration";
+import TileConfiguration, { type BaseDataField, type TileData} from "~/components/TileConfiguration";
 import AppPreview from "~/components/AppPreview";
 import { loadTiles, TileTemplates } from "~/lib/tileUtils";
 
@@ -112,7 +113,44 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
   const selectedBase = data[0];
   console.log(appFieldData)
   const [showModal, setShowModal] = useState(false);
-
+  const baseDataFields: BaseDataField[] = [
+  {
+    key: "base_name",
+    label: "Base Name",
+    value: selectedBase.base.name,
+    icon: Building,
+  },
+  {
+    key: "location",
+    label: "Location",
+    value: `${selectedBase.base.city}, ${selectedBase.base.state}`,
+    icon: MapPin,
+  },
+  {
+    key: "motto",
+    label: "Base Motto",
+    value: selectedBase.motto,
+    icon: Quote,
+  },
+  {
+    key: "commander",
+    label: "Base Commander",
+    value: selectedBase.commander,
+    icon: Shield,
+  },
+  {
+    key: "phone",
+    label: "Contact Phone",
+    value: selectedBase.phone,
+    icon: Phone,
+  },
+  {
+    key: "email",
+    label: "Contact Email",
+    value: selectedBase.email,
+    icon: Mail,
+  },
+];
   const [name, setName] = useState(selectedBase.base.name);
   const [nameEdit, setNameEdit] = useState(false);
   const [motto, setMotto] = useState(selectedBase.motto);
@@ -369,6 +407,7 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
                             tiles={tiles}
                             setTiles={setTiles}
                             entityType="org"
+                            baseData={baseDataFields}
                           />
                         </CardContent>
                       </div>

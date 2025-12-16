@@ -23,14 +23,16 @@ import {
   GripVertical,
   MoveUp,
   MoveDown,
+  Building,
+  X,
 } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
 
 export interface TileContentSection {
   id: string;
-  type: "table" | "links" | "images" | "text";
+  type: "table" | "links" | "images" | "text" | "baseData";
   content: any;
-  label?: string; // Optional label for each section
+  label?: string;
 }
 
 export interface TileData {
@@ -38,13 +40,21 @@ export interface TileData {
   title: string;
   color: string;
   visible: boolean;
-  sections: TileContentSection[]; // Array of different content types
+  sections: TileContentSection[];
+}
+
+export interface BaseDataField {
+  key: string;
+  label: string;
+  value: any;
+  icon?: React.ComponentType<{ className?: string }>;
 }
 
 interface TileConfigurationProps {
   tiles: TileData[];
   setTiles: React.Dispatch<React.SetStateAction<TileData[]>>;
   entityType: "base" | "org";
+  baseData?: BaseDataField[]; // Available base data fields
 }
 
 const TILE_COLORS = [
@@ -63,12 +73,14 @@ const TILE_TYPES = [
   { value: "links", label: "Links", icon: LinkIcon },
   { value: "table", label: "Table Data", icon: Database },
   { value: "images", label: "Image Gallery", icon: ImageIcon },
+  { value: "baseData", label: "Base Data Fields", icon: Building },
 ];
 
 export default function TileConfiguration({
   tiles,
   setTiles,
   entityType,
+  baseData = [],
 }: TileConfigurationProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -100,7 +112,7 @@ export default function TileConfiguration({
   };
 
   const handleEditTile = (tile: TileData) => {
-    setEditingTile(JSON.parse(JSON.stringify(tile))); // Deep clone
+    setEditingTile(JSON.parse(JSON.stringify(tile)));
     setShowEditModal(true);
   };
 
@@ -131,6 +143,8 @@ export default function TileConfiguration({
         return { headers: [], data: [] };
       case "images":
         return [];
+      case "baseData":
+        return []; // Array of selected field keys
       default:
         return null;
     }
@@ -203,6 +217,141 @@ export default function TileConfiguration({
       [sections[index], sections[index + 1]] = [sections[index + 1], sections[index]];
       return { ...prev, sections };
     });
+  };
+
+  // Base Data Field Selection Component
+  const BaseDataSelector = ({
+    section,
+    tile,
+    setTileData,
+  }: {
+    section: TileContentSection;
+    tile: Partial<TileData>;
+    setTileData: React.Dispatch<React.SetStateAction<Partial<TileData>>>;
+  }) => {
+    const selectedKeys = section.content || [];
+    
+    const toggleField = (key: string) => {
+      const newContent = selectedKeys.includes(key)
+        ? selectedKeys.filter((k: string) => k !== key)
+        : [...selectedKeys, key];
+      updateSection(tile, setTileData, section.id, { content: newContent });
+    };
+
+    const moveFieldUp = (index: number) => {
+      if (index === 0) return;
+      const newContent = [...selectedKeys];
+      [newContent[index - 1], newContent[index]] = [newContent[index], newContent[index - 1]];
+      updateSection(tile, setTileData, section.id, { content: newContent });
+    };
+
+    const moveFieldDown = (index: number) => {
+      if (index === selectedKeys.length - 1) return;
+      const newContent = [...selectedKeys];
+      [newContent[index], newContent[index + 1]] = [newContent[index + 1], newContent[index]];
+      updateSection(tile, setTileData, section.id, { content: newContent });
+    };
+
+    const removeField = (key: string) => {
+      const newContent = selectedKeys.filter((k: string) => k !== key);
+      updateSection(tile, setTileData, section.id, { content: newContent });
+    };
+
+    return (
+      <div className="space-y-4">
+        {/* Selected Fields */}
+        {selectedKeys.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Selected Fields (in order)</Label>
+            <div className="border rounded-lg divide-y">
+              {selectedKeys.map((key: string, index: number) => {
+                const field = baseData.find(f => f.key === key);
+                if (!field) return null;
+                
+                return (
+                  <div key={key} className="flex items-center gap-2 p-3 bg-muted/30">
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        type="button"
+                        onClick={() => moveFieldUp(index)}
+                        disabled={index === 0}
+                        className="h-6 w-6 p-0"
+                      >
+                        <MoveUp className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        type="button"
+                        onClick={() => moveFieldDown(index)}
+                        disabled={index === selectedKeys.length - 1}
+                        className="h-6 w-6 p-0"
+                      >
+                        <MoveDown className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{field.label}</p>
+                      <p className="text-xs text-muted-foreground truncate">{field.value || 'N/A'}</p>
+                    </div>
+                    
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      type="button"
+                      onClick={() => removeField(key)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Available Fields */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Available Base Fields</Label>
+          <div className="border rounded-lg max-h-[300px] overflow-y-auto">
+            {baseData.map((field) => {
+              const isSelected = selectedKeys.includes(field.key);
+              const FieldIcon = field.icon || Building;
+              
+              return (
+                <div
+                  key={field.key}
+                  className={`flex items-center gap-3 p-3 border-b last:border-b-0 hover:bg-muted/50 transition-colors ${
+                    isSelected ? 'bg-primary/10' : ''
+                  }`}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleField(field.key)}
+                  />
+                  <FieldIcon className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{field.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {field.value || 'No data'}
+                    </p>
+                  </div>
+                  {isSelected && (
+                    <Badge variant="secondary" className="text-xs">
+                      #{selectedKeys.indexOf(field.key) + 1}
+                    </Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderSectionEditor = (
@@ -278,6 +427,9 @@ export default function TileConfiguration({
     setTileData: React.Dispatch<React.SetStateAction<Partial<TileData>>>
   ) => {
     switch (section.type) {
+      case "baseData":
+        return <BaseDataSelector section={section} tile={tile} setTileData={setTileData} />;
+
       case "text":
         return (
           <div className="space-y-2">

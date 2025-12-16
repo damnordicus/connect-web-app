@@ -15,17 +15,20 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
+  Building,
 } from "lucide-react";
-import type { TileData, TileContentSection } from "./TileConfiguration";
+import type { TileData, TileContentSection, BaseDataField } from "./TileConfiguration";
 
 interface TileContentViewerProps {
   tiles: TileData[];
   compact?: boolean;
+  baseData?: BaseDataField[]; // Pass base data for rendering
 }
 
 export default function TileContentViewer({
   tiles,
   compact = false,
+  baseData = [],
 }: TileContentViewerProps) {
   const getTileIcon = (sections: TileContentSection[]) => {
     if (sections.length === 0) return <FileText className="h-4 w-4" />;
@@ -40,6 +43,8 @@ export default function TileContentViewer({
         return <Database className="h-4 w-4" />;
       case "images":
         return <ImageIcon className="h-4 w-4" />;
+      case "baseData":
+        return <Building className="h-4 w-4" />;
     }
   };
 
@@ -53,6 +58,8 @@ export default function TileContentViewer({
         return <Database className="h-4 w-4" />;
       case "images":
         return <ImageIcon className="h-4 w-4" />;
+      case "baseData":
+        return <Building className="h-4 w-4" />;
     }
   };
 
@@ -66,6 +73,8 @@ export default function TileContentViewer({
         return "Table";
       case "images":
         return "Images";
+      case "baseData":
+        return "Base Data";
     }
   };
 
@@ -84,6 +93,36 @@ export default function TileContentViewer({
 
   const renderSectionContent = (section: TileContentSection) => {
     switch (section.type) {
+      case "baseData":
+        const selectedKeys = Array.isArray(section.content) ? section.content : [];
+        if (selectedKeys.length === 0) {
+          return <p className="text-sm text-muted-foreground italic">No fields selected</p>;
+        }
+        return (
+          <div className="space-y-2">
+            {selectedKeys.map((key: string) => {
+              const field = baseData.find(f => f.key === key);
+              if (!field) return null;
+              
+              const FieldIcon = field.icon || Building;
+              
+              return (
+                <Card key={key} className="bg-muted/30">
+                  <CardContent className="flex items-start gap-3 p-3">
+                    <FieldIcon className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{field.label}</p>
+                      <p className="text-sm text-foreground mt-1 break-words">
+                        {field.value || <span className="text-muted-foreground italic">No data</span>}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        );
+
       case "text":
         return (
           <div className="bg-muted/30 rounded-md p-3">
