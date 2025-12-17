@@ -1,6 +1,6 @@
 
 import { createClient } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SetStateAction } from "react";
 import { Form, redirect, useActionData, useFetcher, useNavigate, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
@@ -21,8 +21,8 @@ export const loader = async ({}: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
     const formData = await request.formData();
     const _action = formData.get("_action");
-    const email = formData.get("email");
-    const password = formData.get("password");
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
     const base = formData.get("base");
     const org = formData.get("org");
     const type = formData.get("type");
@@ -31,24 +31,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     if(_action === "login"){
        try{
-            // const {data, error} = await supabase.from("user").select().eq("email", email).eq("password", password).not('verified', 'is', null);
             const {data, error} = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             })
-            // console.log(data, error)
-            if (data?.length === 0 && error === null) {
-                return  {success: false, error: "Invalid email or password"} ;
+            console.log(data?.length, error)
+            if(error){
+                return {success: false, error: "Invalid credentials"}
             }
             
             if (data ) {
-                // const user = data[0] ?? data.user;
                 const {data: userConnect, error: userError} = await supabase.from("user").select("id, role, admin_id").eq("users_id", data.user?.id).single()
-                // console.log(userConnect?.id)
+                
                 if(userConnect?.role === "SUPERADMIN"){
-                    // const response = redirect("/home?id=superadmin");
-                    // response.headers.set('Set-Cookie', `user_id=${userConnect?.id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
-                    return new Response(JSON.stringify(
+                   return new Response(JSON.stringify(
                         {
                             success: true,
                             role: "SUPERADMIN",
@@ -96,13 +92,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                     }
                     if(test === "organization"){
                         const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData.id, "org_id": org, "request_type": "org-admin"})
-                        // return {requestResponse, insertError}
                     }
                     if(test === "base"){
                         console.log('test')
                         const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData.id, "base_id": base, "request_type": "base-admin"})
                         console.log(requestResponse, insertError)
-                        // return {requestResponse, insertError}
                     }
                 }
                 console.log('base: ', base, ' org: ', org)
@@ -111,9 +105,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 }else{
                     return redirect('/');
                 }
-                // response.headers.set('Set-Cookie', `user_id=${userData[0].id}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure`);
-                // return response;
-                // const response = redirect(`..`);
             } 
         }catch(error){
             console.error(error)
@@ -130,21 +121,11 @@ export default function Login({loaderData, actionData}: Route.ComponentProps){
     const [showLogin, setShowLogin] = useState(true);
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
-    // const actionData = useActionData();
     const [showEmailError, setShowEmailError] = useState(false);
     const [filteredOrgList, setFilteredOrgList] = useState([]);
     const [baseOrg, setBaseOrg] = useState<"base" | "org" >("org")
     const [register, setRegister] = useState('');
-    // const fetcher = useFetcher();
     const navigate = useNavigate();
-
-    // useEffect(() => {
-    //     if(actionData ){
-    //         console.log(actionData)
-    //         setShowEmailError(true);
-    //     }
-    // }, [actionData])
-    // console.log('ad', fetcher)
 
     useEffect(() => {
         if(actionData?.success){
@@ -157,14 +138,14 @@ export default function Login({loaderData, actionData}: Route.ComponentProps){
         }
     }, [actionData])
 
-    function handleBaseChange(e){
+    function handleBaseChange(e: SetStateAction<string>){
         const newList = orgList.filter((org: { base_id: string; }) => org.base_id === e)
         setFilteredOrgList(newList)
         setBaseOrg('base')
         setSelectedBase(e)
     }
 
-    function handleOrgChange(e){
+    function handleOrgChange(e: SetStateAction<string>){
         setBaseOrg('org')
         setSelectedOrg(e)
     }

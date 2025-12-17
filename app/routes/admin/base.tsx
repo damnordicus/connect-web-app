@@ -408,6 +408,7 @@ export default function BaseAdmin({ loaderData, actionData }: Route.ComponentPro
                             setTiles={setTiles}
                             entityType="org"
                             baseData={baseDataFields}
+                            tables={tables}
                           />
                         </CardContent>
                       </div>

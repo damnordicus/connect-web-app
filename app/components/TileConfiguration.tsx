@@ -55,6 +55,7 @@ interface TileConfigurationProps {
   setTiles: React.Dispatch<React.SetStateAction<TileData[]>>;
   entityType: "base" | "org";
   baseData?: BaseDataField[]; // Available base data fields
+  tables?: [];
 }
 
 const TILE_COLORS = [
@@ -81,7 +82,9 @@ export default function TileConfiguration({
   setTiles,
   entityType,
   baseData = [],
+  tables = [],
 }: TileConfigurationProps) {
+  console.log(baseData)
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTile, setEditingTile] = useState<TileData | null>(null);
@@ -507,12 +510,70 @@ export default function TileConfiguration({
         );
 
       case "table":
+        const selectedTableIds: string[] = Array.isArray(section.content) 
+          ? section.content 
+          : [];
+        const availableTables = tables?.filter(t => !selectedTableIds.includes(t.id)) || [];
+        
         return (
           <div className="space-y-4">
             <Label>Table Configuration</Label>
-            <p className="text-sm text-muted-foreground">
-              Table data will use the existing table configuration from the Tables section.
-            </p>
+            <Select 
+              onValueChange={(tableId) => {
+                updateSection(tile, setTileData, section.id, { 
+                  content: [...selectedTableIds, tableId]
+                });
+              }}
+              value=""
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={
+                  availableTables.length > 0 
+                    ? "Select a table to add" 
+                    : "All tables selected"
+                }/>
+              </SelectTrigger>
+              <SelectContent>
+                {availableTables.map(t => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t?.title || "Untitled Table"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {selectedTableIds.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">
+                  Selected Tables ({selectedTableIds.length})
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTableIds.map((tableId) => {
+                    const table = tables?.find(t => t.id === tableId);
+                    return (
+                      <Badge 
+                        key={tableId} 
+                        variant="secondary" 
+                        className="flex items-center gap-2 p-2 border"
+                      >
+                        {table?.title || "Untitled Table"}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateSection(tile, setTileData, section.id, { 
+                              content: selectedTableIds.filter(id => id !== tableId)
+                            });
+                          }}
+                          className="hover:bg-destructive/20 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         );
 
