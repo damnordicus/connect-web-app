@@ -129,9 +129,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const newLinksStr = formData.get('links');
   const newLinks = newLinksStr ? JSON.parse(newLinksStr as string) : [];
   const denialReason = formData.get("denial_reason");
-  
+
   console.log('pre if: ', formData)
-  
+
   if (_action === "submit") {
     try {
       const { data, error } = await supabase
@@ -214,7 +214,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
           })
           .eq('id', user_id);
 
-        return {success: true, _action: "approve"}
+        return { success: true, _action: "approve" }
       } else if (updateObj.request_type === "base-admin") {
         await supabase
           .from('user')
@@ -227,20 +227,20 @@ export const action = async ({ request }: Route.ActionArgs) => {
         await supabase.from('request').delete().eq('id', request_id);
         await supabase.from('baseDetails').insert({ "base_id": base_id, "user_id": user_id });
         await supabase.from('appFields').insert({ "base_id": base_id });
-        return {success: true, _action: "approve"}
+        return { success: true, _action: "approve" }
       } else if (request_type === "base-update") {
         console.log('obj', Object.fromEntries(formData.entries()))
         const { org_id, request_id, request_type, _action, table_data, delete_tables, tiles_config, ...obj } = Object.fromEntries(formData.entries())
-        
-        if(table_data){
-          const {data: currentTables, error: existingError} = await supabase.from('appFields').select("table_data").eq("base_id", base_id).single();
-          if(existingError) throw existingError
+
+        if (table_data) {
+          const { data: currentTables, error: existingError } = await supabase.from('appFields').select("table_data").eq("base_id", base_id).single();
+          if (existingError) throw existingError
           const existingTables = currentTables?.table_data || [];
           const incomingTables = JSON.parse(table_data as string);
           const incomingTablesMap = new Map(incomingTables.map(table => [table.id, table]))
-          const updatedTables = existingTables.map(table => 
-            incomingTablesMap.has(table.id) 
-              ? incomingTablesMap.get(table.id) 
+          const updatedTables = existingTables.map(table =>
+            incomingTablesMap.has(table.id)
+              ? incomingTablesMap.get(table.id)
               : table
           );
           incomingTables.forEach(table => {
@@ -248,20 +248,20 @@ export const action = async ({ request }: Route.ActionArgs) => {
               updatedTables.push(table);
             }
           });
-          const { data, error } = await supabase.from('appFields').update({"table_data": updatedTables}).eq("base_id", base_id);
+          const { data, error } = await supabase.from('appFields').update({ "table_data": updatedTables }).eq("base_id", base_id);
         }
 
-        if(delete_tables){
-          const {data: currentTables, error: existingError} = await supabase.from('appFields').select("table_data").eq("base_id", base_id).single();
-          if(existingError) throw existingError
+        if (delete_tables) {
+          const { data: currentTables, error: existingError } = await supabase.from('appFields').select("table_data").eq("base_id", base_id).single();
+          if (existingError) throw existingError
           const existingTables = currentTables?.table_data || [];
           const deleteTables = JSON.parse(delete_tables as string);
           const newTables = existingTables.filter(table => !deleteTables.includes(table.id))
-          const {data, error} = await supabase.from('appFields').update({"table_data": newTables}).eq("base_id", base_id);
+          const { data, error } = await supabase.from('appFields').update({ "table_data": newTables }).eq("base_id", base_id);
         }
 
-        if(tiles_config){
-          await supabase.from('appFields').update({"tiles_config": JSON.parse(tiles_config as string)}).eq("base_id", base_id);
+        if (tiles_config) {
+          await supabase.from('appFields').update({ "tiles_config": JSON.parse(tiles_config as string) }).eq("base_id", base_id);
         }
 
         console.log('test', obj)
@@ -275,26 +275,26 @@ export const action = async ({ request }: Route.ActionArgs) => {
           .delete()
           .eq('id', request_id)
         console.log('data: ', deleteData, ' error: ', deleteError)
-        return {success: true, _action: "approve"}
+        return { success: true, _action: "approve" }
       }
       else {
         console.log('update Object: ', updateObj)
 
         delete updateObj.request_type;
 
-        if(updateObj.delete_tables){
-          const {data: currentTables, error: existingError} = await supabase.from('organization').select("table_data").eq("id", org_id).single();
-          if(existingError) throw existingError
+        if (updateObj.delete_tables) {
+          const { data: currentTables, error: existingError } = await supabase.from('organization').select("table_data").eq("id", org_id).single();
+          if (existingError) throw existingError
           const existingTables = currentTables?.table_data || [];
           const deleteTables = JSON.parse(updateObj.delete_tables as string);
           const newTables = existingTables.filter(table => !deleteTables.includes(table.id))
-          const {data, error} = await supabase.from('organization').update({"table_data": newTables}).eq("id", org_id);
+          const { data, error } = await supabase.from('organization').update({ "table_data": newTables }).eq("id", org_id);
         }
-        
-        if(updateObj.table_data){
+
+        if (updateObj.table_data) {
           updateObj.table_data = JSON.parse(updateObj.table_data as string)
         }
-        if(updateObj.links){
+        if (updateObj.links) {
           const parseLinks = JSON.parse(updateObj.links as string)
           updateObj.links = parseLinks
         }
@@ -305,9 +305,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
           .update(updateObj)
           .eq("id", org_id);
         console.log(error)
-        const {data: requestData, error: requestError} = await supabase.from('request').delete().eq('id', request_id);
+        const { data: requestData, error: requestError } = await supabase.from('request').delete().eq('id', request_id);
         console.log(requestData, requestError)
-        return {success: true, _action: "approve"}
+        return { success: true, _action: "approve" }
       }
     } catch (error) {
       console.error(error);
@@ -317,13 +317,13 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (_action === 'deny') {
     const { data: updateData, error: updateError } = await supabase
       .from('request')
-      .update({ 
+      .update({
         "is_denied": true,
-        "denial_reason": denialReason 
+        "denial_reason": denialReason
       })
       .eq("id", requestId)
     console.log(updateData, updateError)
-    return {success: true, _action: "deny"}
+    return { success: true, _action: "deny" }
   }
 }
 
@@ -353,7 +353,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
 
   useEffect(() => {
     console.log('location: ', location)
-    if(location.state?.toast) {
+    if (location.state?.toast) {
       toast.success(location.state.toast);
       window.history.replaceState({}, '');
     }
@@ -380,13 +380,13 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
   }, [detailsFetcher])
 
   useEffect(() => {
-    if(actionData && actionData.success){
+    if (actionData && actionData.success) {
       setSelectedRequest(null);
       setShowDenyForm(false);
       setDenialSelect("");
       setCustomDenialReason("");
     }
-  },[actionData])
+  }, [actionData])
 
   function orgNameForId(id: string) {
     return allOrgs?.filter(org => org.id === id)[0]?.name
@@ -470,7 +470,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
         const result = Array.from(existingMap.values());
 
         console.log(existingMap, result)
-        
+
         if (result.length > currentTables.length) {
           return { text: "Added", className: "bg-green-400/30 text-green-500 border-green-500/40" };
         } else if (result.length < currentTables.length) {
@@ -485,7 +485,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
       if (fieldKey === "links") {
         const currentLinks = Array.isArray(parsedOriginal) ? parsedOriginal : [];
         const incomingLinks = Array.isArray(parsedValue) ? parsedValue : [];
-        
+
         if (incomingLinks.length > currentLinks.length) {
           return { text: "Added", className: "bg-green-100 text-green-700 border-green-300" };
         } else if (incomingLinks.length < currentLinks.length) {
@@ -496,8 +496,8 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
         return null;
       }
 
-      if (fieldKey === "tiles_config"){
-        return {text: "Added"}
+      if (fieldKey === "tiles_config") {
+        return { text: "Added" }
       }
 
       // For other fields, check if changed
@@ -537,33 +537,33 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
                 <div className="">
                   <p className="text-xs italic  font-semibold">{table.title ?? "Untitled"}</p>
                 </div>
-              <div key={index} className="border rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        {table.headers?.map((header: string, i: number) => (
-                          <th key={i} className="px-3 py-2 text-left font-semibold border-r last:border-r-0">
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {table.data?.map((row: any[], i: number) => (
-                        <tr key={i} className="hover:bg-muted/30 border-t">
-                          {row.map((cell: any, j: number) => (
-                            <td key={j} className="px-3 py-2 border-r last:border-r-0">
-                              {cell}
-                            </td>
+                <div key={index} className="border rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          {table.headers?.map((header: string, i: number) => (
+                            <th key={i} className="px-3 py-2 text-left font-semibold border-r last:border-r-0">
+                              {header}
+                            </th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {table.data?.map((row: any[], i: number) => (
+                          <tr key={i} className="hover:bg-muted/30 border-t">
+                            {row.map((cell: any, j: number) => (
+                              <td key={j} className="px-3 py-2 border-r last:border-r-0">
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            </>
+              </>
             ))}
           </div>
         );
@@ -580,9 +580,9 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
             {links.map((link: any, idx: number) => (
               <div key={idx} className="border rounded-md px-3 py-2 bg-muted/30">
                 <p className="text-xs font-medium text-muted-foreground">{link.label}</p>
-                <a 
-                  href={link.link} 
-                  target="_blank" 
+                <a
+                  href={link.link}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-blue-600 hover:underline break-all"
                 >
@@ -610,25 +610,25 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
           </div>
         );
       }
-      if(fieldKey === "tiles_config"){
+      if (fieldKey === "tiles_config") {
         console.log(parsedValue)
         return (
           <div className="flex flex-col gap-y-2">
-            {parsedValue?.length && parsedValue.length > 0 && parsedValue.map( tile => 
-            <div className={`flex ${!tile.visible && 'line-through text-white/50'} justify-between border rounded-md p-2 w-full items-center`}>
-              <p>{tile.title}</p>
-              <div className="inline-flex items-center gap-2">
-              <Badge variant={"outline"}>{tile.type}</Badge>
-              <p>{tile.visible ? <Eye size={18}/> : <EyeClosed />}</p>
-              </div>
-            </div>)}
+            {parsedValue?.length && parsedValue.length > 0 && parsedValue.map(tile =>
+              <div className={`flex ${!tile.visible && 'line-through text-white/50'} justify-between border rounded-md p-2 w-full items-center`}>
+                <p>{tile.title}</p>
+                <div className="inline-flex items-center gap-2">
+                  <Badge variant={"outline"}>{tile.type}</Badge>
+                  <p>{tile.visible ? <Eye size={18} /> : <EyeClosed />}</p>
+                </div>
+              </div>)}
           </div>
         )
       }
 
       // Regular text display
       return (
-        <div 
+        <div
           className={`border rounded-md px-3 py-2 bg-muted/30 text-sm`}
         >
           {parsedValue ? (
@@ -756,17 +756,17 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
                       if (key === "orgId" || key === "userId" || key === "baseId" || key === "request-type") {
                         return null;
                       }
-                      if(key === "tiles_config"){
+                      if (key === "tiles_config") {
                         return (
                           <>
-                          <p className="text-sm font-semibold">Tiles Config</p>
-                          <div className=" border rounded-lg p-2 ">
-                            <TileContentViewer 
-                              tiles={JSON.parse(selectedRequest.data.tiles_config)} 
-                              compact={false} 
+                            <p className="text-sm font-semibold">Tiles Config</p>
+                            <div className=" border rounded-lg p-2 ">
+                              <TileContentViewer
+                                tiles={JSON.parse(selectedRequest.data.tiles_config)}
+                                compact={false}
                               />
-                          </div>
-                          <input type="hidden" name="tiles_config" value={selectedRequest.data.tiles_config}/>
+                            </div>
+                            <input type="hidden" name="tiles_config" value={selectedRequest.data.tiles_config} />
                           </>
                         )
                       }
@@ -902,57 +902,56 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
   // BASE ADMIN VIEW
   return (
     <div className="flex w-full justify-center">
-
-    <div className="flex w-full justify-start lg:justify-center lg:w-1/2">
-      {baseData ? (
-        <Tabs defaultValue="requests">
-          <TabsList className="bg-card border mt-4 ml-4 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-            <TabsTrigger
-              value="requests"
-              className="data-[state=active]:!bg-primary"
-              onClick={() => navigate(`.?id=${baseData.base.id}`)}
+      <div className="w-full max-w-7xl mx-auto px-4">
+        {baseData ? (
+          <Tabs defaultValue="requests" className="w-full">
+            <TabsList className="bg-card border mt-4 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+              <TabsTrigger
+                value="requests"
+                className="data-[state=active]:!bg-primary"
+                onClick={() => navigate(`.?id=${baseData.base.id}`)}
               >
-              Requests
-            </TabsTrigger>
-            <TabsTrigger
-              value="baseInfo"
-              className="data-[state=active]:!bg-primary"
-              onClick={() => navigate(`base?id=${baseData.base.id}`)}
+                Requests
+              </TabsTrigger>
+              <TabsTrigger
+                value="baseInfo"
+                className="data-[state=active]:!bg-primary"
+                onClick={() => navigate(`base?id=${baseData.base.id}`)}
               >
-              {baseData.base.name}
-            </TabsTrigger>
-          </TabsList>
+                {baseData.base.name}
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="requests" className="mt-2">
-            <div className="flex flex-col gap-4 mx-4 w-full">
-              <FilterByType filterBy={filterBy} setFilterBy={setFilterBy} />
-              {orgRequests && orgRequests.length > 0 ? (
-                <div className="lg:grid grid-cols-3 gap-4 md:flex md:flex-col">
-                  {orgRequests.filter(item => filterBy.includes(item.request_type)).map(request => (
-                    <RequestCard
-                    key={request.id}
-                    request={request}
-                    allUsers={allUsers}
-                    allOrgs={allOrgs}
-                    setSelectedRequest={setSelectedRequest}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No requests found.</p>
-              )}
-            </div>
-          </TabsContent>
+            <TabsContent value="requests" className="mt-2 w-full">
+              <div className="flex flex-col gap-4 w-full">
+                <FilterByType filterBy={filterBy} setFilterBy={setFilterBy} />
+                {orgRequests && orgRequests.length > 0 ? (
+                  <div className="lg:grid grid-cols-3 gap-4 md:flex md:flex-col">
+                    {orgRequests.filter(item => filterBy.includes(item.request_type)).map(request => (
+                      <RequestCard
+                        key={request.id}
+                        request={request}
+                        allUsers={allUsers}
+                        allOrgs={allOrgs}
+                        setSelectedRequest={setSelectedRequest}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No requests found.</p>
+                )}
+              </div>
+            </TabsContent>
 
-          <TabsContent value="baseInfo">
-            <Outlet />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <Outlet />
-      )}
-      <RequestModal />
-    </div>
+            <TabsContent value="baseInfo">
+              <Outlet />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <Outlet />
+        )}
+        <RequestModal />
       </div>
+    </div>
   );
 }

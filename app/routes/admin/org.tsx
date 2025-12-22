@@ -27,6 +27,8 @@ import {
   RectangleEllipsis,
   XIcon,
   LinkIcon,
+  Quote,
+  Phone,
 } from "lucide-react";
 import type { Route } from "../+types/home";
 import {
@@ -47,6 +49,9 @@ import { DropdownMenuContent, DropdownMenuItem } from "~/components/ui/dropdown-
 import FieldTypes from "~/components/FieldTypes";
 import TableField, { type TableData } from "~/components/TableField";
 import { useLinks } from "~/hooks/useLinks";
+import TileConfiguration, { type BaseDataField, type TileData } from "~/components/TileConfiguration";
+import AppPreview from "~/components/AppPreview";
+import { loadTiles, TileTemplates } from "~/lib/tileUtils";
 
 
 const supabase = createClient(
@@ -96,9 +101,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const coverImage = formData.get("coverImage") as File;
   const coverImagePath = formData.get("coverImage-path") as string;
 
-  if(formData.get("option")){
-    const {data: optionData, error} = await supabase.from("organization").update({"use_tables": true}).eq("id", orgId);
-    return {success: true, message: "organization updated"}
+  if (formData.get("option")) {
+    const { data: optionData, error } = await supabase.from("organization").update({ "use_tables": true }).eq("id", orgId);
+    return { success: true, message: "organization updated" }
   }
 
   if (coverImagePath) {
@@ -144,19 +149,19 @@ export default function OrgDetailsRedesign({
 }: Route.ComponentProps) {
   const { orgData, userId, requestData } = loaderData;
   const [fields, setFields] = useState({
-    name: {value: orgData?.name, isEditing: false},
-    description: {value: orgData?.description, isEditing: false},
-    poc: {value: orgData?.contact, isEditing: false},
-    selectedBadge: {value: orgData?.type, addBadgeToForm: false},
-    webUrl: {value: orgData?.web_url, isEditing: false},
-    building: {value: orgData?.building_number, isEditing: false},
-    address: {value: orgData?.address, isEditing: false},
+    name: { value: orgData?.name, isEditing: false },
+    description: { value: orgData?.description, isEditing: false },
+    poc: { value: orgData?.contact, isEditing: false },
+    selectedBadge: { value: orgData?.type, addBadgeToForm: false },
+    webUrl: { value: orgData?.web_url, isEditing: false },
+    building: { value: orgData?.building_number, isEditing: false },
+    address: { value: orgData?.address, isEditing: false },
   })
 
   const updateFieldValue = (fieldName: string) => (value: string) => {
     setFields(prev => ({
       ...prev,
-      [fieldName]: { ...prev[fieldName], value}
+      [fieldName]: { ...prev[fieldName], value }
     }))
   }
 
@@ -189,11 +194,54 @@ export default function OrgDetailsRedesign({
   const [fieldsModal, setFieldsModal] = useState(false);
   const [selectedType, setSelectedType] = useState(-1);
   const [tables, setTables] = useState(orgData?.table_data)
-  const [useTables, setUseTables ] = useState<boolean>( orgData?.use_tables ?? false)
+  const [useTables, setUseTables] = useState<boolean>(orgData?.use_tables ?? false)
   const [editedTables, setEditedTables] = useState<TableData[]>([])
   const [deleteTables, setDeleteTables] = useState<TableData[]>([])
 
   const linkManager = useLinks(orgData?.links);
+
+  const baseDataFields: BaseDataField[] = [
+    {
+      key: "org_name",
+      label: "Organization Name",
+      value: orgData?.name,
+      icon: Building,
+    },
+    {
+      key: "description",
+      label: "Description",
+      value: orgData?.description,
+      icon: Building,
+    },
+    {
+      key: "contact",
+      label: "Point of Contact",
+      value: orgData?.contact,
+      icon: Mail,
+    },
+    {
+      key: "phone",
+      label: "Contact Phone",
+      value: orgData?.phone,
+      icon: Phone,
+    },
+    {
+      key: "email",
+      label: "Contact Email",
+      value: orgData?.email,
+      icon: Mail,
+    },
+  ];
+
+  const [tiles, setTiles] = useState<TileData[]>(() => {
+    return loadTiles(
+      orgData?.tiles_config,
+      [
+        TileTemplates.textOnly("Organization Info", orgData?.description || ""),
+        TileTemplates.contactInfo(orgData?.phone, orgData?.email)
+      ]
+    );
+  });
 
   // Reset addBadgeToForm when original badge is reselected
   useEffect(() => {
@@ -202,17 +250,17 @@ export default function OrgDetailsRedesign({
 
   useEffect(() => {
     console.log(actionData)
-    if(actionData && actionData.success){
+    if (actionData && actionData.success) {
       setFieldsModal(false)
     }
-  },[actionData])
+  }, [actionData])
 
   // Determine badge state
   const badgeChanged = orgData.type !== selectedBadge;
   const shouldShowSaveButton = badgeChanged;
   const shouldRenderHiddenInput = badgeChanged && addBadgeToForm;
 
- 
+
 
   return (
     <div className="w-full flex-1 overflow-auto">
@@ -334,28 +382,28 @@ export default function OrgDetailsRedesign({
                       disabled={false}
                     />
 
-                    <EditableField 
-                      label={"Building Number"} 
-                      name={"building_number"} 
-                      field={fields.building.value} 
-                      setField={updateFieldValue('building')} 
-                      Icon={MapPin} 
-                      fieldEdit={fields.building.isEditing} 
-                      setFieldEdit={updateFieldEdit('building')} 
-                      disabled={false} 
+                    <EditableField
+                      label={"Building Number"}
+                      name={"building_number"}
+                      field={fields.building.value}
+                      setField={updateFieldValue('building')}
+                      Icon={MapPin}
+                      fieldEdit={fields.building.isEditing}
+                      setFieldEdit={updateFieldEdit('building')}
+                      disabled={false}
                       originalValue={orgData?.building_number} />
 
-                    <EditableField 
-                      label={"Address"} 
-                      name={"address"} 
-                      field={fields.address.value} 
-                      setField={updateFieldValue('address')} 
-                      Icon={MapPin} 
-                      fieldEdit={fields.address.isEditing} 
-                      setFieldEdit={updateFieldEdit('address')} 
-                      disabled={false} 
+                    <EditableField
+                      label={"Address"}
+                      name={"address"}
+                      field={fields.address.value}
+                      setField={updateFieldValue('address')}
+                      Icon={MapPin}
+                      fieldEdit={fields.address.isEditing}
+                      setFieldEdit={updateFieldEdit('address')}
+                      disabled={false}
                       originalValue={orgData?.address} />
-                    
+
                     <EditableField
                       label={"Website"}
                       name={"weburl"}
@@ -394,8 +442,8 @@ export default function OrgDetailsRedesign({
                               onClick={() => setAddBadgeToForm(true)}
                               disabled={addBadgeToForm}
                               className={`transition-colors ${addBadgeToForm
-                                  ? 'text-gray-600 cursor-not-allowed'
-                                  : 'text-white hover:text-gray-200'
+                                ? 'text-gray-600 cursor-not-allowed'
+                                : 'text-white hover:text-gray-200'
                                 }`}
                             >
                               <SaveIcon size={18} />
@@ -420,45 +468,78 @@ export default function OrgDetailsRedesign({
                     />
                   </TabsContent>
                   <TabsContent value="appView" className="mt-4">
-                    <div className="flex gap-4">
-                      <div className="relative flex flex-col w-1/2  gap-4">
-                        <div className="flex items-center gap-4">
-                          <Checkbox
-                            checked={showLogo}
-                            onCheckedChange={() => setShowLogo(!showLogo)}
-                          />
-                          <label className="text-sm">Show logo on card?</label>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <Checkbox
-                            checked={showType}
-                            onCheckedChange={() => setShowType(!showType)}
-                          />
-                          <label className="text-sm">
-                            Show organization type?
-                          </label>
-                        </div>
-                        <Button variant="outline" className="w-full">
-                          <SaveIcon size={18} />
-                          Save
-                        </Button>
-                      </div>
-                      <div
-                        className="relative w-full h-[200px] mx-auto rounded-xl shadow-lg p-6 border-3"
-                      >
-                        <div className="flex flex-col items-center justify-center h-full gap-2">
-                          {showLogo && orgData.image_url && (
-                            <img
-                              src={orgData.image_url}
-                              alt="Logo"
-                              className="h-20 w-20 object-contain"
+                    <div className="grid lg:grid-cols-2 gap-6">
+                      {/* Configuration Panel */}
+                      <div className="space-y-6">
+                        <Card className="border rounded-lg">
+                          <CardHeader className="">
+                            <h3 className="text-lg font-semibold">Header Settings</h3>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="flex items-center gap-4">
+                              <Checkbox
+                                checked={false}
+                                onCheckedChange={() => { }}
+                              />
+                              <label className="text-sm">Show logo on card</label>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <Checkbox
+                                checked={false}
+                                onCheckedChange={() => { }}
+                              />
+                              <label className="text-sm">Show organization type</label>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <div className="border rounded-lg">
+                          <div className="px-6 my-4">
+                            <h3 className="text-lg font-semibold">App Tiles</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Configure what appears on the mobile app
+                            </p>
+                          </div>
+                          <CardContent>
+                            <TileConfiguration
+                              tiles={tiles}
+                              setTiles={setTiles}
+                              entityType="org"
+                              baseData={baseDataFields}
+                              tables={tables}
                             />
-                          )}
-                          <p className="text-center text-xl font-bold">{fields.name.value}</p>
-                          {showType && (
-                            <Badge variant="secondary">{selectedBadge}</Badge>
-                          )}
+                          </CardContent>
                         </div>
+
+                        {/* <div className="flex justify-end gap-2"> 
+                            <Button type="button" onClick={() => {}}>
+                            <SaveIcon className="h-4 w-4 mr-2" />
+                            Save App Configuration
+                          </Button>
+                        </div>*/}
+                      </div>
+
+                      {/* Preview Panel */}
+                      <div className="lg:sticky lg:top-4 h-fit">
+                        <Card className="rounded-lg">
+                          <CardHeader>
+                            <h3 className="text-lg font-semibold">App Preview</h3>
+                            <p className="text-sm text-muted-foreground">
+                              See how your organization will appear in the app
+                            </p>
+                          </CardHeader>
+                          <CardContent>
+                            <AppPreview
+                              showHeader={true}
+                              headerTitle={orgData.name}
+                              headerImage={coverImage ?? undefined}
+                              tiles={tiles}
+                              showLogo={false}
+                              showType={false}
+                              orgType={""}
+                            />
+                          </CardContent>
+                        </Card>
                       </div>
                     </div>
                   </TabsContent>
@@ -469,82 +550,82 @@ export default function OrgDetailsRedesign({
             <Card className="col-span-2 rounded-lg gap-2">
               <CardHeader className="">
                 <div className="inline-flex gap-2 items-center">
-                <LinkIcon size={14}/>
-                <p>Links</p>
+                  <LinkIcon size={14} />
+                  <p>Links</p>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                    {[...linkManager.existingLinks, ...linkManager.links].map((link, index) => {
-                      console.log(link)
-                      const isEditing = linkManager.editingIndex === index;
-                      return (
-                        <Card className="py-2 rounded-lg bg-background/20" >
-                          <CardContent className="relative flex flex-col">
-                            {!isEditing ?
-                              <>
-                                <p className="text-lg">{link.label}</p>
-                                <p className="italic text-gray-400 ">{link.link}</p>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger className="absolute top-1 right-1" asChild>
-                                    <EllipsisVertical size={20} className="" />
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => linkManager.startEditLink(index, link)}>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => linkManager.deleteLink(index)}>Delete</DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </>
+                {[...linkManager.existingLinks, ...linkManager.links].map((link, index) => {
+                  console.log(link)
+                  const isEditing = linkManager.editingIndex === index;
+                  return (
+                    <Card className="py-2 rounded-lg bg-background/20" >
+                      <CardContent className="relative flex flex-col">
+                        {!isEditing ?
+                          <>
+                            <p className="text-lg">{link.label}</p>
+                            <p className="italic text-gray-400 ">{link.link}</p>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger className="absolute top-1 right-1" asChild>
+                                <EllipsisVertical size={20} className="" />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => linkManager.startEditLink(index, link)}>Edit</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => linkManager.deleteLink(index)}>Delete</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </>
 
-                              : <>
-                                <div className="flex flex-col gap-4 w-full">
-                                  <div className="space-y-2">
-                                    <p>Label: </p>
-                                    <input type="text" value={linkManager.editedLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setEditedLink({ ...linkManager.editedLink, label: e.currentTarget.value })} />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <p>Link Address: </p>
-                                    <input type="text" value={linkManager.editedLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setEditedLink({ ...linkManager.editedLink, link: e.currentTarget.value })} />
-                                  </div>
-                                  <div className="flex justify-end gap-2">
-                                    <Button variant={"default"} className="hover:bg-blue-600 border" onClick={() => linkManager.saveEditedLink(index)}><SaveIcon />Save Link</Button>
-                                    <Button variant={"ghost"} className="border " onClick={() => linkManager.setEditingIndex(null)}>Cancel</Button>
-                                  </div>
-                                </div>
-                              </>
-                            }
+                          : <>
+                            <div className="flex flex-col gap-4 w-full">
+                              <div className="space-y-2">
+                                <p>Label: </p>
+                                <input type="text" value={linkManager.editedLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setEditedLink({ ...linkManager.editedLink, label: e.currentTarget.value })} />
+                              </div>
+                              <div className="space-y-2">
+                                <p>Link Address: </p>
+                                <input type="text" value={linkManager.editedLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setEditedLink({ ...linkManager.editedLink, link: e.currentTarget.value })} />
+                              </div>
+                              <div className="flex justify-end gap-2">
+                                <Button variant={"default"} className="hover:bg-blue-600 border" onClick={() => linkManager.saveEditedLink(index)}><SaveIcon />Save Link</Button>
+                                <Button variant={"ghost"} className="border " onClick={() => linkManager.setEditingIndex(null)}>Cancel</Button>
+                              </div>
+                            </div>
+                          </>
+                        }
 
-                          </CardContent>
-                        </Card>
-                      )
-                    })}
-                    {(linkManager.links.length > 0 || linkManager.update) && (
-                      <input type="hidden" name="links" value={JSON.stringify([...(linkManager.existingLinks || []), ...linkManager.links])} />
-                    )}
-                    <Card className="py-2 rounded-lg bg-background/20">
-                      <CardContent className="flex w-full ">
-                        {!linkManager.showAddLink ? <div className="flex w-full justify-between">
-                          <p>Add New Link</p>
-                          <PlusSquareIcon className="hover:text-gray-400" size={24} onClick={() => linkManager.setShowAddLink(true)} />
-                        </div> : <div className="flex flex-col gap-4 w-full">
-                          <div className="space-y-2">
-                            <p>Label: </p>
-                            <input type="text" value={linkManager.newLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setNewLink({ ...linkManager.newLink, label: e.currentTarget.value })} />
-                          </div>
-                          <div className="space-y-2">
-                            <p>Link Address: </p>
-                            <input type="text" value={linkManager.newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setNewLink({ ...linkManager.newLink, link: e.currentTarget.value })} />
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <Button variant={"default"} className="hover:bg-blue-600 border" onClick={linkManager.handleAddLink}><PlusIcon />Add Link</Button>
-                            <Button variant={"ghost"} className="border " onClick={() => linkManager.setShowAddLink(false)}>Cancel</Button>
-                          </div>
-                        </div>}
                       </CardContent>
                     </Card>
+                  )
+                })}
+                {(linkManager.links.length > 0 || linkManager.update) && (
+                  <input type="hidden" name="links" value={JSON.stringify([...(linkManager.existingLinks || []), ...linkManager.links])} />
+                )}
+                <Card className="py-2 rounded-lg bg-background/20">
+                  <CardContent className="flex w-full ">
+                    {!linkManager.showAddLink ? <div className="flex w-full justify-between">
+                      <p>Add New Link</p>
+                      <PlusSquareIcon className="hover:text-gray-400" size={24} onClick={() => linkManager.setShowAddLink(true)} />
+                    </div> : <div className="flex flex-col gap-4 w-full">
+                      <div className="space-y-2">
+                        <p>Label: </p>
+                        <input type="text" value={linkManager.newLink.label} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setNewLink({ ...linkManager.newLink, label: e.currentTarget.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <p>Link Address: </p>
+                        <input type="text" value={linkManager.newLink.link} className="bg-background/20 w-full p-2 border border-border rounded-lg text-sm font-medium text-foreground" onChange={(e) => linkManager.setNewLink({ ...linkManager.newLink, link: e.currentTarget.value })} />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant={"default"} className="hover:bg-blue-600 border" onClick={linkManager.handleAddLink}><PlusIcon />Add Link</Button>
+                        <Button variant={"ghost"} className="border " onClick={() => linkManager.setShowAddLink(false)}>Cancel</Button>
+                      </div>
+                    </div>}
                   </CardContent>
+                </Card>
+              </CardContent>
             </Card>
-            {useTables && 
-              <TableField  tableData={tables} setTableData={setTables} editedTables={editedTables} setEditedTables={setEditedTables} deleteTables={deleteTables} setDeleteTables={setDeleteTables}/>
+            {useTables &&
+              <TableField tableData={tables} setTableData={setTables} editedTables={editedTables} setEditedTables={setEditedTables} deleteTables={deleteTables} setDeleteTables={setDeleteTables} />
             }
             <Card className=" rounded-lg">
               <CardContent className="flex justify-center items-center w-full">
@@ -574,7 +655,7 @@ export default function OrgDetailsRedesign({
         ></UploadModal>
       )}
       {fieldsModal &&
-        <FieldTypes setShowModal={setFieldsModal} setSelectedType={setSelectedType}/>}
+        <FieldTypes setShowModal={setFieldsModal} setSelectedType={setSelectedType} />}
     </div>
   );
 }
