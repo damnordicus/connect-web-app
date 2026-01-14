@@ -19,8 +19,8 @@ const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const cookieHeader = request.headers.get('Cookie');
-  console.log('pre-header: ', request.headers)
-  console.log('header: ', cookieHeader)
+  // console.log('pre-header: ', request.headers)
+  // console.log('header: ', cookieHeader)
   if (!cookieHeader) {
     return redirect('/');
   }
@@ -35,7 +35,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const url = new URL(request.url);
   const baseId = url.searchParams.get('id');
-  console.log('baseId: ', baseId)
+  // console.log('baseId: ', baseId)
   if (!baseId) {
     return redirect("/");
   }
@@ -46,6 +46,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       .from("request")
       .select()
       .eq("is_denied", false);
+
+    const parsedRequests = allRequests?.map(r => {
+      if (r.data.documents){
+        return {
+          ...r,
+          data: {
+            ...r.data,
+            documents: r.data.documents
+          }
+        }
+      }
+    })
 
     const { data: allBases, error: basesError } = await supabase
       .from('base')
@@ -61,7 +73,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     return {
       isSuperAdmin: true,
-      allRequests,
+      allRequests: parsedRequests,
       allBases,
       allUsers,
       allOrgs,
@@ -130,7 +142,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const newLinks = newLinksStr ? JSON.parse(newLinksStr as string) : [];
   const denialReason = formData.get("denial_reason");
 
-  console.log('pre if: ', formData)
+  // console.log('pre if: ', formData)
 
   if (_action === "submit") {
     try {
@@ -144,7 +156,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
           type: badge,
         })
         .eq('id', id);
-      console.log('post update', data, error)
+      // console.log('post update', data, error)
 
       let imageUrl = null;
       if (image && image.size > 0) {
@@ -229,7 +241,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         await supabase.from('appFields').insert({ "base_id": base_id });
         return { success: true, _action: "approve" }
       } else if (request_type === "base-update") {
-        console.log('obj', Object.fromEntries(formData.entries()))
+        // console.log('obj', Object.fromEntries(formData.entries()))
         const { org_id, request_id, request_type, _action, table_data, delete_tables, tiles_config, ...obj } = Object.fromEntries(formData.entries())
 
         if (table_data) {
@@ -264,21 +276,21 @@ export const action = async ({ request }: Route.ActionArgs) => {
           await supabase.from('appFields').update({ "tiles_config": JSON.parse(tiles_config as string) }).eq("base_id", base_id);
         }
 
-        console.log('test', obj)
+        // console.log('test', obj)
         const { data: updateData, error: updateError } = await supabase
           .from('baseDetails')
           .update(obj)
           .eq("base_id", base_id)
-        console.log('data: ', updateData, ' error: ', updateError)
+        // console.log('data: ', updateData, ' error: ', updateError)
         const { data: deleteData, error: deleteError } = await supabase
           .from('request')
           .delete()
           .eq('id', request_id)
-        console.log('data: ', deleteData, ' error: ', deleteError)
+        // console.log('data: ', deleteData, ' error: ', deleteError)
         return { success: true, _action: "approve" }
       }
       else {
-        console.log('update Object: ', updateObj)
+        // console.log('update Object: ', updateObj)
 
         delete updateObj.request_type;
 
@@ -298,15 +310,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
           const parseLinks = JSON.parse(updateObj.links as string)
           updateObj.links = parseLinks
         }
-        console.log(updateObj)
+        // console.log(updateObj)
 
         const { error } = await supabase
           .from('organization')
           .update(updateObj)
           .eq("id", org_id);
-        console.log(error)
+        // console.log(error)
         const { data: requestData, error: requestError } = await supabase.from('request').delete().eq('id', request_id);
-        console.log(requestData, requestError)
+        // console.log(requestData, requestError)
         return { success: true, _action: "approve" }
       }
     } catch (error) {
@@ -322,7 +334,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         "denial_reason": denialReason
       })
       .eq("id", requestId)
-    console.log(updateData, updateError)
+    // console.log(updateData, updateError)
     return { success: true, _action: "deny" }
   }
 }
@@ -350,9 +362,10 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
   const [denialSelect, setDenialSelect] = useState("")
   const [customDenialReason, setCustomDenialReason] = useState("")
   const location = useLocation();
+  
 
   useEffect(() => {
-    console.log('location: ', location)
+    // console.log('location: ', location)
     if (location.state?.toast) {
       toast.success(location.state.toast);
       window.history.replaceState({}, '');
@@ -469,7 +482,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
         incomingTables.forEach(item => existingMap.set(item.id, item));
         const result = Array.from(existingMap.values());
 
-        console.log(existingMap, result)
+        // console.log(existingMap, result)
 
         if (result.length > currentTables.length) {
           return { text: "Added", className: "bg-green-400/30 text-green-500 border-green-500/40" };
@@ -497,6 +510,10 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
       }
 
       if (fieldKey === "tiles_config") {
+        return { text: "Added" }
+      }
+
+      if(fieldKey === "documents"){
         return { text: "Added" }
       }
 
@@ -611,7 +628,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
         );
       }
       if (fieldKey === "tiles_config") {
-        console.log(parsedValue)
+        // console.log(parsedValue)
         return (
           <div className="flex flex-col gap-y-2">
             {parsedValue?.length && parsedValue.length > 0 && parsedValue.map(tile =>
@@ -624,6 +641,18 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
               </div>)}
           </div>
         )
+      }
+      if(fieldKey === "documents"){
+        return(
+          <div>
+            <div>
+              {parsedValue?.files?.map(f => <div className="bg-muted/30 px-3 py-1 rounded-md border">{f.name}</div>) ?? <p>N/A</p>}
+            </div>
+          </div>
+        )
+      }
+      if(fieldKey === "documentFile_0"){
+        return
       }
 
       // Regular text display

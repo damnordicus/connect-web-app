@@ -26,13 +26,13 @@ const fieldConfig: Record<string, { label: string; Icon: any }> = {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const searchParams = new URL(request.url).searchParams;
-  console.log(searchParams)
+  // console.log(searchParams)
   const id = searchParams.get("id");
-  console.log('id: ', id)
+  // console.log('id: ', id)
 
   try{
     const {data: requestData, error: requestError} = await supabase.from("request").select("*").eq("id", id);
-    console.log('rd', requestData)
+    // console.log('rd', requestData)
     if(requestData && requestData.length > 0){
       const { data: orgData, error: orgError } = await supabase.from("organization").select("*").eq("id", requestData[0].org_id)
       if(orgError){
@@ -51,7 +51,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const orgId = formData.get("orgId")
   const requestId = formData.get("requestId")
   const _action = formData.get("submit")
-  console.log('fD: ', formData)
+  // console.log('fD: ', formData)
   
   // Build update object from all form fields except system fields
   if(_action === "change-submit"){
@@ -85,7 +85,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
   if(_action === "deny-submit"){
-    console.log('test')
+    // console.log('test')
     const requestId = formData.get("requestId");
     const reason = formData.get("denial-reason");
     const image = formData.get('image_url') as string
@@ -108,7 +108,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         .remove([image])
 
         if(imgError){
-          console.log(imgError)
+          // console.log(imgError)
         }
         if(imgData){
           return redirect("..")
@@ -127,7 +127,7 @@ export default function RequestOrgUpdate({loaderData}: Route.ComponentProps){
   const [selectedBadge, setSelectedBadge] = useState(requestData[0].data.type)
   const navigate = useNavigate();
   const [showDenialBox, setShowDenialBox] = useState(false);
-  console.log(requestData)
+  // console.log(requestData)
 
   // Filter out system fields and get only the changed fields
   const changedFields = Object.entries(requestData[0].data).filter(

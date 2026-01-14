@@ -52,6 +52,9 @@ import { useLinks } from "~/hooks/useLinks";
 import TileConfiguration, { type BaseDataField, type TileData } from "~/components/TileConfiguration";
 import AppPreview from "~/components/AppPreview";
 import { loadTiles, TileTemplates } from "~/lib/tileUtils";
+import DocumentManager from "~/components/DocumentManager";
+import type { PendingDocumentUpload } from "~/components/DocumentUpload";
+import type { Document, DocumentFolder } from "~/types/documents";
 
 
 const supabase = createClient(
@@ -89,7 +92,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .select("*")
     .eq("org_id", org)
     .eq("is_denied", true)
-  return { orgData, userId: cookies.user_id, requestData };
+
+  // Fetch documents and folders
+  const { data: documents } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("entity_type", "org")
+    .eq("entity_id", org)
+    .eq("is_deleted", false)
+    .order("created_at", { ascending: false });
+
+  const folders = orgData?.document_folders?.folders || [];
+
+  return { orgData, userId: cookies.user_id, requestData, documents: documents || [], folders, baseId: orgData?.base_id };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -113,7 +128,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const image = formData.get("image");
   let file = null;
 
-  console.log('test formData: ', formData)
+  // console.log('test formData: ', formData)
 
   if (requestId) {
     const { data, error } = await supabase.from("request").delete().eq("id", requestId);
@@ -134,10 +149,221 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return { fileName }
   }
 
-  console.log(formData)
-  const { data: requestData, error: requestError } = await supabase.from("request").insert({ "created_at": new Date(Date.now()), "org_id": orgId, "data": Object.fromEntries(formData.entries()), "user_id": userId, "request_type": "org-update" })
-  // const toggle = showName === 'on' ? true : false
-  console.log(requestError)
+  // Handle folder operations
+  const actionType = formData.get("actionType");
+
+  if (actionType === "create-folder") {
+    const folderName = formData.get("folderName") as string;
+    const parentPath = formData.get("parentPath") as string;
+    const existingFolders = JSON.parse(formData.get("folders") as string || "[]");
+
+    // Generate new folder
+    const newFolderId = `folder_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const parentFolder = parentPath === "/" ? null : existingFolders.find((f: any) => f.path === parentPath)?.id || null;
+    const newPath = parentPath === "/" ? `/${folderName}` : `${parentPath}/${folderName}`;
+
+    const newFolder = {
+      id: newFolderId,
+      name: folderName,
+      path: newPath,
+      parent: parentFolder
+    };
+
+    const updatedFolders = [...existingFolders, newFolder];
+
+    const { error: updateError } = await supabase
+      .from("organization")
+      .update({ document_folders: { folders: updatedFolders } })
+      .eq("id", orgId);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+
+    return { success: true, message: "Folder created", folder: newFolder };
+  }
+
+  if (actionType === "rename-folder") {
+    const folderId = formData.get("folderId") as string;
+    const newName = formData.get("newName") as string;
+    const existingFolders = JSON.parse(formData.get("folders") as string || "[]");
+
+    // Find and update the folder
+    const folderIndex = existingFolders.findIndex((f: any) => f.id === folderId);
+    if (folderIndex === -1) {
+      return { error: "Folder not found" };
+    }
+
+    const folder = existingFolders[folderIndex];
+    const oldPath = folder.path;
+    const pathParts = oldPath.split("/").filter(Boolean);
+    pathParts[pathParts.length - 1] = newName;
+    const newPath = "/" + pathParts.join("/");
+
+    // Update the folder
+    existingFolders[folderIndex] = {
+      ...folder,
+      name: newName,
+      path: newPath
+    };
+
+    // Update all child folders' paths
+    existingFolders.forEach((f: any, i: number) => {
+      if (f.path.startsWith(oldPath + "/")) {
+        existingFolders[i] = {
+          ...f,
+          path: f.path.replace(oldPath, newPath)
+        };
+      }
+    });
+
+    // Update organization's folders
+    const { error: updateError } = await supabase
+      .from("organization")
+      .update({ document_folders: { folders: existingFolders } })
+      .eq("id", orgId);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+
+    // Update documents with old path to new path
+    await supabase
+      .from("documents")
+      .update({ folder_path: newPath })
+      .eq("entity_type", "org")
+      .eq("entity_id", orgId)
+      .eq("folder_path", oldPath);
+
+    // Update documents in child folders
+    const { data: childDocs } = await supabase
+      .from("documents")
+      .select("id, folder_path")
+      .eq("entity_type", "org")
+      .eq("entity_id", orgId)
+      .like("folder_path", `${oldPath}/%`);
+
+    if (childDocs) {
+      for (const doc of childDocs) {
+        await supabase
+          .from("documents")
+          .update({ folder_path: doc.folder_path.replace(oldPath, newPath) })
+          .eq("id", doc.id);
+      }
+    }
+
+    return { success: true, message: "Folder renamed" };
+  }
+
+  if (actionType === "delete-folder") {
+    const folderId = formData.get("folderId") as string;
+    const existingFolders = JSON.parse(formData.get("folders") as string || "[]");
+
+    // Find the folder to delete
+    const folder = existingFolders.find((f: any) => f.id === folderId);
+    if (!folder) {
+      return { error: "Folder not found" };
+    }
+
+    const folderPath = folder.path;
+
+    // Get all folders to delete (the folder and its children)
+    const foldersToDelete = existingFolders.filter((f: any) =>
+      f.id === folderId || f.path.startsWith(folderPath + "/")
+    );
+    const folderIdsToDelete = new Set(foldersToDelete.map((f: any) => f.id));
+
+    // Remove folders from the list
+    const updatedFolders = existingFolders.filter((f: any) => !folderIdsToDelete.has(f.id));
+
+    // Update organization's folders
+    const { error: updateError } = await supabase
+      .from("organization")
+      .update({ document_folders: { folders: updatedFolders } })
+      .eq("id", orgId);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+
+    // Soft delete documents in the folder and its children
+    await supabase
+      .from("documents")
+      .update({ is_deleted: true })
+      .eq("entity_type", "org")
+      .eq("entity_id", orgId)
+      .eq("folder_path", folderPath);
+
+    await supabase
+      .from("documents")
+      .update({ is_deleted: true })
+      .eq("entity_type", "org")
+      .eq("entity_id", orgId)
+      .like("folder_path", `${folderPath}/%`);
+
+    return { success: true, message: "Folder deleted" };
+  }
+
+  // Handle document uploads
+  let documentsMetadata = {};
+  const documentsInfo = formData.get("documents");
+  if (documentsInfo) {
+    const docInfo = JSON.parse(documentsInfo as string);
+    const uploadedFiles: Record<string, any> = {};
+
+    // Upload each file to storage
+    for (let i = 0; i < docInfo.count; i++) {
+      const file = formData.get(`documentFile_${i}`) as File;
+      if (file && file.size > 0) {
+        // console.log('file: ', file.name, 'size:', file.size, 'type:', file.type)
+        const fileExt = file.name.split('.').pop();
+        const storagePath = `documents/${orgId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("documents")
+          .upload(storagePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (!uploadError) {
+          uploadedFiles[file.name] = {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            storage_path: storagePath
+          };
+          // console.log('Successfully uploaded:', file.name, 'to', storagePath);
+        } else {
+          console.error('Upload error for', file.name, ':', uploadError);
+        }
+      }
+    }
+
+    documentsMetadata = uploadedFiles;
+  }
+
+  // Build the request data
+  const requestDataObj = Object.fromEntries(formData.entries());
+
+  // Add document metadata to the request data
+  if (Object.keys(documentsMetadata).length > 0) {
+    requestDataObj.documents = documentsMetadata;
+    requestDataObj.folderPath = formData.get("folderPath") || "/";
+    requestDataObj.description = formData.get("description") || "";
+    // console.log('✅ Documents uploaded successfully:', Object.keys(documentsMetadata).length, 'files');
+    // console.log('📁 Folder:', requestDataObj.folderPath);
+    // console.log('📝 Description:', requestDataObj.description);
+  }
+
+  // console.log('📦 Final request data:', JSON.stringify(requestDataObj, null, 2));
+  const { data: requestData, error: requestError } = await supabase.from("request").insert({ "created_at": new Date(Date.now()), "org_id": orgId, "data": requestDataObj, "user_id": userId, "request_type": "org-update" })
+
+  if (requestError) {
+    console.error('❌ Request insert error:', requestError);
+  } else {
+    // console.log('✅ Request created successfully:', requestData);
+  }
   let imageUrl = null;
 
 
@@ -243,13 +469,43 @@ export default function OrgDetailsRedesign({
     );
   });
 
+  const [pendingDocuments, setPendingDocuments] = useState<PendingDocumentUpload | null>(null);
+  const formRef = React.useRef<HTMLFormElement>(null);
+
+  const handleDocumentSubmit = async (data: PendingDocumentUpload) => {
+    // Just store the data for now - it will be included in the form submission
+    // The actual file upload will happen in the action function
+    setPendingDocuments(data);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (pendingDocuments && pendingDocuments.files.length > 0) {
+      e.preventDefault();
+
+      const formData = new FormData(e.currentTarget);
+
+      // Add document files manually
+      pendingDocuments.files.forEach((file, index) => {
+        formData.append(`documentFile_${index}`, file);
+      });
+
+      // Submit the form with the files
+      fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+      }).then(() => {
+        window.location.reload();
+      });
+    }
+  };
+
   // Reset addBadgeToForm when original badge is reselected
   useEffect(() => {
     setAddBadgeToForm(false);
   }, [selectedBadge]);
 
   useEffect(() => {
-    console.log(actionData)
+    // console.log(actionData)
     if (actionData && actionData.success) {
       setFieldsModal(false)
     }
@@ -274,7 +530,7 @@ export default function OrgDetailsRedesign({
               </ul>
             </CardContent>
           </Card>}
-        <Form method="POST" className="space-y-4" >
+        <Form method="POST" className="space-y-4" onSubmit={handleFormSubmit}>
 
           {/* Organization Header Card */}
           <Card className="rounded-lg m-4 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
@@ -354,6 +610,7 @@ export default function OrgDetailsRedesign({
                       Organization Details
                     </TabsTrigger>
                     <TabsTrigger className="data-[state=active]:!bg-primary" value="appView">App View</TabsTrigger>
+                    <TabsTrigger className="data-[state=active]:!bg-primary" value="documents">Documents</TabsTrigger>
                   </TabsList>
                   <TabsContent value="details" className="mt-4 space-y-6">
                     <EditableField
@@ -543,6 +800,19 @@ export default function OrgDetailsRedesign({
                       </div>
                     </div>
                   </TabsContent>
+                  <TabsContent value="documents" className="mt-4">
+                    <DocumentManager
+                      documents={loaderData.documents || []}
+                      folders={loaderData.folders || []}
+                      entityType="org"
+                      entityId={orgData.id}
+                      baseId={loaderData.baseId}
+                      userId={userId}
+                      canUpload={true}
+                      canDelete={true}
+                      onDocumentSubmit={handleDocumentSubmit}
+                    />
+                  </TabsContent>
                 </Tabs>
               </CardHeader>
             </Card>
@@ -556,7 +826,7 @@ export default function OrgDetailsRedesign({
               </CardHeader>
               <CardContent className="space-y-2">
                 {[...linkManager.existingLinks, ...linkManager.links].map((link, index) => {
-                  console.log(link)
+                  // console.log(link)
                   const isEditing = linkManager.editingIndex === index;
                   return (
                     <Card className="py-2 rounded-lg bg-background/20" >
@@ -644,6 +914,24 @@ export default function OrgDetailsRedesign({
           <input type="hidden" name="userId" value={userId} />
           <input type="hidden" name="orgId" value={orgData?.id} />
           {actionData && <input type="hidden" name="image" value={actionData.fileName} />}
+          {pendingDocuments && (
+            <>
+              <input type="hidden" name="folderPath" value={pendingDocuments.folderPath} />
+              <input type="hidden" name="description" value={pendingDocuments.description} />
+              <input
+                type="hidden"
+                name="documents"
+                value={JSON.stringify({
+                  count: pendingDocuments.files.length,
+                  files: pendingDocuments.files.map(f => ({
+                    name: f.name,
+                    size: f.size,
+                    type: f.type
+                  }))
+                })}
+              />
+            </>
+          )}
         </Form>
       </div>
       {showModal && (

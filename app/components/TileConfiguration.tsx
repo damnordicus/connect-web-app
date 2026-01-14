@@ -25,12 +25,13 @@ import {
   MoveDown,
   Building,
   X,
+  FolderOpen,
 } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
 
 export interface TileContentSection {
   id: string;
-  type: "table" | "links" | "images" | "text" | "baseData";
+  type: "table" | "links" | "images" | "text" | "baseData" | "documents";
   content: any;
   label?: string;
 }
@@ -75,6 +76,7 @@ const TILE_TYPES = [
   { value: "table", label: "Table Data", icon: Database },
   { value: "images", label: "Image Gallery", icon: ImageIcon },
   { value: "baseData", label: "Base Data Fields", icon: Building },
+  { value: "documents", label: "Document Library", icon: FolderOpen },
 ];
 
 export default function TileConfiguration({
@@ -84,7 +86,7 @@ export default function TileConfiguration({
   baseData = [],
   tables = [],
 }: TileConfigurationProps) {
-  console.log(baseData)
+  // console.log(baseData)
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTile, setEditingTile] = useState<TileData | null>(null);
@@ -148,6 +150,8 @@ export default function TileConfiguration({
         return [];
       case "baseData":
         return []; // Array of selected field keys
+      case "documents":
+        return { folder: "/", maxFiles: 5, showRecent: true };
       default:
         return null;
     }
@@ -622,6 +626,58 @@ export default function TileConfiguration({
                   </Button>
                 </div>
               ))}
+            </div>
+          </div>
+        );
+
+      case "documents":
+        return (
+          <div className="space-y-4">
+            <Label>Document Display Settings</Label>
+            <p className="text-sm text-muted-foreground">
+              Configure how documents appear in the tile
+            </p>
+            <div className="space-y-2">
+              <Label className="text-sm">Folder to Display</Label>
+              <Input
+                placeholder="Folder path (e.g., /Policies)"
+                value={section.content?.folder || "/"}
+                onChange={(e) =>
+                  updateSection(tile, setTileData, section.id, {
+                    content: { ...section.content, folder: e.target.value }
+                  })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave as "/" to show all documents
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm">Max Files to Show</Label>
+              <Input
+                type="number"
+                min="1"
+                max="20"
+                value={section.content?.maxFiles || 5}
+                onChange={(e) =>
+                  updateSection(tile, setTileData, section.id, {
+                    content: { ...section.content, maxFiles: parseInt(e.target.value) || 5 }
+                  })
+                }
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={section.content?.showRecent ?? true}
+                onCheckedChange={(checked) =>
+                  updateSection(tile, setTileData, section.id, {
+                    content: { ...section.content, showRecent: checked }
+                  })
+                }
+              />
+              <Label className="text-sm">Show most recent files</Label>
             </div>
           </div>
         );

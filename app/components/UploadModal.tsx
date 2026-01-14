@@ -57,7 +57,7 @@ export default function UploadModal({ isOpen, onClose, setCoverImage, baseId }: 
         }
     },[galleryFetcher.state, galleryFetcher.data])
 
-    console.log('urls: ',gallery)
+    // console.log('urls: ',gallery)
 
     const [selected, setSelected] = useState(-1);
 

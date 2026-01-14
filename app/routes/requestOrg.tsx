@@ -48,7 +48,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
     const orgId = formData.get("orgId");
     const baseId = formData.get("baseId");
     const _action = formData.get("_action");
-    console.log(formData)
+    // console.log(formData)
 
     if(_action === "orgSubmit"){
         const {data} = await supabase.from("request").insert({"user_id": userId, "org_id": orgId, "created_at": new Date().toISOString(), "request_type": "org-admin"})
@@ -56,14 +56,14 @@ export const action = async ({request}: ActionFunctionArgs) => {
     }
     if(_action === "baseSubmit"){
         const {data, error} = await supabase.from("request").insert({"user_id": userId, "base_id": baseId, "created_at": new Date().toISOString(), "request_type": "base-admin"})
-        console.log(error)
+        // console.log(error)
         return redirect("/home");
     }
 }
 
 export default function RequestOrg({loaderData}: Route.ComponentProps){
     const {orgs, userId, bases} = loaderData;
-    console.log(bases)
+    // console.log(bases)
     const [selectedOrgId, setSelectedOrgId] = useState("");
     const [selectedBaseId, setSelectedBaseId] = useState("");
 

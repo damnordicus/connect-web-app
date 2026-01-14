@@ -60,7 +60,7 @@ export function loadTiles(
 
   // Check if old format and migrate
   if (isOldTileFormat(tilesConfig)) {
-    console.log('Migrating tiles from old format to new multi-section format');
+    // console.log('Migrating tiles from old format to new multi-section format');
     return migrateTilesToSections(tilesConfig);
   }
 

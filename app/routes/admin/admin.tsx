@@ -57,14 +57,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const base_id = formData.get("base_id") as string;
   const user_id = formData.get("user_id") as string;
 
-  console.log(formData)
+  // console.log(formData)
 
   if(_action === "neworg-submit"){
     const { data: newOrgData, error: newOrgError} = await supabase.from("organization").insert({"name": formData.get("name"), "base_id": base_id, "user_id": user_id, "type": "SUPPORT"}).select("id")
-    console.log(newOrgError)
+    // console.log(newOrgError)
     if(!newOrgError){
       const { data: deleteRequestData, error: deleteRequestError} = await supabase.from("request").delete().eq("id", formData.get("request_id"))
-      console.log(deleteRequestError)
+      // console.log(deleteRequestError)
       return {deleteRequestData}
     }
     return {newOrgData}
@@ -79,7 +79,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const orgFetcher = useFetcher();
   const navigate = useNavigate();
   // const newOrgs = requests.filter((request: {organization: {}}) => request.organization === null)
-  console.log(requests)
+  // console.log(requests)
 
   const approve = async (
     userId: string,

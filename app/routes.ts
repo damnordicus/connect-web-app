@@ -17,5 +17,7 @@ export default [
     ]),
     route("gallery", "./api/gallery.tsx"),
     route("details", "./api/CurrentDetails.tsx"),
+    route("api/documents", "./api/documents.tsx"),
+    route("api/download", "./api/download.tsx"),
     //  route("test", "components/TableField.tsx"),
 ] satisfies RouteConfig;

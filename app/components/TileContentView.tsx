@@ -16,6 +16,8 @@ import {
   EyeOff,
   ExternalLink,
   Building,
+  FolderOpen,
+  Download,
 } from "lucide-react";
 import type { TileData, TileContentSection, BaseDataField } from "./TileConfiguration";
 
@@ -32,7 +34,7 @@ export default function TileContentViewer({
 }: TileContentViewerProps) {
   const getTileIcon = (sections: TileContentSection[]) => {
     if (sections.length === 0) return <FileText className="h-4 w-4" />;
-    
+
     const firstType = sections[0].type;
     switch (firstType) {
       case "text":
@@ -45,6 +47,8 @@ export default function TileContentViewer({
         return <ImageIcon className="h-4 w-4" />;
       case "baseData":
         return <Building className="h-4 w-4" />;
+      case "documents":
+        return <FolderOpen className="h-4 w-4" />;
     }
   };
 
@@ -60,6 +64,8 @@ export default function TileContentViewer({
         return <ImageIcon className="h-4 w-4" />;
       case "baseData":
         return <Building className="h-4 w-4" />;
+      case "documents":
+        return <FolderOpen className="h-4 w-4" />;
     }
   };
 
@@ -75,6 +81,8 @@ export default function TileContentViewer({
         return "Images";
       case "baseData":
         return "Base Data";
+      case "documents":
+        return "Documents";
     }
   };
 
@@ -218,6 +226,41 @@ export default function TileContentViewer({
                 )}
               </div>
             ))}
+          </div>
+        );
+
+      case "documents":
+        const docConfig = section.content || {};
+        const folder = docConfig.folder || "/";
+        const maxFiles = docConfig.maxFiles || 5;
+
+        return (
+          <div className="space-y-2">
+            <div className="bg-muted/30 rounded-md p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">
+                  {folder === "/" ? "All Documents" : `Folder: ${folder}`}
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground italic">
+                Showing up to {maxFiles} {docConfig.showRecent ? "recent " : ""}documents
+              </p>
+            </div>
+            <Card className="bg-muted/30">
+              <CardContent className="flex items-center justify-between p-3">
+                <div className="flex items-center gap-3 flex-1">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Document preview</p>
+                    <p className="text-xs text-muted-foreground">
+                      Documents will appear here in the app
+                    </p>
+                  </div>
+                </div>
+                <Download className="h-4 w-4 text-muted-foreground" />
+              </CardContent>
+            </Card>
           </div>
         );
     }

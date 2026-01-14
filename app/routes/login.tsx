@@ -35,7 +35,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 email: email,
                 password: password,
             })
-            console.log(data?.length, error)
+            // console.log(data?.length, error)
             if(error){
                 return {success: false, error: "Invalid credentials"}
             }
@@ -78,13 +78,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         try{
             const {data: signUpData, error: signUpError} = await authClient.signUp.email()
             const {data, error} = await supabase.from("user").select().eq("email", email)
-            console.log("data: ", data, " error: ", error)
+            // console.log("data: ", data, " error: ", error)
             if(data && data.length){
                 return {success: false, message:"email address already exists"}
             }
             else{
                 const {data: userData, error: userError} = await supabase.from("user").insert({"email": email, "password": password, "current_base": base, "role": test === 'base' ? 'BASE' : 'ORG'}).select().single();
-                console.log(userData)
+                // console.log(userData)
                 if(userData){
 
                     if(newOrg && newOrg.length > 0){
@@ -94,12 +94,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                         const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData.id, "org_id": org, "request_type": "org-admin"})
                     }
                     if(test === "base"){
-                        console.log('test')
+                        // console.log('test')
                         const {data: requestResponse, error: insertError} = await supabase.from("request").insert({"created_at": new Date(Date.now()), "user_id": userData.id, "base_id": base, "request_type": "base-admin"})
-                        console.log(requestResponse, insertError)
+                        // console.log(requestResponse, insertError)
                     }
                 }
-                console.log('base: ', base, ' org: ', org)
+                // console.log('base: ', base, ' org: ', org)
                 if(userData.admin_id){
                     return redirect(`home?id=${userData.admin_id}`)
                 }else{
