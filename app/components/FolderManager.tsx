@@ -159,10 +159,10 @@ export default function FolderManager({
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+            <Button variant="outline" type="button" onClick={() => setCreateDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateFolder}>Create</Button>
+            <Button type="button" onClick={handleCreateFolder}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -196,10 +196,10 @@ export default function FolderManager({
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
+            <Button variant="outline" type="button" onClick={() => setRenameDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleRenameFolder}>Rename</Button>
+            <Button type="button" onClick={handleRenameFolder}>Rename</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -221,10 +221,10 @@ export default function FolderManager({
             </Alert>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button variant="outline" type="button" onClick={() => setDeleteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteFolder}>
+            <Button variant="destructive" type="button" onClick={handleDeleteFolder}>
               Delete
             </Button>
           </DialogFooter>
@@ -270,6 +270,7 @@ export function FolderTreeItem({
           <Button
             size="sm"
             variant="ghost"
+            type="button"
             className="h-6 w-6 p-0"
             onClick={(e) => {
               e.stopPropagation();
@@ -281,6 +282,7 @@ export function FolderTreeItem({
           <Button
             size="sm"
             variant="ghost"
+            type="button"
             className="h-6 w-6 p-0"
             onClick={(e) => {
               e.stopPropagation();
